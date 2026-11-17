@@ -5,14 +5,15 @@ import time
 import random
 import requests
 from bs4 import BeautifulSoup
-from urllib.parse import unquote
+from urllib.parse import unquote, urljoin
 from playwright.sync_api import sync_playwright
 
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN", "").strip()
 CHAT_ID = os.environ.get("CHAT_ID", "").strip()
 MIN_DISCOUNT_PERCENT = 40
 STATE_FILE = "sent_deals.json"
-MAX_RUN_SECONDS = 540
+MAX_RUN_SECONDS = 560       # أمان قبل انتهاء وقت GitHub Actions
+MAX_PAGES_PER_URL = 8       # أقصى عدد صفحات يفحصها داخل كل رابط (تقدر تغيره براحتك)
 
 # قسم الموبايلات (من 700 ج وطالع) + الـ 12 رابط المستهدفة
 WAREHOUSE_URLS = [
@@ -36,10 +37,15 @@ def load_state():
     if os.path.exists(STATE_FILE):
         try:
             with open(STATE_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
+                data = json.load(f)
+                if isinstance(data, dict):
+                    data.setdefault("sent", {})
+                    data.setdefault("ref", {})
+                    data.setdefault("next_idx", 0)
+                    return data
         except Exception:
             pass
-    return {"sent": {}, "ref": {}}
+    return {"sent": {}, "ref": {}, "next_idx": 0}
 
 def save_state(state):
     with open(STATE_FILE, "w", encoding="utf-8") as f:
@@ -86,6 +92,15 @@ def resolve_short_url(url):
         fb = re.search(r"browser_fallback_url=([^;]+)", cur)
         return unquote(fb.group(1)) if fb else "https://" + cur[9:].split("#Intent")[0]
     return cur
+
+def get_next_page_url(soup):
+    next_el = soup.select_one(
+        "a.s-pagination-next:not(.s-pagination-disabled), "
+        ".a-pagination li.a-last:not(.a-disabled) a"
+    )
+    if next_el and next_el.get("href"):
+        return urljoin("https://www.amazon.eg", next_el.get("href"))
+    return None
 
 def set_egypt_location(page):
     print("📍 جاري ضبط عنوان التوصيل داخل مصر برمجياً...")
@@ -223,6 +238,13 @@ def main():
     state = load_state()
     sent_deals = state.get("sent", {})
     ref_cache = state.get("ref", {})
+    total_urls = len(WAREHOUSE_URLS)
+    start_idx = state.get("next_idx", 0) % total_urls
+
+    # ترتيب القائمة بحيث يبدأ من حيث توقف في الجولة السابقة ليفحص كل الصفحات بعدل
+    ordered_indices = [(start_idx + i) % total_urls for i in range(total_urls)]
+    # ضمان وجود قسمي الموبايلات (0 و 1) في أول كل جولة دائماً لسرعة اقتناصها
+    priority_order = [0, 1] + [i for i in ordered_indices if i not in (0, 1)]
 
     with sync_playwright() as p:
         browser = p.chromium.launch(
@@ -242,84 +264,116 @@ def main():
 
         set_egypt_location(page)
 
-        print(f"📂 إجمالي قوائم الفحص المستهدفة: {len(WAREHOUSE_URLS)}")
-        for idx, raw_url in enumerate(WAREHOUSE_URLS, 1):
+        print(f"📂 إجمالي قوائم الفحص: {total_urls} (فحص حتى {MAX_PAGES_PER_URL} صفحات لكل رابط)")
+        time_up = False
+
+        for step_num, url_idx in enumerate(priority_order, 1):
             if time.time() - start_ts > MAX_RUN_SECONDS:
-                print("⏳ اقتراب انتهاء وقت الجولة، حفظ الذاكرة لاستكمال الباقي في الجولة القادمة...")
+                print(f"⏳ انتهى وقت هذه الجولة، سيتم استكمال الباقي في الجولة القادمة من الرابط رقم {url_idx + 1}...")
+                state["next_idx"] = url_idx
+                time_up = True
                 break
 
-            target_url = resolve_short_url(raw_url)
-            print(f"[{idx}/{len(WAREHOUSE_URLS)}] فحص: {raw_url}")
-            try:
-                page.goto(target_url, wait_until="domcontentloaded", timeout=30000)
-                time.sleep(random.uniform(2, 3.5))
-                html = page.content()
+            raw_url = WAREHOUSE_URLS[url_idx]
+            current_url = resolve_short_url(raw_url)
+            print(f"\n[{step_num}/{len(priority_order)}] فحص الرابط ({url_idx + 1}): {raw_url}")
 
-                if "captchacharacters" in html:
-                    print("   ⚠️ أمازون طلب كابتشا في هذا الرابط، تخطي مؤقت.")
-                    continue
+            priced_cnt = 0
+            max_disc = 0
+            page_num = 1
 
-                soup = BeautifulSoup(html, "html.parser")
-                items = soup.select("div[data-component-type='s-search-result']")
-                print(f"   تم العثور على {len(items)} منتج.")
+            while current_url and page_num <= MAX_PAGES_PER_URL:
+                if time.time() - start_ts > MAX_RUN_SECONDS:
+                    state["next_idx"] = url_idx
+                    time_up = True
+                    break
 
-                priced_cnt = 0
-                max_disc = 0
+                try:
+                    page.goto(current_url, wait_until="domcontentloaded", timeout=30000)
+                    time.sleep(random.uniform(2.0, 3.2))
+                    html = page.content()
 
-                for item in items:
-                    if time.time() - start_ts > MAX_RUN_SECONDS:
+                    if "captchacharacters" in html:
+                        print(f"   ⚠️ كابتشا في صفحة {page_num}، تخطي الرابط مؤقتاً.")
                         break
 
-                    asin = (item.get("data-asin") or "").strip()
-                    if len(asin) < 5:
-                        continue
+                    soup = BeautifulSoup(html, "html.parser")
+                    items = soup.select("div[data-component-type='s-search-result']")
+                    print(f"   📄 صفحة ({page_num}): تم العثور على {len(items)} منتج.")
 
-                    prices = extract_card_prices(item)
-                    if not prices:
-                        continue
+                    if not items:
+                        break
 
-                    used_p = min(prices)
-                    old_p = max(prices) if len(prices) >= 2 else None
+                    for item in items:
+                        if time.time() - start_ts > MAX_RUN_SECONDS:
+                            state["next_idx"] = url_idx
+                            time_up = True
+                            break
 
-                    if not old_p:
-                        cached = ref_cache.get(asin)
-                        if cached and (time.time() - cached["ts"] < 21600):
-                            old_p = cached["price"]
-                        else:
-                            old_p = get_original_price(context, page, asin, used_p)
-                            ref_cache[asin] = {"price": old_p or used_p, "ts": time.time()}
-                            time.sleep(random.uniform(0.4, 0.9))
+                        asin = (item.get("data-asin") or "").strip()
+                        if len(asin) < 5:
+                            continue
 
-                    if old_p and old_p > used_p:
-                        priced_cnt += 1
-                        disc = round(((old_p - used_p) / old_p) * 100)
-                        if disc > max_disc:
-                            max_disc = disc
+                        prices = extract_card_prices(item)
+                        if not prices:
+                            continue
 
-                        if disc >= MIN_DISCOUNT_PERCENT:
-                            prev_sent = sent_deals.get(asin)
-                            if not prev_sent or prev_sent > used_p:
-                                t_el = item.select_one("h2 span") or item.select_one("h2")
-                                title = t_el.get_text(strip=True) if t_el else "منتج مستودع أمازون"
-                                msg = (
-                                    f"🔥 لقطة سحابية بخصم {disc}% (مستودع أمازون)!\n\n"
-                                    f"📦 {title}\n"
-                                    f"💰 سعر اللقطة: {used_p} EGP\n"
-                                    f"❌ السعر الأصلي: {old_p} EGP\n\n"
-                                    f"🔗 https://www.amazon.eg/dp/{asin}"
-                                )
-                                if send_telegram(msg):
-                                    sent_deals[asin] = used_p
-                                    print(f"   ✅ تم إرسال لقطة {asin} بخصم {disc}%")
+                        used_p = min(prices)
+                        old_p = max(prices) if len(prices) >= 2 else None
 
-                print(f"   📊 ملخص القسم: تمت مقارنة {priced_cnt} منتج | أعلى خصم حالي: {max_disc}%")
+                        if not old_p:
+                            cached = ref_cache.get(asin)
+                            if cached and (time.time() - cached["ts"] < 21600):
+                                old_p = cached["price"]
+                            else:
+                                old_p = get_original_price(context, page, asin, used_p)
+                                ref_cache[asin] = {"price": old_p or used_p, "ts": time.time()}
+                                time.sleep(random.uniform(0.35, 0.8))
 
-                state["sent"] = sent_deals
-                state["ref"] = ref_cache
-                save_state(state)
+                        if old_p and old_p > used_p:
+                            priced_cnt += 1
+                            disc = round(((old_p - used_p) / old_p) * 100)
+                            if disc > max_disc:
+                                max_disc = disc
 
-            except Exception as e:
-                print(f"   ❌ خطأ: {e}")
+                            if disc >= MIN_DISCOUNT_PERCENT:
+                                prev_sent = sent_deals.get(asin)
+                                if not prev_sent or prev_sent > used_p:
+                                    t_el = item.select_one("h2 span") or item.select_one("h2")
+                                    title = t_el.get_text(strip=True) if t_el else "منتج مستودع أمازون"
+                                    msg = (
+                                        f"🔥 لقطة سحابية بخصم {disc}% (مستودع أمازون)!\n"
+                                        f"📄 رابط ({url_idx + 1}) - صفحة ({page_num})\n\n"
+                                        f"📦 {title}\n"
+                                        f"💰 سعر اللقطة: {used_p} EGP\n"
+                                        f"❌ السعر الأصلي: {old_p} EGP\n\n"
+                                        f"🔗 https://www.amazon.eg/dp/{asin}"
+                                    )
+                                    if send_telegram(msg):
+                                        sent_deals[asin] = used_p
+                                        print(f"      ✅ تم إرسال لقطة {asin} بخصم {disc}%")
+
+                    if time_up:
+                        break
+
+                    next_url = get_next_page_url(soup)
+                    if next_url:
+                        current_url = next_url
+                        page_num += 1
+                    else:
+                        break
+
+                except Exception as e:
+                    print(f"   ❌ خطأ في صفحة {page_num}: {e}")
+                    break
+
+            print(f"   📊 ملخص الرابط ({url_idx + 1}): تمت مقارنة {priced_cnt} منتج عبر {page_num} صفحات | أعلى خصم: {max_disc}%")
+
+            state["sent"] = sent_deals
+            state["ref"] = ref_cache
+            if not time_up:
+                state["next_idx"] = (url_idx + 1) % total_urls
+            save_state(state)
 
         browser.close()
 
