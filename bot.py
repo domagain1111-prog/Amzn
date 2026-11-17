@@ -14,14 +14,10 @@ MIN_DISCOUNT_PERCENT = 40
 STATE_FILE = "sent_deals.json"
 MAX_RUN_SECONDS = 540
 
-# الـ 12 رابط المستهدفة بالكامل
+# قسم الموبايلات (من 700 ج وطالع) + الـ 12 رابط المستهدفة
 WAREHOUSE_URLS = [
-WAREHOUSE_URLS = [
-    # 📱 قسم الموبايلات في مستودع أمازون (من 700 ج وطالع - مرتب بالأحدث)
     "https://www.amazon.eg/s?k=%D9%85%D9%88%D8%A8%D8%A7%D9%8A%D9%84&rh=n%3A27972173031%2Cp_36%3A70000-&s=date-desc-rank",
     "https://www.amazon.eg/s?k=Samsung+iPhone+Xiaomi+Realme+Oppo+Nokia+Infinix&rh=n%3A27972173031%2Cp_36%3A70000-&s=date-desc-rank",
-
-    # باقي الـ 12 قسم بتوعك
     "https://link.amazon/B09NtHO69",
     "https://link.amazon/B02tVS8LW",
     "https://link.amazon/B02vpENB3",
@@ -35,6 +31,7 @@ WAREHOUSE_URLS = [
     "https://link.amazon/B06aAKHT4",
     "https://link.amazon/B0ePt9Jdp"
 ]
+
 def load_state():
     if os.path.exists(STATE_FILE):
         try:
@@ -50,12 +47,17 @@ def save_state(state):
 
 def send_telegram(text):
     if not TELEGRAM_TOKEN or not CHAT_ID:
+        print(f"   ❌ خطأ إعدادات: التوكن موجود؟ {bool(TELEGRAM_TOKEN)} | الشات ID موجود؟ {bool(CHAT_ID)}")
         return False
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     try:
         r = requests.post(url, json={"chat_id": CHAT_ID, "text": text}, timeout=15)
-        return r.status_code == 200
-    except Exception:
+        if r.status_code != 200:
+            print(f"   ❌ تيليجرام رفض الإرسال ({r.status_code}): {r.text}")
+            return False
+        return True
+    except Exception as e:
+        print(f"   ❌ خطأ اتصال بتيليجرام: {e}")
         return False
 
 def resolve_short_url(url):
@@ -85,7 +87,6 @@ def set_egypt_location(page):
         page.goto("https://www.amazon.eg/", wait_until="domcontentloaded", timeout=25000)
         time.sleep(1.5)
 
-        # ضبط الموقع عبر طلب داخلي مباشر بدون الاعتماد على أزرار الواجهة المخفية
         ok = page.evaluate("""async () => {
             try {
                 const tokenEl = document.querySelector('meta[name="anti-csrftoken-a2z"]');
