@@ -8,11 +8,18 @@ TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN", "").strip()
 CHAT_ID = os.environ.get("CHAT_ID", "").strip()
 AMAZON_COOKIES = os.environ.get("AMAZON_COOKIES", "").strip()
 
-MIN_DISCOUNT_PERCENT = 50
+MIN_DISCOUNT_PERCENT = 30
 STATE_FILE = "sent_now.json"
 
-NOW_URLS = [
-    "https://www.amazon.eg/tez/browse/explore/category?qcbrand=sAuWWBROaG&nodeId=220630950031&title=Top+Deals&ref=EG_Tez_SF_Top_deals"
+# القائمة الشاملة لأقسام Amazon Now (7 أقسام)
+NOW_TARGETS = [
+    ("أقوى العروض (Top Deals)", "https://www.amazon.eg/tez/browse/explore/category?qcbrand=sAuWWBROaG&nodeId=220630950031&title=Top+Deals"),
+    ("الشوكولاتة والحلويات", "https://www.amazon.eg/tez/browse/explore/category?qcbrand=sAuWWBROaG&nodeId=215093316031&title=Chocolate+and+Candies"),
+    ("السناكس والحلويات", "https://www.amazon.eg/tez/browse/explore/category?qcbrand=sAuWWBROaG&nodeId=215093298031&title=Snack+%26+Sweets"),
+    ("القهوة والشاي", "https://www.amazon.eg/tez/browse/explore/category?qcbrand=sAuWWBROaG&nodeId=212925569031&title=Coffee+and+Tea"),
+    ("خزين المطبخ والبقالة", "https://www.amazon.eg/tez/browse/explore/category?qcbrand=sAuWWBROaG&nodeId=212925568031&title=Food+Cupboard"),
+    ("المخبوزات", "https://www.amazon.eg/tez/browse/explore/category?qcbrand=sAuWWBROaG&nodeId=215052334031&title=Bakery"),
+    ("الخضروات والفاكهة", "https://www.amazon.eg/tez/browse/explore/category?qcbrand=sAuWWBROaG&nodeId=214841697031&title=Fruits+and+Vegetables"),
 ]
 
 def load_sent():
@@ -159,13 +166,13 @@ EXTRACT_JS = """
 
 SCROLL_JS = """
 () => {
-    window.scrollBy(0, 850);
+    window.scrollBy(0, 950);
     const candidates = Array.from(document.querySelectorAll("main, [role='main'], div"));
     for (const el of candidates) {
         if (el.scrollHeight > el.clientHeight + 300) {
             const st = window.getComputedStyle(el);
             if (st.overflowY === "auto" || st.overflowY === "scroll") {
-                el.scrollBy(0, 850);
+                el.scrollBy(0, 950);
             }
         }
     }
@@ -179,7 +186,7 @@ def main():
         return
 
     sent_deals = load_sent()
-    print(f"⚡ بدء فحص Amazon Now السحابي (تم تحميل {len(cookies)} كوكي جلسة)...")
+    print(f"⚡ بدء فحص Amazon Now السحابي ({len(NOW_TARGETS)} أقسام | خصم {MIN_DISCOUNT_PERCENT}%+)...")
 
     with sync_playwright() as p:
         browser = p.chromium.launch(
@@ -196,22 +203,22 @@ def main():
         page = context.new_page()
         page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
-        for idx, url in enumerate(NOW_URLS, 1):
-            print(f"\n[{idx}/{len(NOW_URLS)}] فتح قسم Amazon Now...")
+        for idx, (cat_name, url) in enumerate(NOW_TARGETS, 1):
+            print(f"\n[{idx}/{len(NOW_TARGETS)}] فحص قسم: {cat_name}...")
             try:
                 page.goto(url, wait_until="domcontentloaded", timeout=35000)
-                time.sleep(4)
+                time.sleep(3)
 
                 body_txt = page.inner_text("body")
                 if "لقد فقدت الاتصال" in body_txt:
                     print("   ⚠️ ظهرت رسالة 'لقد فقدت الاتصال' - قد تحتاج لتحديث AMAZON_COOKIES لاحقاً.")
-                    continue
+                    break
 
                 last_count = 0
                 stagnant = 0
                 all_items = {}
 
-                for _ in range(22):
+                for _ in range(18):
                     items = page.evaluate(EXTRACT_JS)
                     for it in items:
                         all_items[it["prodId"]] = it
@@ -222,11 +229,11 @@ def main():
                         stagnant = 0
                     last_count = len(all_items)
 
-                    if stagnant >= 4 and len(all_items) > 0:
+                    if stagnant >= 3 and len(all_items) > 0:
                         break
 
                     page.evaluate(SCROLL_JS)
-                    time.sleep(1.5)
+                    time.sleep(1.1)
 
                 max_disc = 0
                 sent_now_cnt = 0
@@ -260,7 +267,8 @@ def main():
                                 else it["href"]
                             )
                             msg = (
-                                f"⚡ لقطة سحابية Amazon Now بخصم {disc}%!\n\n"
+                                f"⚡ لقطة Amazon Now بخصم {disc}%!\n"
+                                f"🏷️ القسم: {cat_name}\n\n"
                                 f"📦 {it['title']}\n"
                                 f"💰 السعر الحالي: {curr_p} EGP\n"
                                 f"❌ السعر قبل الخصم: {old_p if old_p else 'مخفض'} EGP\n\n"
@@ -270,11 +278,12 @@ def main():
                                 sent_deals[prod_id] = curr_p
                                 sent_now_cnt += 1
                                 print(f"   ✅ تم إرسال عرض {prod_id} بخصم {disc}%")
+                                time.sleep(0.4)
 
-                print(f"   📊 فُحص {len(all_items)} منتج في Amazon Now | أعلى خصم: {max_disc}% | أُرسل: {sent_now_cnt}")
+                print(f"   📊 فُحص {len(all_items)} منتج | أعلى خصم: {max_disc}% | أُرسل: {sent_now_cnt}")
 
             except Exception as e:
-                print(f"   ❌ خطأ أثناء فحص الرابط: {e}")
+                print(f"   ❌ خطأ أثناء فحص {cat_name}: {e}")
 
         browser.close()
 
