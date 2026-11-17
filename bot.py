@@ -49,16 +49,22 @@ def send_telegram(text):
     if not TELEGRAM_TOKEN or not CHAT_ID:
         print(f"   ❌ خطأ إعدادات: التوكن موجود؟ {bool(TELEGRAM_TOKEN)} | الشات ID موجود؟ {bool(CHAT_ID)}")
         return False
+
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    try:
-        r = requests.post(url, json={"chat_id": CHAT_ID, "text": text}, timeout=15)
-        if r.status_code != 200:
-            print(f"   ❌ تيليجرام رفض الإرسال ({r.status_code}): {r.text}")
-            return False
-        return True
-    except Exception as e:
-        print(f"   ❌ خطأ اتصال بتيليجرام: {e}")
-        return False
+    chat_ids = [cid.strip() for cid in CHAT_ID.split(",") if cid.strip()]
+    sent_any = False
+
+    for cid in chat_ids:
+        try:
+            r = requests.post(url, json={"chat_id": cid, "text": text}, timeout=15)
+            if r.status_code == 200:
+                sent_any = True
+            else:
+                print(f"   ❌ تيليجرام رفض الإرسال لـ {cid} ({r.status_code}): {r.text}")
+        except Exception as e:
+            print(f"   ❌ خطأ اتصال بتيليجرام لـ {cid}: {e}")
+
+    return sent_any
 
 def resolve_short_url(url):
     cur = url.strip()
