@@ -12,15 +12,17 @@ TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN", "").strip()
 CHAT_ID = os.environ.get("CHAT_ID", "").strip()
 MIN_DISCOUNT_PERCENT = 40
 STATE_FILE = "sent_deals.json"
+MAX_RUN_SECONDS = 540  # حفظ التقدم بأمان قبل انتهاء وقت السيرفر
 
+# الـ 11 رابط الأصليين بالكامل لأنها بتفتح النتائج كاملة بدون حظر
 WAREHOUSE_URLS = [
-    "https://www.amazon.eg/s?k=%D8%A8%D8%A7%D9%88%D8%B1+%D8%A8%D8%A7%D9%86%D9%83&i=warehouse-deals&srs=27972173031",
-    "https://www.amazon.eg/s?k=%D8%B3%D8%A7%D8%B9%D8%A9&i=warehouse-deals&srs=27972173031",
-    "https://www.amazon.eg/s?k=%D8%A7%D9%8A%D8%B1%D8%A8%D9%88%D8%AF%D8%B2&i=warehouse-deals&srs=27972173031",
-    "https://www.amazon.eg/s?k=%D8%B4%D8%A7%D8%B4%D9%87&i=warehouse-deals&srs=27972173031",
-    "https://www.amazon.eg/s?k=Tv&i=warehouse-deals&srs=27972173031",
-    "https://www.amazon.eg/s?k=%D9%85%D8%A8%D8%B1%D8%AF+%D9%85%D9%8A%D8%A7%D9%87&i=warehouse-deals&srs=27972173031",
-    "https://www.amazon.eg/s?k=%D8%AB%D9%84%D8%A7%D8%AC%D8%A9&i=warehouse-deals&srs=27972173031",
+    "https://link.amazon/B09NtHO69",
+    "https://link.amazon/B02tVS8LW",
+    "https://link.amazon/B02vpENB3",
+    "https://link.amazon/B09vgf8ax",
+    "https://link.amazon/B0eqLZNuv",
+    "https://link.amazon/B0hw0iKbO",
+    "https://link.amazon/B01ltdZun",
     "https://link.amazon/B0eFldugz",
     "https://link.amazon/B0fel50x6",
     "https://link.amazon/B095coxM0",
@@ -50,6 +52,27 @@ def send_telegram(text):
     except Exception:
         return False
 
+def resolve_short_url(url):
+    cur = url.strip()
+    for _ in range(5):
+        if cur.startswith("intent://"):
+            fb = re.search(r"browser_fallback_url=([^;]+)", cur)
+            return unquote(fb.group(1)) if fb else "https://" + cur[9:].split("#Intent")[0]
+        if "link.amazon" not in cur and "amzn." not in cur:
+            break
+        try:
+            r = requests.get(cur, allow_redirects=False, timeout=15)
+            loc = r.headers.get("Location")
+            if not loc:
+                break
+            cur = loc
+        except Exception:
+            break
+    if cur.startswith("intent://"):
+        fb = re.search(r"browser_fallback_url=([^;]+)", cur)
+        return unquote(fb.group(1)) if fb else "https://" + cur[9:].split("#Intent")[0]
+    return cur
+
 def clean_price(txt):
     if not txt:
         return None
@@ -60,42 +83,86 @@ def clean_price(txt):
 
 def extract_card_prices(item):
     prices = []
+    # استبعاد نصوص الشحن أو الأقساط حتى لا تُحسب كسعر منتج
     for el in item.select(".a-price .a-offscreen, .a-color-price"):
+        if el.find_parent(attrs={"data-cy": "delivery-recipe"}):
+            continue
         v = clean_price(el.get_text())
-        if v and v > 20 and v not in prices:
+        if v and v > 40 and v not in prices:
             prices.append(v)
-    txt = item.get_text(" ", strip=True)
-    reg = r"(?:EGP|ج\.م\.?|جنيه)\s*([\d,٠-٩]+(?:\.[\d٠-٩]+)?)|([\d,٠-٩]+(?:\.[\d٠-٩]+)?)\s*(?:EGP|ج\.م\.?|جنيه)"
-    for m in re.finditer(reg, txt, re.I):
-        v = clean_price(m.group(1) or m.group(2))
-        if v and v > 20 and v not in prices:
-            prices.append(v)
+
+    for row in item.select(".a-row, span"):
+        t = row.get_text(" ", strip=True)
+        if any(w in t.lower() for w in ["delivery", "shipping", "توصيل", "شحن", "قسط", "شهر", "month"]):
+            continue
+        reg = r"(?:EGP|ج\.م\.?|جنيه)\s*([\d,٠-٩]+(?:\.[\d٠-٩]+)?)|([\d,٠-٩]+(?:\.[\d٠-٩]+)?)\s*(?:EGP|ج\.م\.?|جنيه)"
+        for m in re.finditer(reg, t, re.I):
+            v = clean_price(m.group(1) or m.group(2))
+            if v and v > 40 and v not in prices:
+                prices.append(v)
     return prices
 
-def get_original_price(page, asin, used_price):
+def get_original_price(context, page, asin, used_price):
+    candidates = []
+    selectors = [
+        "#newAccordionRow_0 .a-price .a-offscreen",
+        "#newAccordionRow .a-price .a-offscreen",
+        "#apex_desktop_newAccordionRow .a-price .a-offscreen",
+        "#corePriceDisplay_desktop_feature_div .a-price .a-offscreen",
+        "#corePrice_feature_div .a-price .a-offscreen",
+        "#centerCol .basisPrice .a-price .a-offscreen",
+        "#centerCol span[data-a-strike='true'] .a-offscreen"
+    ]
+
+    # 1) فحص صفحة المنتج بسرعة عبر جلسة المتصفح
     try:
-        page.goto(f"https://www.amazon.eg/dp/{asin}", wait_until="domcontentloaded", timeout=25000)
-        soup = BeautifulSoup(page.content(), "html.parser")
-        candidates = []
-        selectors = [
-            "#newAccordionRow_0 .a-price .a-offscreen",
-            "#newAccordionRow .a-price .a-offscreen",
-            "#corePriceDisplay_desktop_feature_div .a-price .a-offscreen",
-            "#corePrice_feature_div .a-price .a-offscreen",
-            "#centerCol .basisPrice .a-price .a-offscreen"
-        ]
+        resp = context.request.get(f"https://www.amazon.eg/dp/{asin}", timeout=15000)
+        html = resp.text() if resp.ok else ""
+        if not html or "captchacharacters" in html:
+            page.goto(f"https://www.amazon.eg/dp/{asin}", wait_until="domcontentloaded", timeout=20000)
+            html = page.content()
+
+        soup = BeautifulSoup(html, "html.parser")
         for sel in selectors:
             for el in soup.select(sel):
                 if el.find_parent(id=["usedBuySection", "usedAccordionRow"]):
                     continue
                 v = clean_price(el.get_text())
-                if v and used_price < v < used_price * 8:
+                if v and used_price < v < used_price * 6:
                     candidates.append(v)
-        return max(candidates) if candidates else None
+
+        olp = soup.select_one("#olpLinkWidget_feature_div, #dynamic-aod-ingress-box")
+        if olp:
+            m = re.search(r"(?:New|جديد)[\s\S]{0,45}?(?:EGP|ج\.م\.?|جنيه)\s*([\d,٠-٩]+(?:\.[\d٠-٩]+)?)", olp.get_text(" ", strip=True), re.I)
+            if m:
+                v = clean_price(m.group(1))
+                if v and used_price < v < used_price * 6:
+                    candidates.append(v)
     except Exception:
-        return None
+        pass
+
+    # 2) لو السعر مخفي بسبب دولة السيرفر، نفحص جدول جميع العروض (AOD) للعروض الجديدة
+    if not candidates:
+        try:
+            aod_url = f"https://www.amazon.eg/gp/product/ajax?asin={asin}&pc=dp&experienceId=aodAjaxMain"
+            resp2 = context.request.get(aod_url, timeout=15000)
+            if resp2.ok:
+                soup2 = BeautifulSoup(resp2.text(), "html.parser")
+                for offer in soup2.select("#aod-pinned-offer, #aod-offer"):
+                    head = offer.select_one("#aod-offer-heading")
+                    cond = head.get_text(" ", strip=True).lower() if head else ""
+                    if ("new" in cond or "جديد" in cond) and "used" not in cond and "مستعمل" not in cond:
+                        p_el = offer.select_one(".a-price .a-offscreen, .aok-offscreen")
+                        v = clean_price(p_el.get_text()) if p_el else None
+                        if v and used_price < v < used_price * 6:
+                            candidates.append(v)
+        except Exception:
+            pass
+
+    return min(candidates) if candidates else None
 
 def main():
+    start_ts = time.time()
     state = load_state()
     sent_deals = state.get("sent", {})
     ref_cache = state.get("ref", {})
@@ -108,7 +175,10 @@ def main():
         context = browser.new_context(
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
             locale="ar-EG",
-            viewport={"width": 1366, "height": 768}
+            viewport={"width": 1366, "height": 768},
+            extra_http_headers={
+                "Accept-Language": "ar-EG,ar;q=0.9,en-US;q=0.8"
+            }
         )
         page = context.new_page()
         page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
@@ -119,20 +189,16 @@ def main():
         except Exception:
             pass
 
-        for idx, target_url in enumerate(WAREHOUSE_URLS, 1):
-            print(f"[{idx}/{len(WAREHOUSE_URLS)}] فحص: {target_url}")
-            try:
-                if "link.amazon" in target_url:
-                    r = requests.get(target_url, allow_redirects=False, timeout=15)
-                    loc = r.headers.get("Location", target_url)
-                    if loc.startswith("intent://"):
-                        fb = re.search(r"browser_fallback_url=([^;]+)", loc)
-                        target_url = unquote(fb.group(1)) if fb else "https://" + loc[9:].split("#Intent")[0]
-                    else:
-                        target_url = loc
+        for idx, raw_url in enumerate(WAREHOUSE_URLS, 1):
+            if time.time() - start_ts > MAX_RUN_SECONDS:
+                print("⏳ اقتراب انتهاء وقت الجولة، جاري حفظ الذاكرة لاستكمال الباقي في الجولة القادمة...")
+                break
 
+            target_url = resolve_short_url(raw_url)
+            print(f"[{idx}/{len(WAREHOUSE_URLS)}] فحص: {raw_url}")
+            try:
                 page.goto(target_url, wait_until="domcontentloaded", timeout=30000)
-                time.sleep(random.uniform(2, 4))
+                time.sleep(random.uniform(2, 3.5))
                 html = page.content()
 
                 if "captchacharacters" in html:
@@ -143,10 +209,17 @@ def main():
                 items = soup.select("div[data-component-type='s-search-result']")
                 print(f"   تم العثور على {len(items)} منتج.")
 
+                priced_cnt = 0
+                max_disc = 0
+
                 for item in items:
+                    if time.time() - start_ts > MAX_RUN_SECONDS:
+                        break
+
                     asin = (item.get("data-asin") or "").strip()
                     if len(asin) < 5:
                         continue
+
                     prices = extract_card_prices(item)
                     if not prices:
                         continue
@@ -159,12 +232,16 @@ def main():
                         if cached and (time.time() - cached["ts"] < 21600):
                             old_p = cached["price"]
                         else:
-                            old_p = get_original_price(page, asin, used_p)
+                            old_p = get_original_price(context, page, asin, used_p)
                             ref_cache[asin] = {"price": old_p or used_p, "ts": time.time()}
-                            time.sleep(random.uniform(1, 2))
+                            time.sleep(random.uniform(0.4, 0.9))
 
                     if old_p and old_p > used_p:
+                        priced_cnt += 1
                         disc = round(((old_p - used_p) / old_p) * 100)
+                        if disc > max_disc:
+                            max_disc = disc
+
                         if disc >= MIN_DISCOUNT_PERCENT:
                             prev_sent = sent_deals.get(asin)
                             if not prev_sent or prev_sent > used_p:
@@ -180,6 +257,13 @@ def main():
                                 if send_telegram(msg):
                                     sent_deals[asin] = used_p
                                     print(f"   ✅ تم إرسال لقطة {asin} بخصم {disc}%")
+
+                print(f"   📊 ملخص القسم: تمت مقارنة {priced_cnt} منتج | أعلى خصم حالي: {max_disc}%")
+
+                # حفظ أول بأول بعد كل قسم
+                state["sent"] = sent_deals
+                state["ref"] = ref_cache
+                save_state(state)
 
             except Exception as e:
                 print(f"   ❌ خطأ: {e}")
