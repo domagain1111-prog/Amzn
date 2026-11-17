@@ -33,6 +33,14 @@ jobs:
           CHAT_ID: ${{ secrets.CHAT_ID }}
         run: python jumia_bot.py
 
+      - name: Run Amazon Now Scanner (if exists)
+        if: hashFiles('amazon_now_bot.py') != ''
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+          AMAZON_COOKIES: ${{ secrets.AMAZON_COOKIES }}
+        run: python amazon_now_bot.py
+
       - name: Run Amazon Scanner
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
@@ -43,6 +51,6 @@ jobs:
         run: |
           git config user.name "AmazonBot"
           git config user.email "bot@users.noreply.github.com"
-          git add sent_deals.json sent_jumia.json 2>/dev/null || true
+          git add sent_deals.json sent_jumia.json sent_now.json 2>/dev/null || true
           git diff --staged --quiet || git commit -m "Update deals cache"
           git push
