@@ -16,6 +16,12 @@ MAX_RUN_SECONDS = 540
 
 # الـ 12 رابط المستهدفة بالكامل
 WAREHOUSE_URLS = [
+WAREHOUSE_URLS = [
+    # 📱 قسم الموبايلات في مستودع أمازون (من 700 ج وطالع - مرتب بالأحدث)
+    "https://www.amazon.eg/s?k=%D9%85%D9%88%D8%A8%D8%A7%D9%8A%D9%84&rh=n%3A27972173031%2Cp_36%3A70000-&s=date-desc-rank",
+    "https://www.amazon.eg/s?k=Samsung+iPhone+Xiaomi+Realme+Oppo+Nokia+Infinix&rh=n%3A27972173031%2Cp_36%3A70000-&s=date-desc-rank",
+
+    # باقي الـ 12 قسم بتوعك
     "https://link.amazon/B09NtHO69",
     "https://link.amazon/B02tVS8LW",
     "https://link.amazon/B02vpENB3",
@@ -29,7 +35,6 @@ WAREHOUSE_URLS = [
     "https://link.amazon/B06aAKHT4",
     "https://link.amazon/B0ePt9Jdp"
 ]
-
 def load_state():
     if os.path.exists(STATE_FILE):
         try:
