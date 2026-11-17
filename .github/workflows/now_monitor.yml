@@ -1,0 +1,42 @@
+name: Amazon Now 24-7
+
+on:
+  schedule:
+    - cron: '7,22,37,52 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  scan_now:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install requests playwright
+          playwright install chromium
+
+      - name: Run Amazon Now Scanner
+        env:
+          NOW_TELEGRAM_TOKEN: ${{ secrets.NOW_TELEGRAM_TOKEN }}
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+          AMAZON_COOKIES: ${{ secrets.AMAZON_COOKIES }}
+        run: python amazon_now_bot.py
+
+      - name: Save Amazon Now memory
+        run: |
+          git config user.name "AmazonNowBot"
+          git config user.email "bot@users.noreply.github.com"
+          git add sent_now.json 2>/dev/null || true
+          git diff --staged --quiet || (git commit -m "Update Amazon Now cache" && git pull --rebase && git push)
