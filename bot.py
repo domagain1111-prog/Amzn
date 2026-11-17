@@ -5,45 +5,30 @@ import time
 import random
 import requests
 from bs4 import BeautifulSoup
-from urllib.parse import urljoin, urlparse, parse_qs, urlencode
+from urllib.parse import unquote
 from playwright.sync_api import sync_playwright
 
-# ======== الإعدادات الأساسية ========
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN", "").strip()
 CHAT_ID = os.environ.get("CHAT_ID", "").strip()
-MIN_DISCOUNT_PERCENT = 40   # أقل نسبة خصم مطلوبة (40%)
-MIN_USED_PRICE = 150        # تجاهل الإكسسوارات الرخيصة جداً أقل من 150 جنيه
+MIN_DISCOUNT_PERCENT = 40
 STATE_FILE = "sent_deals.json"
 MAX_RUN_SECONDS = 540
 
-# البوابة الرئيسية لمستودع أمازون مصر (Amazon Resale) مرتبة بـ "وصل حديثاً"
-WAREHOUSE_MAIN_URL = "https://www.amazon.eg/s?i=warehouse-deals&srs=27972173031&s=date-desc-rank"
-
-# أقسام احتياطية شاملة داخل المستودع مرتبة بـ "وصل حديثاً" لضمان عدم تفويت أي جهاز
-FALLBACK_FEEDS = [
-    ("وصل حديثاً - موبايلات وتابلت", "https://www.amazon.eg/s?k=%D9%85%D9%88%D8%A8%D8%A7%D9%8A%D9%84&i=warehouse-deals&srs=27972173031&s=date-desc-rank"),
-    ("وصل حديثاً - لابتوب وكمبيوتر", "https://www.amazon.eg/s?k=%D9%84%D8%A7%D8%A8+%D8%AA%D9%88%D8%A8&i=warehouse-deals&srs=27972173031&s=date-desc-rank"),
-    ("وصل حديثاً - شاشات وتلفزيونات", "https://www.amazon.eg/s?k=%D8%B4%D8%A7%D8%B4%D8%A9&i=warehouse-deals&srs=27972173031&s=date-desc-rank"),
-    ("وصل حديثاً - إلكترونيات وسماعات وساعات", "https://www.amazon.eg/s?k=%D8%B3%D9%85%D8%A7%D8%B9%D8%A9&i=warehouse-deals&srs=27972173031&s=date-desc-rank"),
-    ("وصل حديثاً - أجهزة منزلية ومطبخ", "https://www.amazon.eg/s?k=%D8%A3%D8%AC%D9%87%D8%B2%D8%A9+%D9%85%D9%86%D8%B2%D9%84%D9%8A%D8%A9&i=warehouse-deals&srs=27972173031&s=date-desc-rank"),
-    ("وصل حديثاً - ثلاجات وغسالات وتكييف", "https://www.amazon.eg/s?k=%D8%AB%D9%84%D8%A7%D8%AC%D8%A9&i=warehouse-deals&srs=27972173031&s=date-desc-rank"),
+# الـ 12 رابط المستهدفة بالكامل
+WAREHOUSE_URLS = [
+    "https://link.amazon/B09NtHO69",
+    "https://link.amazon/B02tVS8LW",
+    "https://link.amazon/B02vpENB3",
+    "https://link.amazon/B09vgf8ax",
+    "https://link.amazon/B0eqLZNuv",
+    "https://link.amazon/B0hw0iKbO",
+    "https://link.amazon/B01ltdZun",
+    "https://link.amazon/B0eFldugz",
+    "https://link.amazon/B0fel50x6",
+    "https://link.amazon/B095coxM0",
+    "https://link.amazon/B06aAKHT4",
+    "https://link.amazon/B0ePt9Jdp"
 ]
-
-# كلمات الأقسام المهمة لاختيارها تلقائياً من القائمة الجانبية للمستودع
-TARGET_DEPT_KEYWORDS = [
-    "إلكترونيات", "الكترونيات", "موبايل", "هواتف", "اتصالات", "كمبيوتر", "حاسب",
-    "لابتوب", "أجهزة منزلية", "اجهزة منزلية", "منزل", "مطبخ", "تلفزيون", "صوت",
-    "electronics", "mobile", "phone", "computer", "laptop", "appliance", "home", "kitchen", "tv"
-]
-
-# كلمات لاستبعاد المنتجات غير المهمة أو الإكسسوارات التافهة
-EXCLUDE_PRODUCT_KEYWORDS = [
-    "كتاب", "رواية", "ملابس", "بنطلون", "قميص", "تيشيرت", "فستان", "حذاء", "شراب",
-    "مكياج", "روج", "كريم", "شامبو", "حفاضات", "لعبة أطفال", "طعام قطط", "طعام كلاب",
-    "جراب", "كفر موبايل", "اسكرينة", "لاصقة شاشة", "حماية شاشة",
-    "screen protector", "phone case", "silicone case", "t-shirt", "lipstick", "shampoo", "diaper"
-]
-# ====================================
 
 def load_state():
     if os.path.exists(STATE_FILE):
@@ -68,93 +53,73 @@ def send_telegram(text):
     except Exception:
         return False
 
-def force_newest_sort(url):
-    parsed = urlparse(url)
-    qs = parse_qs(parsed.query)
-    qs["s"] = ["date-desc-rank"]
-    new_query = urlencode(qs, doseq=True)
-    return f"https://www.amazon.eg{parsed.path}?{new_query}"
+def resolve_short_url(url):
+    cur = url.strip()
+    for _ in range(5):
+        if cur.startswith("intent://"):
+            fb = re.search(r"browser_fallback_url=([^;]+)", cur)
+            return unquote(fb.group(1)) if fb else "https://" + cur[9:].split("#Intent")[0]
+        if "link.amazon" not in cur and "amzn." not in cur:
+            break
+        try:
+            r = requests.get(cur, allow_redirects=False, timeout=15)
+            loc = r.headers.get("Location")
+            if not loc:
+                break
+            cur = loc
+        except Exception:
+            break
+    if cur.startswith("intent://"):
+        fb = re.search(r"browser_fallback_url=([^;]+)", cur)
+        return unquote(fb.group(1)) if fb else "https://" + cur[9:].split("#Intent")[0]
+    return cur
 
-def is_important_product(title):
-    t = title.lower()
-    for bad in EXCLUDE_PRODUCT_KEYWORDS:
-        if bad in t:
-            return False
-    return True
-
-def set_egypt_delivery(page):
-    """ضبط عنوان التوصيل إلى القاهرة حتى تظهر الأجهزة المنزلية والموبايلات والبطاريات للسيرفر"""
-    print("📍 جاري ضبط عنوان التوصيل داخل مصر (القاهرة)...")
+def set_egypt_location(page):
+    print("📍 جاري ضبط عنوان التوصيل داخل مصر برمجياً...")
     try:
         page.goto("https://www.amazon.eg/", wait_until="domcontentloaded", timeout=25000)
-        time.sleep(2)
-
-        loc_btn = page.locator("#nav-global-location-popover-link")
-        if loc_btn.count() > 0:
-            loc_btn.first.click(timeout=5000)
-            time.sleep(2.5)
-
-            city_sel = page.locator("select#GLUXCityList, select[id*='City']")
-            if city_sel.count() > 0:
-                options = city_sel.first.locator("option").all_inner_texts()
-                target_idx = 1
-                for idx, opt in enumerate(options):
-                    if "القاهرة" in opt or "Cairo" in opt:
-                        target_idx = idx
-                        break
-                if len(options) > 1:
-                    city_sel.first.select_option(index=target_idx)
-                    time.sleep(1.5)
-
-                dist_sel = page.locator("select#GLUXDistrictList, select[id*='District']")
-                if dist_sel.count() > 0:
-                    d_opts = dist_sel.first.locator("option").all_inner_texts()
-                    if len(d_opts) > 1:
-                        dist_sel.first.select_option(index=1)
-                        time.sleep(1)
-
-                done_btn = page.locator("button[name='glowDoneButton'], #GLUXConfirmClose, .a-popover-footer button")
-                if done_btn.count() > 0:
-                    done_btn.first.click(timeout=4000)
-                    time.sleep(2)
-
-        page.reload(wait_until="domcontentloaded", timeout=20000)
         time.sleep(1.5)
-        loc_txt = page.locator("#glow-ingress-line2").inner_text(timeout=3000).strip()
-        print(f"   ✅ موقع التوصيل الحالي على أمازون: {loc_txt}")
+
+        # ضبط الموقع عبر طلب داخلي مباشر بدون الاعتماد على أزرار الواجهة المخفية
+        ok = page.evaluate("""async () => {
+            try {
+                const tokenEl = document.querySelector('meta[name="anti-csrftoken-a2z"]');
+                const token = tokenEl ? tokenEl.getAttribute('content') : '';
+                const headers = {
+                    'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                    'X-Requested-With': 'XMLHttpRequest'
+                };
+                if (token) headers['anti-csrftoken-a2z'] = token;
+
+                const body = new URLSearchParams({
+                    locationType: 'CITY',
+                    city: 'Cairo',
+                    cityName: 'Cairo',
+                    state: 'Cairo Governorate',
+                    countryCode: 'EG',
+                    deviceType: 'web',
+                    pageType: 'Gateway',
+                    actionSource: 'glow'
+                });
+
+                const r = await fetch('/portal-migration/hz/glow/address-change?actionSource=glow', {
+                    method: 'POST',
+                    headers: headers,
+                    body: body.toString()
+                });
+                return r.ok;
+            } catch (e) {
+                return false;
+            }
+        }""")
+        if ok:
+            page.reload(wait_until="domcontentloaded", timeout=20000)
+            time.sleep(1)
+            print("   ✅ تم تفعيل التوصيل داخل مصر بنجاح!")
+        else:
+            print("   ℹ️ تم تهيئة الجلسة الافتراضية لمصر.")
     except Exception as e:
-        print(f"   ℹ️ استمرار الفحص الافتراضي: {e}")
-
-def discover_warehouse_departments(page):
-    """استخراج روابط الأقسام المهمة مباشرة من مستودع أمازون مع تفعيل وصل حديثاً"""
-    feeds = [("المستودع العام - وصل حديثاً", WAREHOUSE_MAIN_URL)]
-    seen_urls = {WAREHOUSE_MAIN_URL}
-
-    try:
-        page.goto(WAREHOUSE_MAIN_URL, wait_until="domcontentloaded", timeout=30000)
-        time.sleep(2.5)
-        soup = BeautifulSoup(page.content(), "html.parser")
-
-        for a in soup.select("#departments a, #s-refinements a, .s-navigation-item a"):
-            name = a.get_text(" ", strip=True)
-            href = a.get("href", "")
-            if not name or not href:
-                continue
-            if any(k in name.lower() for k in TARGET_DEPT_KEYWORDS):
-                full_url = force_newest_sort(urljoin("https://www.amazon.eg", href))
-                if full_url not in seen_urls:
-                    seen_urls.add(full_url)
-                    feeds.append((f"قسم {name} (وصل حديثاً)", full_url))
-    except Exception as e:
-        print(f"   ⚠️ تعذر قراءة القائمة الجانبية: {e}")
-
-    # إضافة الأقسام الشاملة لضمان تغطية الموبايلات والأجهزة المنزلية 100%
-    for label, f_url in FALLBACK_FEEDS:
-        if f_url not in seen_urls:
-            seen_urls.add(f_url)
-            feeds.append((label, f_url))
-
-    return feeds
+        print(f"   ℹ️ تخطي إعداد الموقع: {e}")
 
 def clean_price(txt):
     if not txt:
@@ -170,7 +135,7 @@ def extract_card_prices(item):
         if el.find_parent(attrs={"data-cy": "delivery-recipe"}):
             continue
         v = clean_price(el.get_text())
-        if v and v >= MIN_USED_PRICE and v not in prices:
+        if v and v > 40 and v not in prices:
             prices.append(v)
 
     for row in item.select(".a-row, span"):
@@ -180,7 +145,7 @@ def extract_card_prices(item):
         reg = r"(?:EGP|ج\.م\.?|جنيه)\s*([\d,٠-٩]+(?:\.[\d٠-٩]+)?)|([\d,٠-٩]+(?:\.[\d٠-٩]+)?)\s*(?:EGP|ج\.م\.?|جنيه)"
         for m in re.finditer(reg, t, re.I):
             v = clean_price(m.group(1) or m.group(2))
-            if v and v >= MIN_USED_PRICE and v not in prices:
+            if v and v > 40 and v not in prices:
                 prices.append(v)
     return prices
 
@@ -246,7 +211,6 @@ def main():
     state = load_state()
     sent_deals = state.get("sent", {})
     ref_cache = state.get("ref", {})
-    seen_in_run = set()
 
     with sync_playwright() as p:
         browser = p.chromium.launch(
@@ -257,33 +221,35 @@ def main():
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
             locale="ar-EG",
             viewport={"width": 1366, "height": 768},
-            extra_http_headers={"Accept-Language": "ar-EG,ar;q=0.9,en-US;q=0.8"}
+            extra_http_headers={
+                "Accept-Language": "ar-EG,ar;q=0.9,en-US;q=0.8"
+            }
         )
         page = context.new_page()
         page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
-        set_egypt_delivery(page)
-        feeds = discover_warehouse_departments(page)
-        print(f"📂 إجمالي قوائم الفحص المستهدفة (وصل حديثاً): {len(feeds)}")
+        set_egypt_location(page)
 
-        for idx, (label, target_url) in enumerate(feeds, 1):
+        print(f"📂 إجمالي قوائم الفحص المستهدفة: {len(WAREHOUSE_URLS)}")
+        for idx, raw_url in enumerate(WAREHOUSE_URLS, 1):
             if time.time() - start_ts > MAX_RUN_SECONDS:
-                print("⏳ انتهى وقت هذه الجولة، تم حفظ الذاكرة بنجاح.")
+                print("⏳ اقتراب انتهاء وقت الجولة، حفظ الذاكرة لاستكمال الباقي في الجولة القادمة...")
                 break
 
-            print(f"[{idx}/{len(feeds)}] فحص: {label}")
+            target_url = resolve_short_url(raw_url)
+            print(f"[{idx}/{len(WAREHOUSE_URLS)}] فحص: {raw_url}")
             try:
                 page.goto(target_url, wait_until="domcontentloaded", timeout=30000)
                 time.sleep(random.uniform(2, 3.5))
                 html = page.content()
 
                 if "captchacharacters" in html:
-                    print("   ⚠️ كابتشا مؤقتة، تخطي للقسم التالي.")
+                    print("   ⚠️ أمازون طلب كابتشا في هذا الرابط، تخطي مؤقت.")
                     continue
 
                 soup = BeautifulSoup(html, "html.parser")
                 items = soup.select("div[data-component-type='s-search-result']")
-                print(f"   تم العثور على {len(items)} منتج بالصفحة.")
+                print(f"   تم العثور على {len(items)} منتج.")
 
                 priced_cnt = 0
                 max_disc = 0
@@ -293,14 +259,7 @@ def main():
                         break
 
                     asin = (item.get("data-asin") or "").strip()
-                    if len(asin) < 5 or asin in seen_in_run:
-                        continue
-                    seen_in_run.add(asin)
-
-                    t_el = item.select_one("h2 span") or item.select_one("h2")
-                    title = t_el.get_text(strip=True) if t_el else "جهاز مستودع أمازون"
-
-                    if not is_important_product(title):
+                    if len(asin) < 5:
                         continue
 
                     prices = extract_card_prices(item)
@@ -317,7 +276,7 @@ def main():
                         else:
                             old_p = get_original_price(context, page, asin, used_p)
                             ref_cache[asin] = {"price": old_p or used_p, "ts": time.time()}
-                            time.sleep(random.uniform(0.4, 0.8))
+                            time.sleep(random.uniform(0.4, 0.9))
 
                     if old_p and old_p > used_p:
                         priced_cnt += 1
@@ -328,19 +287,20 @@ def main():
                         if disc >= MIN_DISCOUNT_PERCENT:
                             prev_sent = sent_deals.get(asin)
                             if not prev_sent or prev_sent > used_p:
+                                t_el = item.select_one("h2 span") or item.select_one("h2")
+                                title = t_el.get_text(strip=True) if t_el else "منتج مستودع أمازون"
                                 msg = (
-                                    f"🔥 وصل حديثاً بخصم {disc}% في مستودع أمازون!\n"
-                                    f"🏷️ القسم: {label}\n\n"
+                                    f"🔥 لقطة سحابية بخصم {disc}% (مستودع أمازون)!\n\n"
                                     f"📦 {title}\n"
                                     f"💰 سعر اللقطة: {used_p} EGP\n"
-                                    f"❌ سعر الجديد: {old_p} EGP\n\n"
+                                    f"❌ السعر الأصلي: {old_p} EGP\n\n"
                                     f"🔗 https://www.amazon.eg/dp/{asin}"
                                 )
                                 if send_telegram(msg):
                                     sent_deals[asin] = used_p
                                     print(f"   ✅ تم إرسال لقطة {asin} بخصم {disc}%")
 
-                print(f"   📊 تمت مقارنة {priced_cnt} جهاز مهم | أعلى خصم حالي: {max_disc}%")
+                print(f"   📊 ملخص القسم: تمت مقارنة {priced_cnt} منتج | أعلى خصم حالي: {max_disc}%")
 
                 state["sent"] = sent_deals
                 state["ref"] = ref_cache
