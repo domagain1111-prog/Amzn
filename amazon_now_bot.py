@@ -15,14 +15,20 @@ MIN_DISCOUNT_PERCENT = 40
 STATE_FILE = "sent_now.json"
 QC_BRAND = "sAuWWBROaG"
 
+# القائمة الشاملة لأقسام Amazon Now (12 قسم)
 NOW_TARGETS = [
     ("أقوى العروض (Top Deals)", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=220630950031&title=Top+Deals&ref=EG_Tez_SF_Top_deals"),
     ("الشوكولاتة والحلويات", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215093316031&title=Chocolate+and+Candies"),
     ("السناكس والحلويات", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215093298031&title=Snack+%26+Sweets"),
     ("القهوة والشاي", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=212925569031&title=Coffee+and+Tea"),
     ("خزين المطبخ والبقالة", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=212925568031&title=Food+Cupboard"),
-    ("المخبوزات", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215052334031&title=Bakery"),
+    ("الألبان والبيض", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215052334031&title=Bakery"),
     ("الخضروات والفاكهة", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=214841697031&title=Fruits+and+Vegetables"),
+    ("الجمال والعناية الشخصية", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215021840031&ref=EG_Tez_SF_Herotator_Beauty"),
+    ("مستلزمات المنزل", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215103357031&ref=SA_Tez_SF_SBC_Home"),
+    ("المشروبات والعصائر", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=212925566031&ref=EG_Tez_SF_SBC_Beverages"),
+    ("المخبوزات الطازجة", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215052333031&ref=EG_Tez_SF_SBC_Bakery"),
+    ("الدواجن واللحوم والأسماك", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=214841696031&ref=EG_Tez_SF_SBC_CMF"),
 ]
 
 def load_sent():
@@ -121,7 +127,6 @@ EXTRACT_JS = r"""
         return dec.includes("line-through");
     }
 
-    // فحص آمن وسريع لخصائص React المربوطة بكارت المنتج لاستخراج الـ ASIN المخفي
     function getAsinFromReact(rootEl) {
         const asinRe = /^B[0-9A-Z]{9}$/;
         const urlAsinRe = /(?:\/dp\/|\/gp\/product\/|\/product\/|asin[=:"'/]+)([B0-9][A-Z0-9]{9})/i;
@@ -129,7 +134,6 @@ EXTRACT_JS = r"""
 
         for (const node of nodes) {
             if (!node) continue;
-            // فحص كل الـ attributes العادية أولاً
             if (node.attributes) {
                 for (let i = 0; i < node.attributes.length; i++) {
                     const val = node.attributes[i].value || "";
@@ -138,7 +142,6 @@ EXTRACT_JS = r"""
                     if (um) return um[1];
                 }
             }
-            // فحص خصائص React Props / Fiber بعمق محدود وآمن
             const keys = Object.keys(node);
             for (const k of keys) {
                 if (k.startsWith("__reactProps$") || k.startsWith("__reactFiber$")) {
@@ -276,13 +279,13 @@ EXTRACT_JS = r"""
 
 SCROLL_JS = """
 () => {
-    window.scrollBy(0, 900);
+    window.scrollBy(0, 950);
     const candidates = Array.from(document.querySelectorAll("main, [role='main'], div"));
     for (const el of candidates) {
         if (el.scrollHeight > el.clientHeight + 300) {
             const st = window.getComputedStyle(el);
             if (st.overflowY === "auto" || st.overflowY === "scroll") {
-                el.scrollBy(0, 900);
+                el.scrollBy(0, 950);
             }
         }
     }
@@ -293,7 +296,6 @@ ASIN_VAL_RE = re.compile(r"^B[0-9A-Z]{9}$")
 IMG_ID_RE = re.compile(r"/images/I/([A-Za-z0-9+%-]+?)(?:\._|\.)")
 
 def walk_json_for_asins(obj, img_to_asin, title_to_asin):
-    """يمشي داخل أي كائن JSON قادم من سيرفر أمازون ليربط الصورة والاسم بكود الـ ASIN الحقيقي"""
     if isinstance(obj, dict):
         found_asins = []
         found_imgs = []
@@ -327,7 +329,6 @@ def walk_json_for_asins(obj, img_to_asin, title_to_asin):
                 walk_json_for_asins(item, img_to_asin, title_to_asin)
 
 def resolve_direct_asin_by_search(context, title, img_id):
-    """إذا لم يظهر الـ ASIN في الكارت، يفتح البحث في الخلفية لثانية ويسحب رابط المنتج الفردي المباشر"""
     search_page = context.new_page()
     found_asin = ""
     try:
@@ -361,7 +362,7 @@ def main():
         return
 
     sent_deals = load_sent()
-    print(f"⚡ بدء فحص Amazon Now السحابي ({len(NOW_TARGETS)} أقسام | خصم فعلي {MIN_DISCOUNT_PERCENT}%+)...")
+    print(f"⚡ بدء فحص Amazon Now السحابي ({len(NOW_TARGETS)} قسم | خصم فعلي {MIN_DISCOUNT_PERCENT}%+)...")
 
     with sync_playwright() as p:
         browser = p.chromium.launch(
@@ -395,9 +396,8 @@ def main():
             print(f"\n[{idx}/{len(NOW_TARGETS)}] فحص قسم: {cat_name}...")
             try:
                 page.goto(url, wait_until="domcontentloaded", timeout=35000)
-                time.sleep(4)
+                time.sleep(3.2)
 
-                # استخراج أي JSON مدمج داخل الصفحة الأولية (__NEXT_DATA__)
                 try:
                     next_json_list = page.evaluate(
                         """() => Array.from(document.querySelectorAll("script#__NEXT_DATA__, script[type='application/json']")).map(s => s.textContent)"""
@@ -420,7 +420,7 @@ def main():
                 stagnant = 0
                 all_items = {}
 
-                for _ in range(18):
+                for _ in range(16):
                     items = page.evaluate(EXTRACT_JS)
                     for it in items:
                         all_items[it["prodId"]] = it
@@ -431,11 +431,11 @@ def main():
                         stagnant = 0
                     last_count = len(all_items)
 
-                    if stagnant >= 4 and len(all_items) > 0:
+                    if stagnant >= 3 and len(all_items) > 0:
                         break
 
                     page.evaluate(SCROLL_JS)
-                    time.sleep(1.3)
+                    time.sleep(1.1)
 
                 if len(all_items) == 0:
                     snippet = " ".join(body_txt.split())[:120]
@@ -475,7 +475,6 @@ def main():
                         temp_key = asin if asin else prod_id
 
                         if (not sent_deals.get(temp_key) or sent_deals.get(temp_key) > curr_p) and (sent_deals.get(title_key) != curr_p):
-                            # إذا لم يظهر ASIN بعد، نسحبه مباشرة من أول نتيجة مطابقة للصورة والاسم لضمان رابط منتج فردي 100%
                             if not asin:
                                 asin = resolve_direct_asin_by_search(context, title_str, img_id)
 
@@ -488,7 +487,6 @@ def main():
                             elif it.get("href") and "/explore/category" not in it["href"] and "/s?" not in it["href"]:
                                 final_link = it["href"]
                             else:
-                                # في أسوأ الحالات النادرة جداً فقط
                                 final_link = f"https://www.amazon.eg/s?k={urllib.parse.quote_plus(title_str)}"
 
                             saved_egp = round(old_p - curr_p, 2)
