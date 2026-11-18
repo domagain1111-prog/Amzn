@@ -15,7 +15,7 @@ MIN_DISCOUNT_PERCENT = 50         # الخصم الأساسي للموبايلا
 WATCHES_MIN_DISCOUNT = 70         # الخصم المخصص للساعات الكلاسيك (70%+)
 
 STATE_FILE = "sent_deals.json"
-MAX_RUN_SECONDS = 680
+MAX_RUN_SECONDS = 480
 MAX_PAGES_PER_URL = 8
 
 WAREHOUSE_URLS = [
