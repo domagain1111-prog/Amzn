@@ -1,20 +1,20 @@
 import os
+import re
 import json
 import time
 import urllib.parse
 import requests
 from playwright.sync_api import sync_playwright
+
 TELEGRAM_TOKEN = (os.environ.get("NOW_TELEGRAM_TOKEN") or os.environ.get("TELEGRAM_TOKEN") or "").strip()
 CHAT_ID = (os.environ.get("NOW_CHAT_ID") or os.environ.get("CHAT_ID") or "").strip()
-
-CHAT_ID = os.environ.get("CHAT_ID", "").strip()
 AMAZON_COOKIES = os.environ.get("AMAZON_COOKIES", "").strip()
 
 MIN_DISCOUNT_PERCENT = 30
 STATE_FILE = "sent_now.json"
 
 NOW_TARGETS = [
-    ("أقوى العروض (Top Deals)", "https://www.amazon.eg/tez/browse/explore/category?qcbrand=sAuWWBROaG&nodeId=220630950031&title=Top+Deals"),
+    ("أقوى العروض (Top Deals)", "https://www.amazon.eg/tez/browse/explore/category?qcbrand=sAuWWBROaG&nodeId=220630950031&title=Top+Deals&ref=EG_Tez_SF_Top_deals"),
     ("الشوكولاتة والحلويات", "https://www.amazon.eg/tez/browse/explore/category?qcbrand=sAuWWBROaG&nodeId=215093316031&title=Chocolate+and+Candies"),
     ("السناكس والحلويات", "https://www.amazon.eg/tez/browse/explore/category?qcbrand=sAuWWBROaG&nodeId=215093298031&title=Snack+%26+Sweets"),
     ("القهوة والشاي", "https://www.amazon.eg/tez/browse/explore/category?qcbrand=sAuWWBROaG&nodeId=212925569031&title=Coffee+and+Tea"),
@@ -40,6 +40,7 @@ def save_sent(data):
 
 def send_telegram(text):
     if not TELEGRAM_TOKEN or not CHAT_ID:
+        print("   ⚠️ توكن تيليجرام أو الـ CHAT_ID غير موجود!")
         return False
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     sent_ok = False
@@ -48,6 +49,8 @@ def send_telegram(text):
             r = requests.post(url, json={"chat_id": cid, "text": text}, timeout=15)
             if r.status_code == 200:
                 sent_ok = True
+            else:
+                print(f"   ⚠️ رد تيليجرام لـ {cid}: {r.status_code} - {r.text}")
         except Exception as e:
             print(f"   ❌ خطأ إرسال تيليجرام لـ {cid}: {e}")
     return sent_ok
@@ -84,9 +87,9 @@ def parse_playwright_cookies(raw_json):
         cleaned.append(item)
     return cleaned
 
-# كود اعتراض طلبات الشبكة الخلفية لربط صور المنتجات وأسمائها بكود ASIN الحقيقي
+# العودة للكود السريع والمضمون 100% لقراءة الكروت مع إرجاع كود الصورة النظيف
 EXTRACT_JS = """
-(apiAsinMap) => {
+() => {
     function arToEn(str) {
         if (!str) return "";
         const ar = "٠١٢٣٤٥٦٧٨٩", en = "0123456789";
@@ -97,40 +100,6 @@ EXTRACT_JS = """
         let s = arToEn(str).replace(/,/g, "").replace(/٬/g, "");
         let m = s.match(/\\d+(?:\\.\\d+)?/);
         return m ? parseFloat(m[0]) : null;
-    }
-
-    // فحص بيانات Next.js المدمجة في الصفحة لربط كود الصورة بالـ ASIN
-    const localMap = Object.assign({}, apiAsinMap || {});
-    document.querySelectorAll("script#__NEXT_DATA__, script[type='application/json']").forEach(sc => {
-        const txt = sc.textContent || "";
-        // ربط أي ASIN بصورة أمازون القريبة منه في الـ JSON
-        const regex = /"asin"\\s*:\\s*"([B0-9][A-Z0-9]{9})"[\\s\\S]{0,600}?\\/images\\/I\\/([A-Za-z0-9+%-]+)\\.|\\/images\\/I\\/([A-Za-z0-9+%-]+)\\.[\\s\\S]{0,600}?"asin"\\s*:\\s*"([B0-9][A-Z0-9]{9})"/gi;
-        let m;
-        while ((m = regex.exec(txt)) !== null) {
-            const asin = m[1] || m[4];
-            const imgId = m[2] || m[3];
-            if (asin && imgId) localMap[imgId] = asin;
-        }
-    });
-
-    // استخراج الـ ASIN من خصائص React الداخلية للعنصر إن وجدت
-    function findReactAsin(domEl) {
-        let cur = domEl;
-        for (let depth = 0; depth < 6 && cur; depth++) {
-            const keys = Object.keys(cur);
-            const reactKey = keys.find(k => k.startsWith("__reactProps$") || k.startsWith("__reactFiber$"));
-            if (reactKey) {
-                try {
-                    const str = JSON.stringify(cur[reactKey], (k, v) => (k.startsWith("_") || typeof v === "function" || v instanceof Node) ? undefined : v);
-                    if (str) {
-                        const m = str.match(/"(?:asin|productId|id)"\\s*:\\s*"([B0-9][A-Z0-9]{9})"/i) || str.match(/\\b(B0[A-Z0-9]{8})\\b/);
-                        if (m) return m[1];
-                    }
-                } catch (e) {}
-            }
-            cur = cur.parentElement;
-        }
-        return null;
     }
 
     const cardsMap = new Map();
@@ -153,20 +122,12 @@ EXTRACT_JS = """
         }
 
         if (bestCard) {
-            const imgKey = ((img.src.match(/\\/I\\/([A-Za-z0-9+%-]+?)\\._/) || img.src.match(/\\/I\\/([A-Za-z0-9+%-]+)\\./)) || [])[1] || "";
-            const baseImgId = imgKey.split(".")[0];
-
-            // البحث عن ASIN بكل الطرق الممكنة (الروابط، خصائص العنصر، شجرة React، أو خريطة الـ API)
-            const linkEl = bestCard.querySelector("a[href*='/dp/'], a[href*='/gp/'], a[href*='/tez/product'], a[href]") || bestCard.closest("a[href]");
-            const rawHref = linkEl ? linkEl.href : "";
-
-            const htmlSearch = rawHref + " " + bestCard.outerHTML;
-            const asinMatch = htmlSearch.match(/(?:\\/dp\\/|\\/gp\\/product\\/|\\/product\\/|data-asin[=:"']+|asin[=:"']+)([B0-9][A-Z0-9]{9})/i)
-                           || htmlSearch.match(/\\b(B0[A-Z0-9]{8})\\b/);
-
-            let asin = asinMatch ? asinMatch[1] : (localMap[baseImgId] || localMap[imgKey] || findReactAsin(bestCard));
-
-            const prodId = asin ? asin : ("TEZ_" + (baseImgId || img.alt || "")).slice(0, 35);
+            const linkEl = bestCard.querySelector("a[href]") || bestCard.closest("a[href]");
+            const href = linkEl ? linkEl.href : "";
+            const asinMatch = (href + " " + bestCard.innerHTML).match(/(?:\\/dp\\/|\\/gp\\/product\\/|asin[=:"']+)([B0-9][A-Z0-9]{9})/i);
+            const imgFile = (img.src.split("/I/")[1] || "").split("?")[0];
+            const imgId = imgFile.split(".")[0];
+            const prodId = asinMatch ? asinMatch[1] : ("TEZ_" + (imgId || img.alt || "")).slice(0, 35);
 
             if (prodId && !cardsMap.has(prodId)) {
                 const normText = arToEn((bestCard.innerText || "").replace(/\\s+/g, " "));
@@ -200,14 +161,15 @@ EXTRACT_JS = """
                     title = lines[0] || "منتج عرض Amazon Now";
                 }
 
-                let productUrl = "";
-                if (asin) {
-                    productUrl = "https://www.amazon.eg/dp/" + asin;
-                } else if (rawHref && !rawHref.includes("/explore/category")) {
-                    productUrl = rawHref;
-                }
-
-                cardsMap.set(prodId, { prodId, asin: asin || "", productUrl, title, prices, badgeDisc });
+                cardsMap.set(prodId, {
+                    prodId,
+                    asin: asinMatch ? asinMatch[1] : "",
+                    imgId,
+                    href,
+                    title,
+                    prices,
+                    badgeDisc
+                });
             }
         }
     });
@@ -218,32 +180,27 @@ EXTRACT_JS = """
 
 SCROLL_JS = """
 () => {
-    window.scrollBy(0, 950);
+    window.scrollBy(0, 900);
     const candidates = Array.from(document.querySelectorAll("main, [role='main'], div"));
     for (const el of candidates) {
         if (el.scrollHeight > el.clientHeight + 300) {
             const st = window.getComputedStyle(el);
             if (st.overflowY === "auto" || st.overflowY === "scroll") {
-                el.scrollBy(0, 950);
+                el.scrollBy(0, 900);
             }
         }
     }
 }
 """
 
-def extract_asins_from_json_text(txt, store_map):
-    import re
-    # يلتقط أي ASIN مقترن برابط صورته في استجابات API الخلفية أثناء التمرير
-    pattern = re.compile(
-        r'"asin"\s*:\s*"([B0-9][A-Z0-9]{9})"[\s\S]{0,600}?/images/I/([A-Za-z0-9+%-]+?)(?:\._|\.)|'
-        r'/images/I/([A-Za-z0-9+%-]+?)(?:\._|\.)[\s\S]{0,600}?"asin"\s*:\s*"([B0-9][A-Z0-9]{9})"',
-        re.IGNORECASE
-    )
-    for m in pattern.finditer(txt):
-        asin = m.group(1) or m.group(4)
-        img_id = (m.group(2) or m.group(3) or "").split(".")[0]
-        if asin and img_id:
-            store_map[img_id] = asin
+ASIN_IMG_RE_1 = re.compile(r'"asin"\s*:\s*"(B[A-Z0-9]{9})"[\s\S]{0,500}?/images/I/([A-Za-z0-9+%-]+?)\.', re.I)
+ASIN_IMG_RE_2 = re.compile(r'/images/I/([A-Za-z0-9+%-]+?)\.[\s\S]{0,500}?"asin"\s*:\s*"(B[A-Z0-9]{9})"', re.I)
+
+def collect_asins_from_text(txt, img_to_asin):
+    for m in ASIN_IMG_RE_1.finditer(txt):
+        img_to_asin[m.group(2).split(".")[0]] = m.group(1)
+    for m in ASIN_IMG_RE_2.finditer(txt):
+        img_to_asin[m.group(1).split(".")[0]] = m.group(2)
 
 def main():
     cookies = parse_playwright_cookies(AMAZON_COOKIES)
@@ -269,29 +226,41 @@ def main():
         page = context.new_page()
         page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
-        api_asin_map = {}
+        img_to_asin = {}
 
-        def handle_response(response):
+        def on_response(resp):
             try:
-                ctype = response.headers.get("content-type", "")
-                if ("json" in ctype or "tez" in response.url) and response.status == 200:
-                    txt = response.text()
-                    if "images/I/" in txt and ("asin" in txt.lower() or "B0" in txt):
-                        extract_asins_from_json_text(txt, api_asin_map)
+                if resp.status == 200 and ("json" in resp.headers.get("content-type", "") or "tez" in resp.url):
+                    t = resp.text()
+                    if "/images/I/" in t and "asin" in t.lower():
+                        collect_asins_from_text(t, img_to_asin)
             except Exception:
                 pass
 
-        page.on("response", handle_response)
+        page.on("response", on_response)
+
+        # تمهيد الجلسة على نطاق أمازون أولاً لضمان تفعيل كوكيز العنوان
+        try:
+            page.goto("https://www.amazon.eg/tez/browse?qcbrand=sAuWWBROaG", wait_until="domcontentloaded", timeout=30000)
+            time.sleep(2.5)
+        except Exception:
+            pass
 
         for idx, (cat_name, url) in enumerate(NOW_TARGETS, 1):
             print(f"\n[{idx}/{len(NOW_TARGETS)}] فحص قسم: {cat_name}...")
             try:
                 page.goto(url, wait_until="domcontentloaded", timeout=35000)
-                time.sleep(3)
+                time.sleep(4)
+
+                # التقاط أي ASIN موجود في مصدر الصفحة المبدئي
+                try:
+                    collect_asins_from_text(page.content(), img_to_asin)
+                except Exception:
+                    pass
 
                 body_txt = page.inner_text("body")
                 if "لقد فقدت الاتصال" in body_txt:
-                    print("   ⚠️ ظهرت رسالة 'لقد فقدت الاتصال' - قد تحتاج لتحديث AMAZON_COOKIES لاحقاً.")
+                    print("   ⚠️ ظهرت رسالة 'لقد فقدت الاتصال' - الكوكيز تحتاج تحديث أو المخزن مغلق مؤقتاً.")
                     break
 
                 last_count = 0
@@ -299,7 +268,7 @@ def main():
                 all_items = {}
 
                 for _ in range(18):
-                    items = page.evaluate(EXTRACT_JS, api_asin_map)
+                    items = page.evaluate(EXTRACT_JS)
                     for it in items:
                         all_items[it["prodId"]] = it
 
@@ -309,11 +278,15 @@ def main():
                         stagnant = 0
                     last_count = len(all_items)
 
-                    if stagnant >= 3 and len(all_items) > 0:
+                    if stagnant >= 4 and len(all_items) > 0:
                         break
 
                     page.evaluate(SCROLL_JS)
-                    time.sleep(1.1)
+                    time.sleep(1.3)
+
+                if len(all_items) == 0:
+                    snippet = " ".join(body_txt.split())[:120]
+                    print(f"   ℹ️ تشخيص الصفحة (0 منتج): العنوان='{page.title()}' | النص='{snippet}'")
 
                 max_disc = 0
                 sent_now_cnt = 0
@@ -339,12 +312,16 @@ def main():
                         max_disc = disc
 
                     if disc >= MIN_DISCOUNT_PERCENT and curr_p:
-                        prev_p = sent_deals.get(prod_id)
-                        # فحص عدم التكرار أيضاً بالاسم والسعر في حال تغير المعرف من TEZ_ إلى ASIN
+                        asin = it.get("asin") or img_to_asin.get(it.get("imgId", ""), "")
+                        unique_key = asin if asin else prod_id
                         title_key = "TITLE_" + it["title"][:30]
+
+                        prev_p = sent_deals.get(unique_key)
                         if (not prev_p or prev_p > curr_p) and (sent_deals.get(title_key) != curr_p):
-                            if it.get("productUrl"):
-                                final_link = it["productUrl"]
+                            if asin:
+                                final_link = f"https://www.amazon.eg/dp/{asin}"
+                            elif it.get("href") and "/explore/category" not in it["href"]:
+                                final_link = it["href"]
                             else:
                                 q = urllib.parse.quote_plus(it["title"])
                                 final_link = f"https://www.amazon.eg/s?k={q}"
@@ -358,10 +335,10 @@ def main():
                                 f"🔗 {final_link}"
                             )
                             if send_telegram(msg):
-                                sent_deals[prod_id] = curr_p
+                                sent_deals[unique_key] = curr_p
                                 sent_deals[title_key] = curr_p
                                 sent_now_cnt += 1
-                                print(f"   ✅ تم إرسال عرض {prod_id} بخصم {disc}% -> {final_link}")
+                                print(f"   ✅ تم إرسال عرض {unique_key} بخصم {disc}%")
                                 time.sleep(0.4)
 
                 print(f"   📊 فُحص {len(all_items)} منتج | أعلى خصم: {max_disc}% | أُرسل: {sent_now_cnt}")
