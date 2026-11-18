@@ -480,12 +480,12 @@
     "ts": 1794968618
   },
   "B07PGWNSP5": {
-    "price": 56.7,
-    "ts": 1794968618
+    "price": 50.87,
+    "ts": 1795040391
   },
   "TITLE_Frida spray air freshener, 460": {
-    "price": 56.7,
-    "ts": 1794968618
+    "price": 50.87,
+    "ts": 1795040391
   },
   "B0D967CXLX": {
     "price": 85.95,
@@ -602,5 +602,21 @@
   "TITLE_Temry Chicken Nuggets": {
     "price": 182.95,
     "ts": 1795039588
+  },
+  "B0DBM18K6D": {
+    "price": 16.8,
+    "ts": 1795040270
+  },
+  "TITLE_Al Doha Mushroom Sauce Pasta": {
+    "price": 16.8,
+    "ts": 1795040270
+  },
+  "B07VN9DY2S": {
+    "price": 753.76,
+    "ts": 1795040360
+  },
+  "TITLE_BioDerma Pigment-bio": {
+    "price": 753.76,
+    "ts": 1795040360
   }
 }
