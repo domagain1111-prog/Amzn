@@ -10,10 +10,10 @@ from playwright.sync_api import sync_playwright
 
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN", "").strip()
 CHAT_ID = os.environ.get("CHAT_ID", "").strip()
-MIN_DISCOUNT_PERCENT = 40
+MIN_DISCOUNT_PERCENT = 50   # خصم فعلي 50% فما فوق فقط
 STATE_FILE = "sent_deals.json"
-MAX_RUN_SECONDS = 560       # أمان قبل انتهاء وقت GitHub Actions
-MAX_PAGES_PER_URL = 8       # أقصى عدد صفحات يفحصها داخل كل رابط (تقدر تغيره براحتك)
+MAX_RUN_SECONDS = 680       # متوافق مع مهلة 14 دقيقة في GitHub Actions
+MAX_PAGES_PER_URL = 8       # أقصى عدد صفحات يفحصها داخل كل رابط
 
 # قسم الموبايلات (من 700 ج وطالع) + الـ 12 رابط المستهدفة
 WAREHOUSE_URLS = [
@@ -34,6 +34,7 @@ WAREHOUSE_URLS = [
 ]
 
 def load_state():
+    now = time.time()
     if os.path.exists(STATE_FILE):
         try:
             with open(STATE_FILE, "r", encoding="utf-8") as f:
@@ -42,6 +43,11 @@ def load_state():
                     data.setdefault("sent", {})
                     data.setdefault("ref", {})
                     data.setdefault("next_idx", 0)
+                    # تنظيف كاش الأسعار المرجعية المؤقت فقط (وليس سجل المنتجات المرسلة حتى لا تتكرر أبداً)
+                    data["ref"] = {
+                        k: v for k, v in data["ref"].items()
+                        if isinstance(v, dict) and (now - v.get("ts", 0) < 86400)
+                    }
                     return data
         except Exception:
             pass
@@ -51,24 +57,75 @@ def save_state(state):
     with open(STATE_FILE, "w", encoding="utf-8") as f:
         json.dump(state, f, ensure_ascii=False, indent=2)
 
-def send_telegram(text):
+def should_send_deal(sent_deals, asin, used_p, disc):
+    """لا يسمح بإرسال المنتج مرة أخرى أبداً إلا إذا انخفض سعره وأصبح بخصم أكبر من السابق"""
+    prev = sent_deals.get(asin)
+    if prev is None:
+        return True
+    if isinstance(prev, (int, float)):
+        return used_p < prev
+    if isinstance(prev, dict):
+        prev_price = prev.get("price", float("inf"))
+        prev_disc = prev.get("disc", 0)
+        return (used_p < prev_price) and (disc > prev_disc)
+    return True
+
+def record_sent_deal(sent_deals, asin, used_p, disc):
+    prev = sent_deals.get(asin)
+    best_price = used_p
+    best_disc = disc
+    if isinstance(prev, (int, float)):
+        best_price = min(prev, used_p)
+    elif isinstance(prev, dict):
+        best_price = min(prev.get("price", used_p), used_p)
+        best_disc = max(prev.get("disc", disc), disc)
+    sent_deals[asin] = {
+        "price": best_price,
+        "disc": best_disc,
+        "ts": int(time.time())
+    }
+
+def send_telegram_deal(caption, img_url="", buttons=None):
     if not TELEGRAM_TOKEN or not CHAT_ID:
         print(f"   ❌ خطأ إعدادات: التوكن موجود؟ {bool(TELEGRAM_TOKEN)} | الشات ID موجود؟ {bool(CHAT_ID)}")
         return False
 
-    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    photo_api = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto"
+    msg_api = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    reply_markup = {"inline_keyboard": buttons} if buttons else None
+
+    # رفع جودة صورة المنتج في تيليجرام
+    hi_res_img = re.sub(r"\._[^.]+_\.", "._SL500_.", img_url) if img_url else ""
+
     chat_ids = [cid.strip() for cid in CHAT_ID.split(",") if cid.strip()]
     sent_any = False
 
     for cid in chat_ids:
-        try:
-            r = requests.post(url, json={"chat_id": cid, "text": text}, timeout=15)
-            if r.status_code == 200:
-                sent_any = True
-            else:
-                print(f"   ❌ تيليجرام رفض الإرسال لـ {cid} ({r.status_code}): {r.text}")
-        except Exception as e:
-            print(f"   ❌ خطأ اتصال بتيليجرام لـ {cid}: {e}")
+        delivered = False
+        if hi_res_img:
+            try:
+                payload = {"chat_id": cid, "photo": hi_res_img, "caption": caption[:1020]}
+                if reply_markup:
+                    payload["reply_markup"] = reply_markup
+                r = requests.post(photo_api, json=payload, timeout=15)
+                if r.status_code == 200:
+                    delivered = True
+                    sent_any = True
+            except Exception:
+                pass
+
+        if not delivered:
+            try:
+                payload = {"chat_id": cid, "text": caption, "disable_web_page_preview": False}
+                if reply_markup:
+                    payload["reply_markup"] = reply_markup
+                r = requests.post(msg_api, json=payload, timeout=15)
+                if r.status_code == 200:
+                    sent_any = True
+                else:
+                    print(f"   ❌ تيليجرام رفض الإرسال لـ {cid} ({r.status_code}): {r.text}")
+            except Exception as e:
+                print(f"   ❌ خطأ اتصال بتيليجرام لـ {cid}: {e}")
 
     return sent_any
 
@@ -152,29 +209,54 @@ def clean_price(txt):
     if not txt:
         return None
     ar, en = "٠١٢٣٤٥٦٧٨٩", "0123456789"
-    s = txt.translate(str.maketrans(ar, en))
+    s = txt.translate(str.maketrans(ar, en)).replace("٬", ",")
     m = re.search(r"[\d,]+(?:\.\d+)?", s)
     return float(m.group(0).replace(",", "")) if m else None
 
+BADGE_SKIP_WORDS = (
+    "delivery", "shipping", "توصيل", "شحن", "قسط", "شهر", "month",
+    "وفر", "توفير", "خصم", "كوبون", "save", "saving", "coupon", "off", "%"
+)
+
 def extract_card_prices(item):
-    prices = []
+    used_candidates = []
+    strike_candidates = []
+
     for el in item.select(".a-price .a-offscreen, .a-color-price"):
         if el.find_parent(attrs={"data-cy": "delivery-recipe"}):
             continue
+        parent_txt = el.parent.get_text(" ", strip=True).lower() if el.parent else ""
+        if any(w in parent_txt for w in BADGE_SKIP_WORDS):
+            continue
+
         v = clean_price(el.get_text())
-        if v and v > 40 and v not in prices:
-            prices.append(v)
+        if not v or v <= 40:
+            continue
+
+        is_strike = bool(el.find_parent(attrs={"data-a-strike": "true"}) or el.find_parent("s") or el.find_parent(class_="a-text-price"))
+        if is_strike:
+            if v not in strike_candidates:
+                strike_candidates.append(v)
+        else:
+            if v not in used_candidates:
+                used_candidates.append(v)
 
     for row in item.select(".a-row, span"):
+        if row.find("span") is not None and len(row.get_text(strip=True)) > 45:
+            continue
         t = row.get_text(" ", strip=True)
-        if any(w in t.lower() for w in ["delivery", "shipping", "توصيل", "شحن", "قسط", "شهر", "month"]):
+        tl = t.lower()
+        if any(w in tl for w in BADGE_SKIP_WORDS):
             continue
         reg = r"(?:EGP|ج\.م\.?|جنيه)\s*([\d,٠-٩]+(?:\.[\d٠-٩]+)?)|([\d,٠-٩]+(?:\.[\d٠-٩]+)?)\s*(?:EGP|ج\.م\.?|جنيه)"
         for m in re.finditer(reg, t, re.I):
             v = clean_price(m.group(1) or m.group(2))
-            if v and v > 40 and v not in prices:
-                prices.append(v)
-    return prices
+            if v and v > 40 and v not in used_candidates and v not in strike_candidates:
+                used_candidates.append(v)
+
+    used_p = min(used_candidates) if used_candidates else None
+    old_p = max(strike_candidates) if strike_candidates else (max(used_candidates) if len(used_candidates) >= 2 else None)
+    return used_p, old_p
 
 def get_original_price(context, page, asin, used_price):
     candidates = []
@@ -182,7 +264,7 @@ def get_original_price(context, page, asin, used_price):
         "#newAccordionRow_0 .a-price .a-offscreen",
         "#newAccordionRow .a-price .a-offscreen",
         "#apex_desktop_newAccordionRow .a-price .a-offscreen",
-        "#corePriceDisplay_desktop_feature_div .a-price .a-offscreen",
+        "#corePriceDisplay_desktop_feature_div .a-price:not([data-a-strike='true']) .a-offscreen",
         "#corePrice_feature_div .a-price .a-offscreen",
         "#centerCol .basisPrice .a-price .a-offscreen",
         "#centerCol span[data-a-strike='true'] .a-offscreen"
@@ -201,7 +283,7 @@ def get_original_price(context, page, asin, used_price):
                 if el.find_parent(id=["usedBuySection", "usedAccordionRow"]):
                     continue
                 v = clean_price(el.get_text())
-                if v and used_price < v < used_price * 6:
+                if v and used_price < v < used_price * 8:
                     candidates.append(v)
 
         olp = soup.select_one("#olpLinkWidget_feature_div, #dynamic-aod-ingress-box")
@@ -209,7 +291,7 @@ def get_original_price(context, page, asin, used_price):
             m = re.search(r"(?:New|جديد)[\s\S]{0,45}?(?:EGP|ج\.م\.?|جنيه)\s*([\d,٠-٩]+(?:\.[\d٠-٩]+)?)", olp.get_text(" ", strip=True), re.I)
             if m:
                 v = clean_price(m.group(1))
-                if v and used_price < v < used_price * 6:
+                if v and used_price < v < used_price * 8:
                     candidates.append(v)
     except Exception:
         pass
@@ -226,7 +308,7 @@ def get_original_price(context, page, asin, used_price):
                     if ("new" in cond or "جديد" in cond) and "used" not in cond and "مستعمل" not in cond:
                         p_el = offer.select_one(".a-price .a-offscreen, .aok-offscreen")
                         v = clean_price(p_el.get_text()) if p_el else None
-                        if v and used_price < v < used_price * 6:
+                        if v and used_price < v < used_price * 8:
                             candidates.append(v)
         except Exception:
             pass
@@ -241,9 +323,7 @@ def main():
     total_urls = len(WAREHOUSE_URLS)
     start_idx = state.get("next_idx", 0) % total_urls
 
-    # ترتيب القائمة بحيث يبدأ من حيث توقف في الجولة السابقة ليفحص كل الصفحات بعدل
     ordered_indices = [(start_idx + i) % total_urls for i in range(total_urls)]
-    # ضمان وجود قسمي الموبايلات (0 و 1) في أول كل جولة دائماً لسرعة اقتناصها
     priority_order = [0, 1] + [i for i in ordered_indices if i not in (0, 1)]
 
     with sync_playwright() as p:
@@ -264,7 +344,7 @@ def main():
 
         set_egypt_location(page)
 
-        print(f"📂 إجمالي قوائم الفحص: {total_urls} (فحص حتى {MAX_PAGES_PER_URL} صفحات لكل رابط)")
+        print(f"📂 إجمالي قوائم الفحص: {total_urls} | خصم فعلي مطلوب: {MIN_DISCOUNT_PERCENT}%+ | حتى {MAX_PAGES_PER_URL} صفحات لكل رابط")
         time_up = False
 
         for step_num, url_idx in enumerate(priority_order, 1):
@@ -314,14 +394,11 @@ def main():
                         if len(asin) < 5:
                             continue
 
-                        prices = extract_card_prices(item)
-                        if not prices:
+                        used_p, old_p = extract_card_prices(item)
+                        if not used_p:
                             continue
 
-                        used_p = min(prices)
-                        old_p = max(prices) if len(prices) >= 2 else None
-
-                        if not old_p:
+                        if not old_p or old_p <= used_p:
                             cached = ref_cache.get(asin)
                             if cached and (time.time() - cached["ts"] < 21600):
                                 old_p = cached["price"]
@@ -336,22 +413,43 @@ def main():
                             if disc > max_disc:
                                 max_disc = disc
 
-                            if disc >= MIN_DISCOUNT_PERCENT:
-                                prev_sent = sent_deals.get(asin)
-                                if not prev_sent or prev_sent > used_p:
-                                    t_el = item.select_one("h2 span") or item.select_one("h2")
-                                    title = t_el.get_text(strip=True) if t_el else "منتج مستودع أمازون"
-                                    msg = (
-                                        f"🔥 لقطة سحابية بخصم {disc}% (مستودع أمازون)!\n"
-                                        f"📄 رابط ({url_idx + 1}) - صفحة ({page_num})\n\n"
-                                        f"📦 {title}\n"
-                                        f"💰 سعر اللقطة: {used_p} EGP\n"
-                                        f"❌ السعر الأصلي: {old_p} EGP\n\n"
-                                        f"🔗 https://www.amazon.eg/dp/{asin}"
-                                    )
-                                    if send_telegram(msg):
-                                        sent_deals[asin] = used_p
-                                        print(f"      ✅ تم إرسال لقطة {asin} بخصم {disc}%")
+                            if disc >= MIN_DISCOUNT_PERCENT and should_send_deal(sent_deals, asin, used_p, disc):
+                                t_el = item.select_one("h2 span") or item.select_one("h2")
+                                title = t_el.get_text(strip=True) if t_el else "منتج مستودع أمازون"
+
+                                img_el = item.select_one("img.s-image") or item.select_one("img[src*='/images/I/']")
+                                img_url = img_el.get("src", "") if img_el else ""
+
+                                saved_egp = round(old_p - used_p, 2)
+                                prev_entry = sent_deals.get(asin)
+                                drop_note = ""
+                                if prev_entry:
+                                    old_sent_p = prev_entry["price"] if isinstance(prev_entry, dict) else prev_entry
+                                    drop_note = f"\n📉 نزل أكتر! (كان مبعوت قبل كدة بـ {old_sent_p} EGP)"
+
+                                caption = (
+                                    f"🔥 لقطة مستودع أمازون بخصم فعلي {disc}%!{drop_note}\n"
+                                    f"📄 رابط ({url_idx + 1}) - صفحة ({page_num})\n\n"
+                                    f"📦 {title}\n"
+                                    f"💰 سعر المستعمل: {used_p} EGP\n"
+                                    f"❌ سعر الجديد: {old_p} EGP (وفرت {saved_egp} ج)"
+                                )
+
+                                dp_url = f"https://www.amazon.eg/dp/{asin}"
+                                used_offers_url = f"https://www.amazon.eg/gp/offer-listing/{asin}/ref=dp_olp_used?ie=UTF8&condition=used"
+                                add_cart_url = f"https://www.amazon.eg/gp/aws/cart/add.html?ASIN.1={asin}&Quantity.1=1"
+
+                                buttons = [
+                                    [{"text": "🏷️ عروض المستعمل مباشرة", "url": used_offers_url}],
+                                    [
+                                        {"text": "📦 صفحة المنتج", "url": dp_url},
+                                        {"text": "🛒 أضف للسلة", "url": add_cart_url}
+                                    ]
+                                ]
+
+                                if send_telegram_deal(caption, img_url=img_url, buttons=buttons):
+                                    record_sent_deal(sent_deals, asin, used_p, disc)
+                                    print(f"      ✅ تم إرسال لقطة {asin} بالصورة والأزرار (خصم {disc}%)")
 
                     if time_up:
                         break
