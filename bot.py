@@ -15,10 +15,9 @@ MIN_DISCOUNT_PERCENT = 50         # الخصم الأساسي للموبايلا
 WATCHES_MIN_DISCOUNT = 70         # الخصم المخصص للساعات الكلاسيك (70%+)
 
 STATE_FILE = "sent_deals.json"
-MAX_RUN_SECONDS = 680             # متوافق مع مهلة 14 دقيقة في GitHub Actions
-MAX_PAGES_PER_URL = 8             # أقصى عدد صفحات يفحصها داخل كل رابط
+MAX_RUN_SECONDS = 680
+MAX_PAGES_PER_URL = 8
 
-# قسم الموبايلات (من 700 ج وطالع) + الـ 12 رابط المستهدفة
 WAREHOUSE_URLS = [
     "https://www.amazon.eg/s?k=%D9%85%D9%88%D8%A8%D8%A7%D9%8A%D9%84&rh=n%3A27972173031%2Cp_36%3A70000-&s=date-desc-rank",
     "https://www.amazon.eg/s?k=Samsung+iPhone+Xiaomi+Realme+Oppo+Nokia+Infinix&rh=n%3A27972173031%2Cp_36%3A70000-&s=date-desc-rank",
@@ -52,7 +51,6 @@ SMARTWATCH_EXCEPTIONS = (
     "huawei watch", "xiaomi watch", "redmi watch", "oraimo watch", "mibro", "haylou"
 )
 
-# كلمات إكسسوارات الساعات حتى لا تُعامل كساعة كاملة إن لم تكن في قسم الساعات
 WATCH_ACCESSORY_WORDS = (
     "أستيك", "استيك", "سير ساعة", "حزام ساعة", "اسكرينة", "حافظة ساعة",
     "watch strap", "watch band", "screen protector", "watch case", "charger", "شاحن ساعة"
@@ -61,22 +59,23 @@ WATCH_ACCESSORY_WORDS = (
 def is_classic_watch_item(title, page_heading="", current_url=""):
     full_text = f"{title} {page_heading}".lower()
     title_low = (title or "").lower()
-
-    # استثناء الساعات الذكية والإكسسوارات لتبقى على خصم 50% العادي
     if any(sw in title_low for sw in SMARTWATCH_EXCEPTIONS):
         return False
     if any(acc in title_low for acc in WATCH_ACCESSORY_WORDS):
         return False
-
-    # التحقق من اسم المنتج أو عنوان القسم المفتوح أو الرابط
     if any(wk in full_text for wk in WATCH_KEYWORDS):
         return True
     if re.search(r"\bwatch\b", title_low):
         return True
     if "watch" in unquote(current_url).lower() or "ساعات" in unquote(current_url):
         return True
-
     return False
+
+def make_title_key(title):
+    if not title:
+        return ""
+    norm = re.sub(r"[^\w\u0600-\u06FF]+", "", title.lower())
+    return f"TTL_{norm[:42]}" if len(norm) >= 8 else ""
 
 def load_state():
     now = time.time()
@@ -88,7 +87,6 @@ def load_state():
                     data.setdefault("sent", {})
                     data.setdefault("ref", {})
                     data.setdefault("next_idx", 0)
-                    # تنظيف كاش الأسعار المرجعية المؤقت فقط (وليس سجل المنتجات المرسلة حتى لا تتكرر أبداً)
                     data["ref"] = {
                         k: v for k, v in data["ref"].items()
                         if isinstance(v, dict) and (now - v.get("ts", 0) < 86400)
@@ -102,33 +100,58 @@ def save_state(state):
     with open(STATE_FILE, "w", encoding="utf-8") as f:
         json.dump(state, f, ensure_ascii=False, indent=2)
 
-def should_send_deal(sent_deals, asin, used_p, disc):
-    """لا يسمح بإرسال المنتج مرة أخرى أبداً إلا إذا انخفض سعره وأصبح بخصم أكبر من السابق"""
-    prev = sent_deals.get(asin)
-    if prev is None:
-        return True
-    if isinstance(prev, (int, float)):
-        return used_p < prev
-    if isinstance(prev, dict):
-        prev_price = prev.get("price", float("inf"))
-        prev_disc = prev.get("disc", 0)
-        return (used_p < prev_price) and (disc > prev_disc)
-    return True
+def extract_prev_record(entry):
+    if entry is None:
+        return None, 0
+    if isinstance(entry, (int, float)):
+        return float(entry), 0
+    if isinstance(entry, dict):
+        return float(entry.get("price", float("inf"))), int(entry.get("disc", 0))
+    return None, 0
 
-def record_sent_deal(sent_deals, asin, used_p, disc):
-    prev = sent_deals.get(asin)
-    best_price = used_p
-    best_disc = disc
-    if isinstance(prev, (int, float)):
-        best_price = min(prev, used_p)
-    elif isinstance(prev, dict):
-        best_price = min(prev.get("price", used_p), used_p)
-        best_disc = max(prev.get("disc", disc), disc)
-    sent_deals[asin] = {
-        "price": best_price,
-        "disc": best_disc,
-        "ts": int(time.time())
-    }
+def should_send_deal(sent_deals, asin, title, used_p, disc):
+    """
+    قفل مزدوج ضد التكرار (بالـ ASIN + اسم المنتج):
+    إذا أُرسل من قبل، لا يُرسل مجدداً إلا إذا انخفض السعر فعلياً بنسبة 5% على الأقل
+    وبفارق لا يقل عن 25 جنيهاً، وزادت نسبة الخصم عن المرة السابقة.
+    """
+    t_key = make_title_key(title)
+    candidates = [sent_deals.get(asin)]
+    if t_key:
+        candidates.append(sent_deals.get(t_key))
+
+    known_prices = []
+    known_discs = []
+    for entry in candidates:
+        p, d = extract_prev_record(entry)
+        if p is not None:
+            known_prices.append(p)
+            known_discs.append(d)
+
+    if not known_prices:
+        return True
+
+    lowest_prev_price = min(known_prices)
+    highest_prev_disc = max(known_discs)
+
+    # منع الإرسال لو السعر لم ينزل هبوطاً حقيقياً معتبراً (على الأقل 5% وأقل بـ 25 جنيه)
+    significant_drop = (lowest_prev_price - used_p) >= max(25.0, lowest_prev_price * 0.05)
+    bigger_discount = (highest_prev_disc == 0) or (disc >= highest_prev_disc + 2)
+
+    return significant_drop and bigger_discount
+
+def record_sent_deal(sent_deals, asin, title, used_p, disc):
+    now_ts = int(time.time())
+    keys = [asin]
+    t_key = make_title_key(title)
+    if t_key:
+        keys.append(t_key)
+
+    for k in keys:
+        prev_p, prev_d = extract_prev_record(sent_deals.get(k))
+        best_p = min(prev_p, used_p) if prev_p is not None else used_p
+        best_d = max(prev_d, disc)
+        sent_deals[k] = {"price": round(best_p, 2), "disc": best_d, "ts": now_ts}
 
 def send_telegram_deal(caption, img_url="", buttons=None):
     if not TELEGRAM_TOKEN or not CHAT_ID:
@@ -138,7 +161,6 @@ def send_telegram_deal(caption, img_url="", buttons=None):
     photo_api = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto"
     msg_api = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     reply_markup = {"inline_keyboard": buttons} if buttons else None
-
     hi_res_img = re.sub(r"\._[^.]+_\.", "._SL500_.", img_url) if img_url else ""
 
     chat_ids = [cid.strip() for cid in CHAT_ID.split(",") if cid.strip()]
@@ -244,8 +266,6 @@ def set_egypt_location(page):
             page.reload(wait_until="domcontentloaded", timeout=20000)
             time.sleep(1)
             print("   ✅ تم تفعيل التوصيل داخل مصر بنجاح!")
-        else:
-            print("   ℹ️ تم تهيئة الجلسة الافتراضية لمصر.")
     except Exception as e:
         print(f"   ℹ️ تخطي إعداد الموقع: {e}")
 
@@ -369,6 +389,7 @@ def main():
 
     ordered_indices = [(start_idx + i) % total_urls for i in range(total_urls)]
     priority_order = [0, 1] + [i for i in ordered_indices if i not in (0, 1)]
+    seen_this_run = set()  # منع أي تكرار داخل نفس الجولة حتى لو المنتج ظهر في رابطين مختلفين
 
     with sync_playwright() as p:
         browser = p.chromium.launch(
@@ -379,21 +400,17 @@ def main():
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
             locale="ar-EG",
             viewport={"width": 1366, "height": 768},
-            extra_http_headers={
-                "Accept-Language": "ar-EG,ar;q=0.9,en-US;q=0.8"
-            }
+            extra_http_headers={"Accept-Language": "ar-EG,ar;q=0.9,en-US;q=0.8"}
         )
         page = context.new_page()
         page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
         set_egypt_location(page)
-
-        print(f"📂 إجمالي قوائم الفحص: {total_urls} | الخصم العام: {MIN_DISCOUNT_PERCENT}%+ | الساعات: {WATCHES_MIN_DISCOUNT}%+")
+        print(f"📂 الفحص: {total_urls} قوائم | عام: {MIN_DISCOUNT_PERCENT}%+ | ساعات: {WATCHES_MIN_DISCOUNT}%+ | مسجل بالذاكرة: {len(sent_deals)}")
         time_up = False
 
         for step_num, url_idx in enumerate(priority_order, 1):
             if time.time() - start_ts > MAX_RUN_SECONDS:
-                print(f"⏳ انتهى وقت هذه الجولة، سيتم استكمال الباقي في الجولة القادمة من الرابط رقم {url_idx + 1}...")
                 state["next_idx"] = url_idx
                 time_up = True
                 break
@@ -439,8 +456,9 @@ def main():
                             break
 
                         asin = (item.get("data-asin") or "").strip()
-                        if len(asin) < 5:
+                        if len(asin) < 5 or asin in seen_this_run:
                             continue
+                        seen_this_run.add(asin)
 
                         used_p, old_p = extract_card_prices(item)
                         if not used_p:
@@ -449,7 +467,6 @@ def main():
                         t_el = item.select_one("h2 span") or item.select_one("h2")
                         title = t_el.get_text(strip=True) if t_el else "منتج مستودع أمازون"
 
-                        # تحديد نسبة الخصم المطلوبة (70% للساعات الكلاسيك، و 50% لباقي المنتجات)
                         is_watch = is_classic_watch_item(title, page_heading, current_url)
                         required_disc = WATCHES_MIN_DISCOUNT if is_watch else MIN_DISCOUNT_PERCENT
 
@@ -468,16 +485,13 @@ def main():
                             if disc > max_disc:
                                 max_disc = disc
 
-                            if disc >= required_disc and should_send_deal(sent_deals, asin, used_p, disc):
+                            if disc >= required_disc and should_send_deal(sent_deals, asin, title, used_p, disc):
                                 img_el = item.select_one("img.s-image") or item.select_one("img[src*='/images/I/']")
                                 img_url = img_el.get("src", "") if img_el else ""
 
                                 saved_egp = round(old_p - used_p, 2)
-                                prev_entry = sent_deals.get(asin)
-                                drop_note = ""
-                                if prev_entry:
-                                    old_sent_p = prev_entry["price"] if isinstance(prev_entry, dict) else prev_entry
-                                    drop_note = f"\n📉 نزل أكتر! (كان مبعوت قبل كدة بـ {old_sent_p} EGP)"
+                                prev_p, _ = extract_prev_record(sent_deals.get(asin) or sent_deals.get(make_title_key(title)))
+                                drop_note = f"\n📉 نزل أكتر! (كان بـ {prev_p} EGP)" if prev_p else ""
 
                                 watch_tag = "⌚ [لقطة ساعات 70%+] " if is_watch else "🔥 "
                                 caption = (
@@ -501,8 +515,10 @@ def main():
                                 ]
 
                                 if send_telegram_deal(caption, img_url=img_url, buttons=buttons):
-                                    record_sent_deal(sent_deals, asin, used_p, disc)
-                                    print(f"      ✅ تم إرسال لقطة {asin} بالصورة والأزرار (خصم {disc}%)")
+                                    record_sent_deal(sent_deals, asin, title, used_p, disc)
+                                    state["sent"] = sent_deals
+                                    save_state(state)  # حفظ فوري بعد كل رسالة مباشرة
+                                    print(f"      ✅ تم إرسال وحفظ لقطة {asin} (خصم {disc}%)")
 
                     if time_up:
                         break
@@ -518,7 +534,7 @@ def main():
                     print(f"   ❌ خطأ في صفحة {page_num}: {e}")
                     break
 
-            print(f"   📊 ملخص الرابط ({url_idx + 1}): تمت مقارنة {priced_cnt} منتج عبر {page_num} صفحات | أعلى خصم: {max_disc}%")
+            print(f"   📊 ملخص الرابط ({url_idx + 1}): تمت مقارنة {priced_cnt} منتج | أعلى خصم: {max_disc}%")
 
             state["sent"] = sent_deals
             state["ref"] = ref_cache
