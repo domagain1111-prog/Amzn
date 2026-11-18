@@ -1,136 +1,539 @@
 {
-  "TEZ_21H+4dcqyyL": 40.95,
-  "TITLE_Fresh Roots Tomatoes": 40.95,
-  "TEZ_4146NuZYKbL": 54.59,
-  "TITLE_corona Chocolate Dark 72% 45gm": 54.59,
-  "TEZ_41UtMKq8JZL": 55.64,
-  "TITLE_Corona Milk Hazelnut Chocolate": 55.64,
-  "TEZ_41buM4EhPnL": 30.32,
-  "TITLE_corona Chocolate Dark Large 45": 30.32,
-  "TEZ_41+iH5iCvML": 86.09,
-  "TITLE_Every Moment's Dark Chocolate": 86.09,
-  "TEZ_41WXwe9CNJL": 142.79,
-  "TITLE_Mars Miniatures Chocolate": 142.79,
-  "TEZ_4176raFCStL": 54.59,
-  "TITLE_corona Chocolate Dark Hazelnut": 54.59,
-  "TEZ_41C+mxqNM-L": 107.25,
-  "TITLE_Moko 72% Dark Cocoffee Chocola": 107.25,
-  "TEZ_31H67GHH+ML": 101,
-  "TITLE_Moko 72% Dark Chocolate 30 g": 101,
-  "TEZ_41yHogZqI2L": 101,
-  "TITLE_Moko 41% Cocoa Milk Chocolate ": 101,
-  "TEZ_41YPtduFptL": 110,
-  "TITLE_Moko 41% Salt N Gold Milk Choc": 110,
-  "TEZ_31DNwJSHEhL": 126.5,
-  "TITLE_Moko Sugar Free 55% Dark Choco": 126.5,
-  "TEZ_41JKJwEe+qL": 350,
-  "TITLE_Lindt Excellence Dark Chocolat": 165,
-  "TEZ_311ZYxGQH+L": 126.5,
-  "TITLE_Moko 33% Cocoa No Sugar Added ": 126.5,
-  "TEZ_31FruxpL9WL": 185,
-  "TITLE_Scrunch Dark Chocolate Barks": 194.25,
-  "TEZ_41BmcK41O7L": 60,
-  "TITLE_corona Chocolate Dark Stevia 6": 60,
-  "TEZ_41tdvr40poL": 64.58,
-  "TITLE_Wunder Dark Chocolate Bar": 145,
-  "TEZ_415CjjIzPGL": 7.88,
-  "TITLE_Cocoa Lovers Sandwich": 7.88,
-  "TEZ_31L3IJc0RzL": 165,
-  "TEZ_41t7Ho9HHeL": 194.25,
-  "TEZ_41scVP5Ci3L": 54.59,
-  "TITLE_corona Chocolate Dark Almond 5": 54.59,
-  "TEZ_41GTQ2PODvL": 12,
-  "TITLE_Corona Crispy Chocolate Bar": 19.44,
-  "TEZ_41zQ0SH3P-L": 144,
-  "TEZ_41iz8kgjwqL": 226.75,
-  "TITLE_Moko Dark Chocolate Bar": 226.75,
-  "TEZ_41XmzhsJgJL": 64,
-  "TEZ_31e0x-jX1GL": 212.25,
-  "TITLE_Moko 41% Cocoa Medley Chocolat": 212.25,
-  "TEZ_31ITqIXNGaL": 60.9,
-  "TITLE_Wunder Dark Chocolate": 60.9,
-  "TEZ_31vCuf5MUoL": 218.25,
-  "TITLE_Moko Chocolate Bar": 218.25,
-  "TEZ_41kh0WRSnsL": 398,
-  "TITLE_Cocoamore Belian Dark Chocolat": 398,
-  "TEZ_41rjTQPvOKL": 145,
-  "TEZ_41Yj5wS6ePL": 10,
-  "TITLE_Bake Rolz Ketchup Family Size ": 10,
-  "TEZ_41ol6K6kFcL": 47.25,
-  "TITLE_Eclairs Toffee Bag": 47.25,
-  "TEZ_31hx7ZIFywL": 37.45,
-  "TITLE_Royal Herbs Teabag": 38.5,
-  "TEZ_41qdgPQuqsL": 38.5,
-  "TEZ_31L6M2d90tL": 29.93,
-  "TITLE_Royal Herbs dream herbal drink": 29.93,
-  "TEZ_41Ki9JyzHPL": 18.95,
-  "TITLE_Cooks Salt 700g": 18.95,
-  "TEZ_41TzM8mFivL": 18.83,
-  "TITLE_Al Doha Creamy Pesto Sause Pas": 18.83,
-  "TEZ_31GqnaG4hjL": 45,
-  "TITLE_Valley Greens - Navel Orange 1": 45,
-  "TEZ_51VYkrhwI1L": 25.95,
-  "TITLE_Givrex Broccoli": 25.95,
-  "TEZ_41Hqdf9K+SL": 12,
-  "TITLE_Galaxy Flutes Chocolate Wafer": 12,
-  "TEZ_419N9hf3uWL": 12,
-  "TITLE_Cadbury Wafer Choco Rolls": 12,
-  "B097F8NKH8": 37.45,
-  "B08WJN9YVY": 38.5,
-  "B0FWCVVMFH": 38.95,
-  "TITLE_Agrovate Chinese Garlic": 38.95,
-  "B08WJN65HC": 39.9,
-  "TITLE_Maxell Magic Sprays Air Freshe": 39.9,
-  "B0CPFQ7SK6": 20,
-  "TITLE_Elano Drinking Water": 20,
-  "B0D3HWHMN6": 12,
-  "TITLE_Razz Cupcake": 12,
-  "B0BHZN6CYW": 19.44,
-  "B0114C7JQU": 126,
-  "TITLE_Bobana hair serum jojoba oil 1": 126,
-  "B0DLBFLZH7": 61.95,
-  "TITLE_Care & More Foot cream 100 ML": 61.95,
-  "B07LBSH6B2": 33.6,
-  "TITLE_Bobana Berry Spa Salt Scrub Ja": 33.6,
-  "B07Y8JTWT3": 33.6,
-  "TITLE_Bobana yogurt spa salt, 300gm": 33.6,
-  "B0114C1W40": 58.8,
-  "TITLE_Bobana- charcoal peel off face": 58.8,
-  "B0816P5T8P": 455.95,
-  "TITLE_Maybelline New York Super Stay": 455.95,
-  "B09Y2842HP": 53.03,
-  "TITLE_DORCO EVE 3 FIT FOR LADY DISPO": 53.03,
-  "B0CQHPMPD8": 156.45,
-  "TITLE_Root To End Conditioner For Dr": 156.45,
-  "B0DF6GZD8F": 200.55,
-  "TITLE_Dermacy Labs Moisturizing Milk": 200.55,
-  "B01GHP57Z4": 367.5,
-  "TITLE_Maybelline New York Fit Me Mat": 393.7,
-  "B01N6K5YUZ": 393.7,
-  "B0046VJTX8": 322.35,
-  "TITLE_Maybelline New York Fit Me Con": 322.35,
-  "B0CJQ1Q1CN": 130.2,
-  "TITLE_Dermactive Acti-Clear Gentle C": 130.2,
-  "B0B86LMYRH": 96.89,
-  "TITLE_Bobana leave-in cream coconut ": 96.89,
-  "B0114C3ME8": 60.14,
-  "TITLE_Bobana Dead Sea Salts Mud Mask": 60.14,
-  "B08WJMSZYJ": 51.42,
-  "TITLE_Bobana Natural Mud Mask 400 Gm": 51.42,
-  "B0114C3GDA": 51.41,
-  "TITLE_Bobana Bobana- shea butter mud": 51.41,
-  "B07PGWNSP5": 56.7,
-  "TITLE_Frida spray air freshener, 460": 56.7,
-  "B0D967CXLX": 85.95,
-  "TITLE_White Flexi Facial Tissues – 5": 85.95,
-  "B09R4TRFHK": 46.95,
-  "TITLE_Home Genie Cleaning Cloth Towe": 46.95,
-  "B0H2J7WNJF": 42,
-  "TITLE_Gorilla Ultimate Mango-coconut": 42,
-  "B0H2JC6MK1": 40,
-  "TITLE_Gorilla Ultimate Energy Drink ": 40,
-  "B0H2J2G8NF": 42,
-  "TITLE_Gorilla Ultimate watermelon-me": 42,
-  "B08WJMF51S": 39.9,
-  "TITLE_Maxell Magic tropical air fres": 39.9
+  "TEZ_21H+4dcqyyL": {
+    "price": 40.95,
+    "ts": 1794968618
+  },
+  "TITLE_Fresh Roots Tomatoes": {
+    "price": 40.95,
+    "ts": 1794968618
+  },
+  "TEZ_4146NuZYKbL": {
+    "price": 54.59,
+    "ts": 1794968618
+  },
+  "TITLE_corona Chocolate Dark 72% 45gm": {
+    "price": 54.59,
+    "ts": 1794968618
+  },
+  "TEZ_41UtMKq8JZL": {
+    "price": 55.64,
+    "ts": 1794968618
+  },
+  "TITLE_Corona Milk Hazelnut Chocolate": {
+    "price": 55.64,
+    "ts": 1794968618
+  },
+  "TEZ_41buM4EhPnL": {
+    "price": 30.32,
+    "ts": 1794968618
+  },
+  "TITLE_corona Chocolate Dark Large 45": {
+    "price": 30.32,
+    "ts": 1794968618
+  },
+  "TEZ_41+iH5iCvML": {
+    "price": 86.09,
+    "ts": 1794968618
+  },
+  "TITLE_Every Moment's Dark Chocolate": {
+    "price": 86.09,
+    "ts": 1794968618
+  },
+  "TEZ_41WXwe9CNJL": {
+    "price": 142.79,
+    "ts": 1794968618
+  },
+  "TITLE_Mars Miniatures Chocolate": {
+    "price": 142.79,
+    "ts": 1794968618
+  },
+  "TEZ_4176raFCStL": {
+    "price": 54.59,
+    "ts": 1794968618
+  },
+  "TITLE_corona Chocolate Dark Hazelnut": {
+    "price": 54.59,
+    "ts": 1794968618
+  },
+  "TEZ_41C+mxqNM-L": {
+    "price": 107.25,
+    "ts": 1794968618
+  },
+  "TITLE_Moko 72% Dark Cocoffee Chocola": {
+    "price": 107.25,
+    "ts": 1794968618
+  },
+  "TEZ_31H67GHH+ML": {
+    "price": 101,
+    "ts": 1794968618
+  },
+  "TITLE_Moko 72% Dark Chocolate 30 g": {
+    "price": 101,
+    "ts": 1794968618
+  },
+  "TEZ_41yHogZqI2L": {
+    "price": 101,
+    "ts": 1794968618
+  },
+  "TITLE_Moko 41% Cocoa Milk Chocolate ": {
+    "price": 101,
+    "ts": 1794968618
+  },
+  "TEZ_41YPtduFptL": {
+    "price": 110,
+    "ts": 1794968618
+  },
+  "TITLE_Moko 41% Salt N Gold Milk Choc": {
+    "price": 110,
+    "ts": 1794968618
+  },
+  "TEZ_31DNwJSHEhL": {
+    "price": 126.5,
+    "ts": 1794968618
+  },
+  "TITLE_Moko Sugar Free 55% Dark Choco": {
+    "price": 126.5,
+    "ts": 1794968618
+  },
+  "TEZ_41JKJwEe+qL": {
+    "price": 350,
+    "ts": 1794968618
+  },
+  "TITLE_Lindt Excellence Dark Chocolat": {
+    "price": 165,
+    "ts": 1794968618
+  },
+  "TEZ_311ZYxGQH+L": {
+    "price": 126.5,
+    "ts": 1794968618
+  },
+  "TITLE_Moko 33% Cocoa No Sugar Added ": {
+    "price": 126.5,
+    "ts": 1794968618
+  },
+  "TEZ_31FruxpL9WL": {
+    "price": 185,
+    "ts": 1794968618
+  },
+  "TITLE_Scrunch Dark Chocolate Barks": {
+    "price": 194.25,
+    "ts": 1794968618
+  },
+  "TEZ_41BmcK41O7L": {
+    "price": 60,
+    "ts": 1794968618
+  },
+  "TITLE_corona Chocolate Dark Stevia 6": {
+    "price": 60,
+    "ts": 1794968618
+  },
+  "TEZ_41tdvr40poL": {
+    "price": 64.58,
+    "ts": 1794968618
+  },
+  "TITLE_Wunder Dark Chocolate Bar": {
+    "price": 145,
+    "ts": 1794968618
+  },
+  "TEZ_415CjjIzPGL": {
+    "price": 7.88,
+    "ts": 1794968618
+  },
+  "TITLE_Cocoa Lovers Sandwich": {
+    "price": 7.88,
+    "ts": 1794968618
+  },
+  "TEZ_31L3IJc0RzL": {
+    "price": 165,
+    "ts": 1794968618
+  },
+  "TEZ_41t7Ho9HHeL": {
+    "price": 194.25,
+    "ts": 1794968618
+  },
+  "TEZ_41scVP5Ci3L": {
+    "price": 54.59,
+    "ts": 1794968618
+  },
+  "TITLE_corona Chocolate Dark Almond 5": {
+    "price": 54.59,
+    "ts": 1794968618
+  },
+  "TEZ_41GTQ2PODvL": {
+    "price": 12,
+    "ts": 1794968618
+  },
+  "TITLE_Corona Crispy Chocolate Bar": {
+    "price": 19.44,
+    "ts": 1794968618
+  },
+  "TEZ_41zQ0SH3P-L": {
+    "price": 144,
+    "ts": 1794968618
+  },
+  "TEZ_41iz8kgjwqL": {
+    "price": 226.75,
+    "ts": 1794968618
+  },
+  "TITLE_Moko Dark Chocolate Bar": {
+    "price": 226.75,
+    "ts": 1794968618
+  },
+  "TEZ_41XmzhsJgJL": {
+    "price": 64,
+    "ts": 1794968618
+  },
+  "TEZ_31e0x-jX1GL": {
+    "price": 212.25,
+    "ts": 1794968618
+  },
+  "TITLE_Moko 41% Cocoa Medley Chocolat": {
+    "price": 212.25,
+    "ts": 1794968618
+  },
+  "TEZ_31ITqIXNGaL": {
+    "price": 60.9,
+    "ts": 1794968618
+  },
+  "TITLE_Wunder Dark Chocolate": {
+    "price": 60.9,
+    "ts": 1794968618
+  },
+  "TEZ_31vCuf5MUoL": {
+    "price": 218.25,
+    "ts": 1794968618
+  },
+  "TITLE_Moko Chocolate Bar": {
+    "price": 218.25,
+    "ts": 1794968618
+  },
+  "TEZ_41kh0WRSnsL": {
+    "price": 398,
+    "ts": 1794968618
+  },
+  "TITLE_Cocoamore Belian Dark Chocolat": {
+    "price": 398,
+    "ts": 1794968618
+  },
+  "TEZ_41rjTQPvOKL": {
+    "price": 145,
+    "ts": 1794968618
+  },
+  "TEZ_41Yj5wS6ePL": {
+    "price": 10,
+    "ts": 1794968618
+  },
+  "TITLE_Bake Rolz Ketchup Family Size ": {
+    "price": 10,
+    "ts": 1794968618
+  },
+  "TEZ_41ol6K6kFcL": {
+    "price": 47.25,
+    "ts": 1794968618
+  },
+  "TITLE_Eclairs Toffee Bag": {
+    "price": 47.25,
+    "ts": 1794968618
+  },
+  "TEZ_31hx7ZIFywL": {
+    "price": 37.45,
+    "ts": 1794968618
+  },
+  "TITLE_Royal Herbs Teabag": {
+    "price": 38.5,
+    "ts": 1794968618
+  },
+  "TEZ_41qdgPQuqsL": {
+    "price": 38.5,
+    "ts": 1794968618
+  },
+  "TEZ_31L6M2d90tL": {
+    "price": 29.93,
+    "ts": 1794968618
+  },
+  "TITLE_Royal Herbs dream herbal drink": {
+    "price": 29.93,
+    "ts": 1794968618
+  },
+  "TEZ_41Ki9JyzHPL": {
+    "price": 18.95,
+    "ts": 1794968618
+  },
+  "TITLE_Cooks Salt 700g": {
+    "price": 18.95,
+    "ts": 1794968618
+  },
+  "TEZ_41TzM8mFivL": {
+    "price": 18.83,
+    "ts": 1794968618
+  },
+  "TITLE_Al Doha Creamy Pesto Sause Pas": {
+    "price": 18.83,
+    "ts": 1794968618
+  },
+  "TEZ_31GqnaG4hjL": {
+    "price": 45,
+    "ts": 1794968618
+  },
+  "TITLE_Valley Greens - Navel Orange 1": {
+    "price": 45,
+    "ts": 1794968618
+  },
+  "TEZ_51VYkrhwI1L": {
+    "price": 25.95,
+    "ts": 1794968618
+  },
+  "TITLE_Givrex Broccoli": {
+    "price": 25.95,
+    "ts": 1794968618
+  },
+  "TEZ_41Hqdf9K+SL": {
+    "price": 12,
+    "ts": 1794968618
+  },
+  "TITLE_Galaxy Flutes Chocolate Wafer": {
+    "price": 12,
+    "ts": 1794968618
+  },
+  "TEZ_419N9hf3uWL": {
+    "price": 12,
+    "ts": 1794968618
+  },
+  "TITLE_Cadbury Wafer Choco Rolls": {
+    "price": 12,
+    "ts": 1794968618
+  },
+  "B097F8NKH8": {
+    "price": 37.45,
+    "ts": 1794968618
+  },
+  "B08WJN9YVY": {
+    "price": 38.5,
+    "ts": 1794968618
+  },
+  "B0FWCVVMFH": {
+    "price": 38.95,
+    "ts": 1794968618
+  },
+  "TITLE_Agrovate Chinese Garlic": {
+    "price": 38.95,
+    "ts": 1794968618
+  },
+  "B08WJN65HC": {
+    "price": 39.9,
+    "ts": 1794968618
+  },
+  "TITLE_Maxell Magic Sprays Air Freshe": {
+    "price": 39.9,
+    "ts": 1794968618
+  },
+  "B0CPFQ7SK6": {
+    "price": 20,
+    "ts": 1794968618
+  },
+  "TITLE_Elano Drinking Water": {
+    "price": 20,
+    "ts": 1794968618
+  },
+  "B0D3HWHMN6": {
+    "price": 12,
+    "ts": 1794968618
+  },
+  "TITLE_Razz Cupcake": {
+    "price": 12,
+    "ts": 1794968618
+  },
+  "B0BHZN6CYW": {
+    "price": 19.44,
+    "ts": 1794968618
+  },
+  "B0114C7JQU": {
+    "price": 126,
+    "ts": 1794968618
+  },
+  "TITLE_Bobana hair serum jojoba oil 1": {
+    "price": 126,
+    "ts": 1794968618
+  },
+  "B0DLBFLZH7": {
+    "price": 61.95,
+    "ts": 1794968618
+  },
+  "TITLE_Care & More Foot cream 100 ML": {
+    "price": 61.95,
+    "ts": 1794968618
+  },
+  "B07LBSH6B2": {
+    "price": 33.6,
+    "ts": 1794968618
+  },
+  "TITLE_Bobana Berry Spa Salt Scrub Ja": {
+    "price": 33.6,
+    "ts": 1794968618
+  },
+  "B07Y8JTWT3": {
+    "price": 33.6,
+    "ts": 1794968618
+  },
+  "TITLE_Bobana yogurt spa salt, 300gm": {
+    "price": 33.6,
+    "ts": 1794968618
+  },
+  "B0114C1W40": {
+    "price": 58.8,
+    "ts": 1794968618
+  },
+  "TITLE_Bobana- charcoal peel off face": {
+    "price": 58.8,
+    "ts": 1794968618
+  },
+  "B0816P5T8P": {
+    "price": 455.95,
+    "ts": 1794968618
+  },
+  "TITLE_Maybelline New York Super Stay": {
+    "price": 455.95,
+    "ts": 1794968618
+  },
+  "B09Y2842HP": {
+    "price": 53.03,
+    "ts": 1794968618
+  },
+  "TITLE_DORCO EVE 3 FIT FOR LADY DISPO": {
+    "price": 53.03,
+    "ts": 1794968618
+  },
+  "B0CQHPMPD8": {
+    "price": 156.45,
+    "ts": 1794968618
+  },
+  "TITLE_Root To End Conditioner For Dr": {
+    "price": 156.45,
+    "ts": 1794968618
+  },
+  "B0DF6GZD8F": {
+    "price": 200.55,
+    "ts": 1794968618
+  },
+  "TITLE_Dermacy Labs Moisturizing Milk": {
+    "price": 200.55,
+    "ts": 1794968618
+  },
+  "B01GHP57Z4": {
+    "price": 367.5,
+    "ts": 1794968618
+  },
+  "TITLE_Maybelline New York Fit Me Mat": {
+    "price": 393.7,
+    "ts": 1794968618
+  },
+  "B01N6K5YUZ": {
+    "price": 393.7,
+    "ts": 1794968618
+  },
+  "B0046VJTX8": {
+    "price": 322.35,
+    "ts": 1794968618
+  },
+  "TITLE_Maybelline New York Fit Me Con": {
+    "price": 322.35,
+    "ts": 1794968618
+  },
+  "B0CJQ1Q1CN": {
+    "price": 130.2,
+    "ts": 1794968618
+  },
+  "TITLE_Dermactive Acti-Clear Gentle C": {
+    "price": 130.2,
+    "ts": 1794968618
+  },
+  "B0B86LMYRH": {
+    "price": 96.89,
+    "ts": 1794968618
+  },
+  "TITLE_Bobana leave-in cream coconut ": {
+    "price": 96.89,
+    "ts": 1794968618
+  },
+  "B0114C3ME8": {
+    "price": 60.14,
+    "ts": 1794968618
+  },
+  "TITLE_Bobana Dead Sea Salts Mud Mask": {
+    "price": 60.14,
+    "ts": 1794968618
+  },
+  "B08WJMSZYJ": {
+    "price": 51.42,
+    "ts": 1794968618
+  },
+  "TITLE_Bobana Natural Mud Mask 400 Gm": {
+    "price": 51.42,
+    "ts": 1794968618
+  },
+  "B0114C3GDA": {
+    "price": 51.41,
+    "ts": 1794968618
+  },
+  "TITLE_Bobana Bobana- shea butter mud": {
+    "price": 51.41,
+    "ts": 1794968618
+  },
+  "B07PGWNSP5": {
+    "price": 56.7,
+    "ts": 1794968618
+  },
+  "TITLE_Frida spray air freshener, 460": {
+    "price": 56.7,
+    "ts": 1794968618
+  },
+  "B0D967CXLX": {
+    "price": 85.95,
+    "ts": 1794968618
+  },
+  "TITLE_White Flexi Facial Tissues – 5": {
+    "price": 85.95,
+    "ts": 1794968618
+  },
+  "B09R4TRFHK": {
+    "price": 46.95,
+    "ts": 1794968618
+  },
+  "TITLE_Home Genie Cleaning Cloth Towe": {
+    "price": 46.95,
+    "ts": 1794968618
+  },
+  "B0H2J7WNJF": {
+    "price": 42,
+    "ts": 1794968618
+  },
+  "TITLE_Gorilla Ultimate Mango-coconut": {
+    "price": 42,
+    "ts": 1794968618
+  },
+  "B0H2JC6MK1": {
+    "price": 40,
+    "ts": 1794968618
+  },
+  "TITLE_Gorilla Ultimate Energy Drink ": {
+    "price": 40,
+    "ts": 1794968618
+  },
+  "B0H2J2G8NF": {
+    "price": 42,
+    "ts": 1794968618
+  },
+  "TITLE_Gorilla Ultimate watermelon-me": {
+    "price": 42,
+    "ts": 1794968618
+  },
+  "B08WJMF51S": {
+    "price": 39.9,
+    "ts": 1794968618
+  },
+  "TITLE_Maxell Magic tropical air fres": {
+    "price": 39.9,
+    "ts": 1794968618
+  },
+  "__COOKIE_ALERT_TS__": 1794968624
 }
