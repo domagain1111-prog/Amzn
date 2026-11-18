@@ -10,18 +10,19 @@ TELEGRAM_TOKEN = (os.environ.get("NOW_TELEGRAM_TOKEN") or os.environ.get("TELEGR
 CHAT_ID = (os.environ.get("NOW_CHAT_ID") or os.environ.get("CHAT_ID") or "").strip()
 AMAZON_COOKIES = os.environ.get("AMAZON_COOKIES", "").strip()
 
-# نسبة الخصم الفعلية المحسوبة من فرق السعرين (40% - ولو تقصد ربع السعر الأصلي اجعلها 75)
+# نسبة الخصم الفعلية المحسوبة من فرق السعر القديم والجديد فقط
 MIN_DISCOUNT_PERCENT = 40
 STATE_FILE = "sent_now.json"
+QC_BRAND = "sAuWWBROaG"
 
 NOW_TARGETS = [
-    ("أقوى العروض (Top Deals)", "https://www.amazon.eg/tez/browse/explore/category?qcbrand=sAuWWBROaG&nodeId=220630950031&title=Top+Deals&ref=EG_Tez_SF_Top_deals"),
-    ("الشوكولاتة والحلويات", "https://www.amazon.eg/tez/browse/explore/category?qcbrand=sAuWWBROaG&nodeId=215093316031&title=Chocolate+and+Candies"),
-    ("السناكس والحلويات", "https://www.amazon.eg/tez/browse/explore/category?qcbrand=sAuWWBROaG&nodeId=215093298031&title=Snack+%26+Sweets"),
-    ("القهوة والشاي", "https://www.amazon.eg/tez/browse/explore/category?qcbrand=sAuWWBROaG&nodeId=212925569031&title=Coffee+and+Tea"),
-    ("خزين المطبخ والبقالة", "https://www.amazon.eg/tez/browse/explore/category?qcbrand=sAuWWBROaG&nodeId=212925568031&title=Food+Cupboard"),
-    ("المخبوزات", "https://www.amazon.eg/tez/browse/explore/category?qcbrand=sAuWWBROaG&nodeId=215052334031&title=Bakery"),
-    ("الخضروات والفاكهة", "https://www.amazon.eg/tez/browse/explore/category?qcbrand=sAuWWBROaG&nodeId=214841697031&title=Fruits+and+Vegetables"),
+    ("أقوى العروض (Top Deals)", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=220630950031&title=Top+Deals&ref=EG_Tez_SF_Top_deals"),
+    ("الشوكولاتة والحلويات", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215093316031&title=Chocolate+and+Candies"),
+    ("السناكس والحلويات", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215093298031&title=Snack+%26+Sweets"),
+    ("القهوة والشاي", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=212925569031&title=Coffee+and+Tea"),
+    ("خزين المطبخ والبقالة", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=212925568031&title=Food+Cupboard"),
+    ("المخبوزات", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215052334031&title=Bakery"),
+    ("الخضروات والفاكهة", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=214841697031&title=Fruits+and+Vegetables"),
 ]
 
 def load_sent():
@@ -88,7 +89,7 @@ def parse_playwright_cookies(raw_json):
         cleaned.append(item)
     return cleaned
 
-# استخراج السعر القديم (المشطوب فعلياً) والسعر الحالي فقط وتجاهل نسب أمازون المكتوبة
+# استخراج الأسعار الفعلية + سحب كود الـ ASIN مباشرة من خصائص React الداخلية للكارت
 EXTRACT_JS = r"""
 () => {
     function arToEn(str) {
@@ -120,6 +121,55 @@ EXTRACT_JS = r"""
         return dec.includes("line-through");
     }
 
+    // فحص آمن وسريع لخصائص React المربوطة بكارت المنتج لاستخراج الـ ASIN المخفي
+    function getAsinFromReact(rootEl) {
+        const asinRe = /^B[0-9A-Z]{9}$/;
+        const urlAsinRe = /(?:\/dp\/|\/gp\/product\/|\/product\/|asin[=:"'/]+)([B0-9][A-Z0-9]{9})/i;
+        const nodes = [rootEl, ...Array.from(rootEl.querySelectorAll("*")).slice(0, 25)];
+
+        for (const node of nodes) {
+            if (!node) continue;
+            // فحص كل الـ attributes العادية أولاً
+            if (node.attributes) {
+                for (let i = 0; i < node.attributes.length; i++) {
+                    const val = node.attributes[i].value || "";
+                    if (asinRe.test(val)) return val;
+                    const um = val.match(urlAsinRe);
+                    if (um) return um[1];
+                }
+            }
+            // فحص خصائص React Props / Fiber بعمق محدود وآمن
+            const keys = Object.keys(node);
+            for (const k of keys) {
+                if (k.startsWith("__reactProps$") || k.startsWith("__reactFiber$")) {
+                    const rootObj = node[k];
+                    const queue = [rootObj, rootObj && rootObj.memoizedProps, rootObj && rootObj.pendingProps, rootObj && rootObj.return && rootObj.return.memoizedProps];
+                    const seen = new Set();
+                    let steps = 0;
+
+                    while (queue.length > 0 && steps < 80) {
+                        const cur = queue.shift();
+                        steps++;
+                        if (!cur || typeof cur !== "object" || seen.has(cur)) continue;
+                        if (cur instanceof Node || cur instanceof Window) continue;
+                        seen.add(cur);
+
+                        for (const [pk, pv] of Object.entries(cur)) {
+                            if (typeof pv === "string") {
+                                if (asinRe.test(pv)) return pv;
+                                const m = pv.match(urlAsinRe);
+                                if (m) return m[1];
+                            } else if (pv && typeof pv === "object" && !pk.startsWith("_") && pk !== "children" && pk !== "stateNode" && pk !== "return" && pk !== "sibling") {
+                                queue.push(pv);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return "";
+    }
+
     const cardsMap = new Map();
     const imgs = Array.from(document.querySelectorAll("img[src*='media-amazon.com/images/I/']"));
 
@@ -142,10 +192,15 @@ EXTRACT_JS = r"""
         if (bestCard) {
             const linkEl = bestCard.querySelector("a[href]") || bestCard.closest("a[href]");
             const href = linkEl ? linkEl.href : "";
-            const asinMatch = (href + " " + bestCard.innerHTML).match(/(?:\/dp\/|\/gp\/product\/|asin[=:"']+)([B0-9][A-Z0-9]{9})/i);
+            const asinMatch = (href + " " + bestCard.innerHTML).match(/(?:\/dp\/|\/gp\/product\/|\/product\/|asin[=:"']+)([B0-9][A-Z0-9]{9})/i);
+            let asin = asinMatch ? asinMatch[1] : "";
+            if (!asin) {
+                try { asin = getAsinFromReact(bestCard); } catch (e) {}
+            }
+
             const imgFile = (img.src.split("/I/")[1] || "").split("?")[0];
             const imgId = imgFile.split(".")[0];
-            const prodId = asinMatch ? asinMatch[1] : ("TEZ_" + (imgId || img.alt || "")).slice(0, 35);
+            const prodId = asin ? asin : ("TEZ_" + (imgId || img.alt || "")).slice(0, 35);
 
             if (prodId && !cardsMap.has(prodId)) {
                 const origNodes = Array.from(bestCard.querySelectorAll("*"));
@@ -154,7 +209,6 @@ EXTRACT_JS = r"""
 
                 let oldPrices = [];
 
-                // 1. سحب السعر القديم المشطوب فقط وحذفه من النسخة حتى لا يختلط بالسعر الجديد
                 origNodes.forEach((node, idx) => {
                     if (isStrikeNode(node)) {
                         let hasStrikeParent = false;
@@ -181,7 +235,6 @@ EXTRACT_JS = r"""
                     }
                 });
 
-                // 2. سحب السعر الحالي مع استبعاد سعر الجرام/الكيلو/الوحدة وأي نسب مئوية
                 let remText = cleanPriceText((clone.innerText || "").replace(/\s+/g, " "));
                 remText = remText.replace(/\([^)]*(?:\/|لكل)[^)]*\)/gi, " ");
                 remText = remText.replace(/(?:EGP|ج\.م\.?|جنيه)\s*\d+(?:\.\d+)?\s*(?:\/|لكل)\s*\S+/gi, " ");
@@ -206,7 +259,7 @@ EXTRACT_JS = r"""
 
                 cardsMap.set(prodId, {
                     prodId,
-                    asin: asinMatch ? asinMatch[1] : "",
+                    asin,
                     imgId,
                     href,
                     title,
@@ -236,14 +289,70 @@ SCROLL_JS = """
 }
 """
 
-ASIN_IMG_RE_1 = re.compile(r'"asin"\s*:\s*"(B[A-Z0-9]{9})"[\s\S]{0,500}?/images/I/([A-Za-z0-9+%-]+?)\.', re.I)
-ASIN_IMG_RE_2 = re.compile(r'/images/I/([A-Za-z0-9+%-]+?)\.[\s\S]{0,500}?"asin"\s*:\s*"(B[A-Z0-9]{9})"', re.I)
+ASIN_VAL_RE = re.compile(r"^B[0-9A-Z]{9}$")
+IMG_ID_RE = re.compile(r"/images/I/([A-Za-z0-9+%-]+?)(?:\._|\.)")
 
-def collect_asins_from_text(txt, img_to_asin):
-    for m in ASIN_IMG_RE_1.finditer(txt):
-        img_to_asin[m.group(2).split(".")[0]] = m.group(1)
-    for m in ASIN_IMG_RE_2.finditer(txt):
-        img_to_asin[m.group(1).split(".")[0]] = m.group(2)
+def walk_json_for_asins(obj, img_to_asin, title_to_asin):
+    """يمشي داخل أي كائن JSON قادم من سيرفر أمازون ليربط الصورة والاسم بكود الـ ASIN الحقيقي"""
+    if isinstance(obj, dict):
+        found_asins = []
+        found_imgs = []
+        found_titles = []
+
+        for k, v in obj.items():
+            kl = k.lower()
+            if isinstance(v, str):
+                if ASIN_VAL_RE.match(v) or (kl in ("asin", "productid", "id") and len(v) == 10 and v.startswith("B")):
+                    found_asins.append(v)
+                if "/images/I/" in v:
+                    for im in IMG_ID_RE.finditer(v):
+                        found_imgs.append(im.group(1).split(".")[0])
+                if kl in ("title", "name", "producttitle", "alt", "displaystring") and len(v.strip()) > 6:
+                    found_titles.append(v.strip())
+
+        if len(found_asins) == 1:
+            asin = found_asins[0]
+            for img_id in found_imgs:
+                img_to_asin[img_id] = asin
+            for t in found_titles:
+                title_to_asin[t[:40]] = asin
+
+        for v in obj.values():
+            if isinstance(v, (dict, list)):
+                walk_json_for_asins(v, img_to_asin, title_to_asin)
+
+    elif isinstance(obj, list):
+        for item in obj:
+            if isinstance(item, (dict, list)):
+                walk_json_for_asins(item, img_to_asin, title_to_asin)
+
+def resolve_direct_asin_by_search(context, title, img_id):
+    """إذا لم يظهر الـ ASIN في الكارت، يفتح البحث في الخلفية لثانية ويسحب رابط المنتج الفردي المباشر"""
+    search_page = context.new_page()
+    found_asin = ""
+    try:
+        q = urllib.parse.quote_plus(title)
+        search_page.goto(f"https://www.amazon.eg/s?k={q}", wait_until="domcontentloaded", timeout=18000)
+        found_asin = search_page.evaluate(
+            """(targetImgId) => {
+                const cards = Array.from(document.querySelectorAll("div[data-asin]")).filter(d => /^B[0-9A-Z]{9}$/.test(d.getAttribute("data-asin") || ""));
+                if (targetImgId) {
+                    for (const c of cards) {
+                        const img = c.querySelector("img[src*='/images/I/']");
+                        if (img && img.src.includes(targetImgId)) {
+                            return c.getAttribute("data-asin");
+                        }
+                    }
+                }
+                return cards.length > 0 ? cards[0].getAttribute("data-asin") : "";
+            }""",
+            img_id or ""
+        )
+    except Exception:
+        pass
+    finally:
+        search_page.close()
+    return found_asin
 
 def main():
     cookies = parse_playwright_cookies(AMAZON_COOKIES)
@@ -270,13 +379,13 @@ def main():
         page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
         img_to_asin = {}
+        title_to_asin = {}
 
         def on_response(resp):
             try:
                 if resp.status == 200 and ("json" in resp.headers.get("content-type", "") or "tez" in resp.url):
-                    t = resp.text()
-                    if "/images/I/" in t and "asin" in t.lower():
-                        collect_asins_from_text(t, img_to_asin)
+                    data = resp.json()
+                    walk_json_for_asins(data, img_to_asin, title_to_asin)
             except Exception:
                 pass
 
@@ -288,8 +397,17 @@ def main():
                 page.goto(url, wait_until="domcontentloaded", timeout=35000)
                 time.sleep(4)
 
+                # استخراج أي JSON مدمج داخل الصفحة الأولية (__NEXT_DATA__)
                 try:
-                    collect_asins_from_text(page.content(), img_to_asin)
+                    next_json_list = page.evaluate(
+                        """() => Array.from(document.querySelectorAll("script#__NEXT_DATA__, script[type='application/json']")).map(s => s.textContent)"""
+                    )
+                    for raw_j in next_json_list:
+                        if raw_j:
+                            try:
+                                walk_json_for_asins(json.loads(raw_j), img_to_asin, title_to_asin)
+                            except Exception:
+                                pass
                 except Exception:
                     pass
 
@@ -330,7 +448,6 @@ def main():
                     curr_prices = it.get("currPrices") or []
                     old_prices = it.get("oldPrices") or []
 
-                    # يشترط وجود سعر قديم مشطوب وسعر حالي معاً للمقارنة الحقيقية
                     if not curr_prices or not old_prices:
                         continue
 
@@ -340,32 +457,45 @@ def main():
                     if old_p <= curr_p or old_p > curr_p * 12:
                         continue
 
-                    # حساب نسبة الخصم الفعلية من السعرين فقط
                     disc = round(((old_p - curr_p) / old_p) * 100)
 
                     if disc > max_disc:
                         max_disc = disc
 
                     if disc >= MIN_DISCOUNT_PERCENT:
-                        asin = it.get("asin") or img_to_asin.get(it.get("imgId", ""), "")
-                        unique_key = asin if asin else prod_id
-                        title_key = "TITLE_" + it["title"][:30]
+                        img_id = it.get("imgId", "")
+                        title_str = it.get("title", "")
+                        asin = (
+                            it.get("asin")
+                            or img_to_asin.get(img_id, "")
+                            or title_to_asin.get(title_str[:40], "")
+                        )
 
-                        prev_p = sent_deals.get(unique_key)
-                        if (not prev_p or prev_p > curr_p) and (sent_deals.get(title_key) != curr_p):
+                        title_key = "TITLE_" + title_str[:30]
+                        temp_key = asin if asin else prod_id
+
+                        if (not sent_deals.get(temp_key) or sent_deals.get(temp_key) > curr_p) and (sent_deals.get(title_key) != curr_p):
+                            # إذا لم يظهر ASIN بعد، نسحبه مباشرة من أول نتيجة مطابقة للصورة والاسم لضمان رابط منتج فردي 100%
+                            if not asin:
+                                asin = resolve_direct_asin_by_search(context, title_str, img_id)
+
+                            unique_key = asin if asin else prod_id
+                            if sent_deals.get(unique_key) == curr_p:
+                                continue
+
                             if asin:
                                 final_link = f"https://www.amazon.eg/dp/{asin}"
-                            elif it.get("href") and "/explore/category" not in it["href"]:
+                            elif it.get("href") and "/explore/category" not in it["href"] and "/s?" not in it["href"]:
                                 final_link = it["href"]
                             else:
-                                q = urllib.parse.quote_plus(it["title"])
-                                final_link = f"https://www.amazon.eg/s?k={q}"
+                                # في أسوأ الحالات النادرة جداً فقط
+                                final_link = f"https://www.amazon.eg/s?k={urllib.parse.quote_plus(title_str)}"
 
                             saved_egp = round(old_p - curr_p, 2)
                             msg = (
                                 f"⚡ لقطة Amazon Now بخصم فعلي {disc}%!\n"
                                 f"🏷️ القسم: {cat_name}\n\n"
-                                f"📦 {it['title']}\n"
+                                f"📦 {title_str}\n"
                                 f"💰 السعر الجديد: {curr_p} EGP\n"
                                 f"❌ السعر القديم: {old_p} EGP (وفرت {saved_egp} ج)\n\n"
                                 f"🔗 {final_link}"
@@ -374,7 +504,7 @@ def main():
                                 sent_deals[unique_key] = curr_p
                                 sent_deals[title_key] = curr_p
                                 sent_now_cnt += 1
-                                print(f"   ✅ تم إرسال عرض {unique_key} بخصم فعلي {disc}%")
+                                print(f"   ✅ تم إرسال عرض {unique_key} بخصم فعلي {disc}% -> {final_link}")
                                 time.sleep(0.4)
 
                 print(f"   📊 فُحص {len(all_items)} منتج | أعلى خصم فعلي: {max_disc}% | أُرسل: {sent_now_cnt}")
