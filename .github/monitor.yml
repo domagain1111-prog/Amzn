@@ -1,0 +1,79 @@
+name: Amazon Warehouse 24-7
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: warehouse-bot-lock
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install requests beautifulsoup4 playwright
+          playwright install chromium
+
+      - name: Run Jumia Scanner (if exists)
+        if: hashFiles('jumia_bot.py') != ''
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+        run: python jumia_bot.py
+
+      - name: Run Amazon Scanner
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+        run: python bot.py
+
+      - name: Force Save Deals Memory
+        if: always()
+        run: |
+          git config user.name "AmazonBot"
+          git config user.email "bot@users.noreply.github.com"
+
+          ls -lh sent_deals.json || echo "⚠️ ملف sent_deals.json لم يُنشأ بعد!"
+          cp sent_deals.json /tmp/sent_deals.bak 2>/dev/null || true
+          cp sent_jumia.json /tmp/sent_jumia.bak 2>/dev/null || true
+
+          for i in 1 2 3 4 5; do
+            git fetch origin main
+            git reset --hard origin/main
+            cp /tmp/sent_deals.bak sent_deals.json 2>/dev/null || true
+            cp /tmp/sent_jumia.bak sent_jumia.json 2>/dev/null || true
+
+            git add -f sent_deals.json 2>/dev/null || true
+            if [ -f sent_jumia.json ]; then
+              git add -f sent_jumia.json
+            fi
+
+            if git diff --cached --quiet; then
+              echo "ℹ️ الملف مطابق لآخر نسخة محفوظة على GitHub."
+              break
+            fi
+
+            git commit -m "Update warehouse deals cache [skip ci]"
+            if git push origin HEAD:main; then
+              echo "✅ تم رفع وحفظ sent_deals.json على GitHub بنجاح!"
+              break
+            fi
+            echo "⏳ إعادة المحاولة ($i)..."
+            sleep 3
+          done
