@@ -1,8 +1,6 @@
 name: Amazon Now 24-7
 
 on:
-  schedule:
-    - cron: '7,22,37,52 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -11,7 +9,7 @@ permissions:
 jobs:
   scan_now:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 14
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -29,6 +27,7 @@ jobs:
       - name: Run Amazon Now Scanner
         env:
           NOW_TELEGRAM_TOKEN: ${{ secrets.NOW_TELEGRAM_TOKEN }}
+          NOW_CHAT_ID: ${{ secrets.NOW_CHAT_ID }}
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
           AMAZON_COOKIES: ${{ secrets.AMAZON_COOKIES }}
