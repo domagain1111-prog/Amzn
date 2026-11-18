@@ -3,6 +3,10 @@ name: Amazon Warehouse 24-7
 on:
   workflow_dispatch:
 
+concurrency:
+  group: warehouse-bot-lock
+  cancel-in-progress: false
+
 permissions:
   contents: write
 
@@ -37,9 +41,16 @@ jobs:
           CHAT_ID: ${{ secrets.CHAT_ID }}
         run: python bot.py
 
-      - name: Save sent deals memory
+      - name: Save sent deals memory reliably
+        if: always()
         run: |
           git config user.name "AmazonBot"
           git config user.email "bot@users.noreply.github.com"
+          cp sent_deals.json /tmp/sent_deals.bak 2>/dev/null || true
+          cp sent_jumia.json /tmp/sent_jumia.bak 2>/dev/null || true
+          git fetch origin main
+          git reset --hard origin/main
+          cp /tmp/sent_deals.bak sent_deals.json 2>/dev/null || true
+          cp /tmp/sent_jumia.bak sent_jumia.json 2>/dev/null || true
           git add sent_deals.json sent_jumia.json 2>/dev/null || true
-          git diff --staged --quiet || (git commit -m "Update deals cache" && git pull --rebase && git push)
+          git diff --staged --quiet || (git commit -m "Update warehouse deals cache" && git push origin main)
