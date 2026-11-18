@@ -10,10 +10,13 @@ from playwright.sync_api import sync_playwright
 
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN", "").strip()
 CHAT_ID = os.environ.get("CHAT_ID", "").strip()
-MIN_DISCOUNT_PERCENT = 50   # خصم فعلي 50% فما فوق فقط
+
+MIN_DISCOUNT_PERCENT = 50         # الخصم الأساسي للموبايلات وباقي الأقسام (50%+)
+WATCHES_MIN_DISCOUNT = 70         # الخصم المخصص للساعات الكلاسيك (70%+)
+
 STATE_FILE = "sent_deals.json"
-MAX_RUN_SECONDS = 680       # متوافق مع مهلة 14 دقيقة في GitHub Actions
-MAX_PAGES_PER_URL = 8       # أقصى عدد صفحات يفحصها داخل كل رابط
+MAX_RUN_SECONDS = 680             # متوافق مع مهلة 14 دقيقة في GitHub Actions
+MAX_PAGES_PER_URL = 8             # أقصى عدد صفحات يفحصها داخل كل رابط
 
 # قسم الموبايلات (من 700 ج وطالع) + الـ 12 رابط المستهدفة
 WAREHOUSE_URLS = [
@@ -32,6 +35,48 @@ WAREHOUSE_URLS = [
     "https://link.amazon/B06aAKHT4",
     "https://link.amazon/B0ePt9Jdp"
 ]
+
+WATCH_KEYWORDS = (
+    "ساعة يد", "ساعه يد", "ساعات يد", "ساعة رجالي", "ساعة حريمي", "ساعة نسائية",
+    "ساعه رجالي", "ساعه حريمي", "كرونوغراف", "كوارتز", "أنالوج", "انالوج",
+    "wristwatch", "watches", "chronograph", "quartz", "analog watch",
+    "casio", "كاسيو", "fossil", "فوسيل", "seiko", "سيكو", "citizen", "سيتيزن",
+    "tommy hilfiger", "تومي هيلفيغر", "curren", "كورين", "naviforce", "نافي فورس",
+    "alba", "ألبا", "orient", "أورينت", "guess watch", "invicta", "timex", "swatch",
+    "tissot", "تيسو", "daniel klein", "دانيال كلاين", "mini focus", "skmei"
+)
+
+SMARTWATCH_EXCEPTIONS = (
+    "ساعة ذكية", "ساعه ذكيه", "سمارت", "smartwatch", "smart watch",
+    "apple watch", "galaxy watch", "band", "سوار ذكي", "امازفيت", "amazfit",
+    "huawei watch", "xiaomi watch", "redmi watch", "oraimo watch", "mibro", "haylou"
+)
+
+# كلمات إكسسوارات الساعات حتى لا تُعامل كساعة كاملة إن لم تكن في قسم الساعات
+WATCH_ACCESSORY_WORDS = (
+    "أستيك", "استيك", "سير ساعة", "حزام ساعة", "اسكرينة", "حافظة ساعة",
+    "watch strap", "watch band", "screen protector", "watch case", "charger", "شاحن ساعة"
+)
+
+def is_classic_watch_item(title, page_heading="", current_url=""):
+    full_text = f"{title} {page_heading}".lower()
+    title_low = (title or "").lower()
+
+    # استثناء الساعات الذكية والإكسسوارات لتبقى على خصم 50% العادي
+    if any(sw in title_low for sw in SMARTWATCH_EXCEPTIONS):
+        return False
+    if any(acc in title_low for acc in WATCH_ACCESSORY_WORDS):
+        return False
+
+    # التحقق من اسم المنتج أو عنوان القسم المفتوح أو الرابط
+    if any(wk in full_text for wk in WATCH_KEYWORDS):
+        return True
+    if re.search(r"\bwatch\b", title_low):
+        return True
+    if "watch" in unquote(current_url).lower() or "ساعات" in unquote(current_url):
+        return True
+
+    return False
 
 def load_state():
     now = time.time()
@@ -94,7 +139,6 @@ def send_telegram_deal(caption, img_url="", buttons=None):
     msg_api = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     reply_markup = {"inline_keyboard": buttons} if buttons else None
 
-    # رفع جودة صورة المنتج في تيليجرام
     hi_res_img = re.sub(r"\._[^.]+_\.", "._SL500_.", img_url) if img_url else ""
 
     chat_ids = [cid.strip() for cid in CHAT_ID.split(",") if cid.strip()]
@@ -344,7 +388,7 @@ def main():
 
         set_egypt_location(page)
 
-        print(f"📂 إجمالي قوائم الفحص: {total_urls} | خصم فعلي مطلوب: {MIN_DISCOUNT_PERCENT}%+ | حتى {MAX_PAGES_PER_URL} صفحات لكل رابط")
+        print(f"📂 إجمالي قوائم الفحص: {total_urls} | الخصم العام: {MIN_DISCOUNT_PERCENT}%+ | الساعات: {WATCHES_MIN_DISCOUNT}%+")
         time_up = False
 
         for step_num, url_idx in enumerate(priority_order, 1):
@@ -378,6 +422,10 @@ def main():
                         break
 
                     soup = BeautifulSoup(html, "html.parser")
+                    page_title_txt = soup.title.get_text(" ", strip=True) if soup.title else ""
+                    dept_el = soup.select_one("#departments .a-text-bold, .s-breadcrumb .a-text-bold")
+                    page_heading = f"{page_title_txt} {dept_el.get_text(' ', strip=True) if dept_el else ''}"
+
                     items = soup.select("div[data-component-type='s-search-result']")
                     print(f"   📄 صفحة ({page_num}): تم العثور على {len(items)} منتج.")
 
@@ -398,6 +446,13 @@ def main():
                         if not used_p:
                             continue
 
+                        t_el = item.select_one("h2 span") or item.select_one("h2")
+                        title = t_el.get_text(strip=True) if t_el else "منتج مستودع أمازون"
+
+                        # تحديد نسبة الخصم المطلوبة (70% للساعات الكلاسيك، و 50% لباقي المنتجات)
+                        is_watch = is_classic_watch_item(title, page_heading, current_url)
+                        required_disc = WATCHES_MIN_DISCOUNT if is_watch else MIN_DISCOUNT_PERCENT
+
                         if not old_p or old_p <= used_p:
                             cached = ref_cache.get(asin)
                             if cached and (time.time() - cached["ts"] < 21600):
@@ -413,10 +468,7 @@ def main():
                             if disc > max_disc:
                                 max_disc = disc
 
-                            if disc >= MIN_DISCOUNT_PERCENT and should_send_deal(sent_deals, asin, used_p, disc):
-                                t_el = item.select_one("h2 span") or item.select_one("h2")
-                                title = t_el.get_text(strip=True) if t_el else "منتج مستودع أمازون"
-
+                            if disc >= required_disc and should_send_deal(sent_deals, asin, used_p, disc):
                                 img_el = item.select_one("img.s-image") or item.select_one("img[src*='/images/I/']")
                                 img_url = img_el.get("src", "") if img_el else ""
 
@@ -427,8 +479,9 @@ def main():
                                     old_sent_p = prev_entry["price"] if isinstance(prev_entry, dict) else prev_entry
                                     drop_note = f"\n📉 نزل أكتر! (كان مبعوت قبل كدة بـ {old_sent_p} EGP)"
 
+                                watch_tag = "⌚ [لقطة ساعات 70%+] " if is_watch else "🔥 "
                                 caption = (
-                                    f"🔥 لقطة مستودع أمازون بخصم فعلي {disc}%!{drop_note}\n"
+                                    f"{watch_tag}لقطة مستودع أمازون بخصم فعلي {disc}%!{drop_note}\n"
                                     f"📄 رابط ({url_idx + 1}) - صفحة ({page_num})\n\n"
                                     f"📦 {title}\n"
                                     f"💰 سعر المستعمل: {used_p} EGP\n"
