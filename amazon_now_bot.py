@@ -10,7 +10,9 @@ TELEGRAM_TOKEN = (os.environ.get("NOW_TELEGRAM_TOKEN") or os.environ.get("TELEGR
 CHAT_ID = (os.environ.get("NOW_CHAT_ID") or os.environ.get("CHAT_ID") or "").strip()
 AMAZON_COOKIES = os.environ.get("AMAZON_COOKIES", "").strip()
 
-MIN_DISCOUNT_PERCENT = 33
+MIN_DISCOUNT_PERCENT = 40
+CACHE_TTL_DAYS = 7          # مسح العروض القديمة بعد 7 أيام تلقائياً
+COOKIE_ALERT_COOLDOWN = 6 * 3600  # عدم تكرار تنبيه الكوكيز قبل مرور 6 ساعات
 STATE_FILE = "sent_now.json"
 QC_BRAND = "sAuWWBROaG"
 
@@ -29,37 +31,124 @@ NOW_TARGETS = [
     ("الدواجن واللحوم والأسماك", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=214841696031&ref=EG_Tez_SF_SBC_CMF"),
 ]
 
-def load_sent():
+def load_and_clean_sent():
+    now = int(time.time())
+    cutoff = now - (CACHE_TTL_DAYS * 86400)
+    data = {}
     if os.path.exists(STATE_FILE):
         try:
             with open(STATE_FILE, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                if isinstance(data, dict):
-                    return data
+                raw = json.load(f)
+                if isinstance(raw, dict):
+                    data = raw
         except Exception:
             pass
-    return {}
+
+    cleaned = {}
+    removed_cnt = 0
+    for k, v in data.items():
+        if k == "__COOKIE_ALERT_TS__":
+            if isinstance(v, (int, float)) and (now - v) < 86400:
+                cleaned[k] = v
+            continue
+
+        if isinstance(v, dict):
+            if v.get("ts", 0) >= cutoff and "price" in v:
+                cleaned[k] = v
+            else:
+                removed_cnt += 1
+        elif isinstance(v, (int, float)):
+            # ترقية البيانات القديمة تلقائياً لنظام التوقيت الجديد بدون إعادة إرسالها فوراً
+            cleaned[k] = {"price": v, "ts": now}
+
+    if removed_cnt > 0:
+        print(f"🧹 تم تنظيف {removed_cnt} عرض قديم مر عليه أكثر من {CACHE_TTL_DAYS} أيام.")
+    return cleaned
+
+def get_saved_price(sent_deals, key):
+    val = sent_deals.get(key)
+    if isinstance(val, dict):
+        return val.get("price")
+    if isinstance(val, (int, float)):
+        return val
+    return None
+
+def record_deal(sent_deals, key, price):
+    sent_deals[key] = {"price": price, "ts": int(time.time())}
 
 def save_sent(data):
     with open(STATE_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
-def send_telegram(text):
+def send_telegram_text(text):
     if not TELEGRAM_TOKEN or not CHAT_ID:
-        print("   ⚠️ توكن تيليجرام أو الـ CHAT_ID غير موجود!")
         return False
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     sent_ok = False
     for cid in [c.strip() for c in CHAT_ID.split(",") if c.strip()]:
         try:
-            r = requests.post(url, json={"chat_id": cid, "text": text, "disable_web_page_preview": False}, timeout=15)
+            r = requests.post(url, json={"chat_id": cid, "text": text}, timeout=15)
             if r.status_code == 200:
                 sent_ok = True
-            else:
-                print(f"   ⚠️ رد تيليجرام لـ {cid}: {r.status_code} - {r.text}")
-        except Exception as e:
-            print(f"   ❌ خطأ إرسال تيليجرام لـ {cid}: {e}")
+        except Exception:
+            pass
     return sent_ok
+
+def send_telegram_deal(caption, img_url="", buttons=None):
+    if not TELEGRAM_TOKEN or not CHAT_ID:
+        print("   ⚠️ توكن تيليجرام أو الـ CHAT_ID غير موجود!")
+        return False
+
+    photo_api = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto"
+    msg_api = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    reply_markup = {"inline_keyboard": buttons} if buttons else None
+
+    # تحسين جودة صورة أمازون لتظهر واضحة في تيليجرام
+    hi_res_img = re.sub(r"\._[^.]+_\.", "._SL500_.", img_url) if img_url else ""
+
+    sent_ok = False
+    for cid in [c.strip() for c in CHAT_ID.split(",") if c.strip()]:
+        delivered = False
+        if hi_res_img:
+            try:
+                payload = {"chat_id": cid, "photo": hi_res_img, "caption": caption[:1020]}
+                if reply_markup:
+                    payload["reply_markup"] = reply_markup
+                r = requests.post(photo_api, json=payload, timeout=15)
+                if r.status_code == 200:
+                    delivered = True
+                    sent_ok = True
+            except Exception:
+                pass
+
+        # إرسال نصي احتياطي إذا تعذر تحميل الصورة لأي سبب
+        if not delivered:
+            try:
+                payload = {"chat_id": cid, "text": caption, "disable_web_page_preview": False}
+                if reply_markup:
+                    payload["reply_markup"] = reply_markup
+                r = requests.post(msg_api, json=payload, timeout=15)
+                if r.status_code == 200:
+                    sent_ok = True
+                else:
+                    print(f"   ⚠️ رد تيليجرام لـ {cid}: {r.status_code} - {r.text}")
+            except Exception as e:
+                print(f"   ❌ خطأ إرسال تيليجرام لـ {cid}: {e}")
+    return sent_ok
+
+def maybe_send_cookie_alert(sent_deals, reason):
+    now = int(time.time())
+    last_ts = sent_deals.get("__COOKIE_ALERT_TS__", 0)
+    if (now - last_ts) >= COOKIE_ALERT_COOLDOWN:
+        alert_msg = (
+            "⚠️ تنبيه مهم من رادار Amazon Now!\n\n"
+            f"السبب: {reason}\n"
+            "🔑 جلسة الكوكيز انتهت أو أمازون طلب تسجيل الدخول.\n"
+            "افتح Firefox وتأكد من تفعيل (Keep me signed in ✅) ثم حدّث AMAZON_COOKIES في GitHub Secrets عشان الرادار يكمل صيد."
+        )
+        if send_telegram_text(alert_msg):
+            sent_deals["__COOKIE_ALERT_TS__"] = now
+            print("   🚨 تم إرسال تنبيه انتهاء الكوكيز على تيليجرام.")
 
 def parse_playwright_cookies(raw_json):
     if not raw_json:
@@ -209,7 +298,8 @@ EXTRACT_JS = r"""
                 try { asin = getAsinFromReact(bestCard); } catch (e) {}
             }
 
-            const imgFile = (img.src.split("/I/")[1] || "").split("?")[0];
+            const imgUrl = img.src || "";
+            const imgFile = (imgUrl.split("/I/")[1] || "").split("?")[0];
             const imgId = imgFile.split(".")[0];
             const prodId = asin ? asin : ("TEZ_" + (imgId || img.alt || "")).slice(0, 35);
 
@@ -218,7 +308,6 @@ EXTRACT_JS = r"""
                 const clone = bestCard.cloneNode(true);
                 const cloneNodes = [clone, ...Array.from(clone.querySelectorAll("*"))];
 
-                // إصلاح الكسور العشرية المنفصلة في عناصر أمازون القياسية إن وجدت
                 clone.querySelectorAll(".a-price-fraction").forEach(fr => {
                     if (fr.textContent && !fr.textContent.trim().startsWith(".")) {
                         fr.textContent = "." + fr.textContent.trim();
@@ -227,7 +316,6 @@ EXTRACT_JS = r"""
 
                 let oldPrices = [];
 
-                // 1. استخراج وحذف الأسعار المشطوبة (السعر القديم)
                 origNodes.forEach((node, idx) => {
                     if (idx > 0 && isStrikeNode(node)) {
                         let hasStrikeParent = false;
@@ -252,7 +340,6 @@ EXTRACT_JS = r"""
                     }
                 });
 
-                // 2. حذف شارات النسب المئوية أولاً (مثل -14% أو خصم 15%)
                 cloneNodes.forEach((cNode, idx) => {
                     if (idx === 0 || !clone.contains(cNode)) return;
                     const t = cleanPriceText(cNode.innerText || "").trim();
@@ -261,7 +348,6 @@ EXTRACT_JS = r"""
                     }
                 });
 
-                // 3. حذف أي شارة توفير أو خصم أو سعر وحدة (مثل "وفر 20 ج.م" أو "Save EGP 12" أو "-12 EGP")
                 cloneNodes.forEach((cNode, idx) => {
                     if (idx === 0 || !clone.contains(cNode)) return;
                     const t = cleanPriceText(cNode.innerText || "").trim();
@@ -272,7 +358,6 @@ EXTRACT_JS = r"""
                     }
                 });
 
-                // 4. استخراج السعر الحالي من أضيق عنصر سعر فقط (لمنع دمج "20 Pieces" مع "EGP") مع تسجيل حجم الخط
                 let currCandidates = [];
                 cloneNodes.forEach((cNode, idx) => {
                     if (!clone.contains(cNode)) return;
@@ -283,7 +368,6 @@ EXTRACT_JS = r"""
                     if (childHasBoth) return;
 
                     let cleaned = cleanPriceText(rawT);
-                    // تنظيف إضافي لأي نص توفير متبقٍ في نفس السطر
                     cleaned = cleaned.replace(/(?:وفر|توفير|خصم|تخفيض|save|saving|off)\s*[:\-]?\s*(?:EGP|ج\.م\.?|جنيه)?\s*\d+(?:\.\d+)?\s*(?:EGP|ج\.م\.?|جنيه)?/gi, " ");
                     cleaned = cleaned.replace(/(?:EGP|ج\.م\.?|جنيه)?\s*\d+(?:\.\d+)?\s*(?:EGP|ج\.م\.?|جنيه)?\s*(?:off\b|خصم|توفير|وفر)/gi, " ");
                     cleaned = cleaned.replace(/\([^)]*(?:\/|لكل)[^)]*\)/gi, " ");
@@ -292,7 +376,6 @@ EXTRACT_JS = r"""
 
                     const fontSize = parseFloat(window.getComputedStyle(origNodes[idx]).fontSize) || 14;
 
-                    // التطابق الصارم: العملة قبل الرقم (EGP 106) أو الرقم قبل العملة في نفس السطر القصير فقط
                     let priceRegex;
                     if (cleaned.trim().length <= 22) {
                         priceRegex = /(?:EGP|ج\.م\.?|جنيه)\s*(\d+(?:\.\d+)?)|(\d+(?:\.\d+)?)\s*(?:EGP|ج\.م\.?|جنيه)/gi;
@@ -309,7 +392,6 @@ EXTRACT_JS = r"""
                     }
                 });
 
-                // ترتيب المرشحين بحيث يفوز السعر الرئيسي ذو الخط الأكبر دائماً
                 currCandidates.sort((a, b) => b.fontSize - a.fontSize);
                 const currPrices = [];
                 currCandidates.forEach(c => {
@@ -329,6 +411,7 @@ EXTRACT_JS = r"""
                     prodId,
                     asin,
                     imgId,
+                    imgUrl,
                     href,
                     title,
                     currPrices,
@@ -426,7 +509,7 @@ def main():
         print("⚠️ لم يتم العثور على AMAZON_COOKIES في Secrets، تخطي فحص Amazon Now.")
         return
 
-    sent_deals = load_sent()
+    sent_deals = load_and_clean_sent()
     print(f"⚡ بدء فحص Amazon Now السحابي ({len(NOW_TARGETS)} أقسام | خصم فعلي {MIN_DISCOUNT_PERCENT}%+)...")
 
     with sync_playwright() as p:
@@ -463,6 +546,24 @@ def main():
                 page.goto(url, wait_until="domcontentloaded", timeout=35000)
                 time.sleep(4)
 
+                page_title = page.title()
+                body_txt = page.inner_text("body")
+
+                # فحص انتهاء الكوكيز أو طلب تسجيل الدخول وإرسال تنبيه فوري
+                if (
+                    "amazon sign in" in page_title.lower()
+                    or "تسجيل الدخول" in page_title
+                    or "/ap/signin" in page.url
+                ):
+                    print("   🚨 صفحة تسجيل الدخول ظهرت - الكوكيز انتهت صلاحيتها!")
+                    maybe_send_cookie_alert(sent_deals, "أمازون طلب تسجيل الدخول (Amazon Sign In)")
+                    break
+
+                if "لقد فقدت الاتصال" in body_txt:
+                    print("   ⚠️ ظهرت رسالة 'لقد فقدت الاتصال' - الكوكيز تحتاج تحديث أو المخزن مغلق مؤقتاً.")
+                    maybe_send_cookie_alert(sent_deals, "ظهور رسالة 'لقد فقدت الاتصال' في Amazon Now")
+                    break
+
                 try:
                     next_json_list = page.evaluate(
                         """() => Array.from(document.querySelectorAll("script#__NEXT_DATA__, script[type='application/json']")).map(s => s.textContent)"""
@@ -475,11 +576,6 @@ def main():
                                 pass
                 except Exception:
                     pass
-
-                body_txt = page.inner_text("body")
-                if "لقد فقدت الاتصال" in body_txt:
-                    print("   ⚠️ ظهرت رسالة 'لقد فقدت الاتصال' - الكوكيز تحتاج تحديث أو المخزن مغلق مؤقتاً.")
-                    break
 
                 last_count = 0
                 stagnant = 0
@@ -502,9 +598,15 @@ def main():
                     page.evaluate(SCROLL_JS)
                     time.sleep(1.3)
 
-                if len(all_items) == 0:
+                if len(all_items) > 0:
+                    # تصفير عداد تنبيه الكوكيز طالما الحساب شغال وبيسحب منتجات بنجاح
+                    sent_deals.pop("__COOKIE_ALERT_TS__", None)
+                else:
                     snippet = " ".join(body_txt.split())[:120]
-                    print(f"   ℹ️ تشخيص الصفحة (0 منتج): العنوان='{page.title()}' | النص='{snippet}'")
+                    print(f"   ℹ️ تشخيص الصفحة (0 منتج): العنوان='{page_title}' | النص='{snippet}'")
+                    if "password" in body_txt.lower() or "كلمة المرور" in body_txt:
+                        maybe_send_cookie_alert(sent_deals, "ظهور خانة كلمة المرور بدلاً من المنتجات")
+                        break
 
                 max_disc = 0
                 sent_now_cnt = 0
@@ -516,7 +618,6 @@ def main():
                     if not curr_prices or not old_prices:
                         continue
 
-                    # أول عنصر هو السعر الرئيسي ذو الخط الأكبر في الكارت
                     curr_p = curr_prices[0]
                     old_p = max(old_prices)
 
@@ -530,6 +631,7 @@ def main():
 
                     if disc >= MIN_DISCOUNT_PERCENT:
                         img_id = it.get("imgId", "")
+                        img_url = it.get("imgUrl", "")
                         title_str = it.get("title", "")
                         asin = (
                             it.get("asin")
@@ -539,13 +641,15 @@ def main():
 
                         title_key = "TITLE_" + title_str[:30]
                         temp_key = asin if asin else prod_id
+                        prev_temp_p = get_saved_price(sent_deals, temp_key)
+                        prev_title_p = get_saved_price(sent_deals, title_key)
 
-                        if (not sent_deals.get(temp_key) or sent_deals.get(temp_key) > curr_p) and (sent_deals.get(title_key) != curr_p):
+                        if (not prev_temp_p or prev_temp_p > curr_p) and (prev_title_p != curr_p):
                             if not asin:
                                 asin = resolve_direct_asin_by_search(context, title_str, img_id)
 
                             unique_key = asin if asin else prod_id
-                            if sent_deals.get(unique_key) == curr_p:
+                            if get_saved_price(sent_deals, unique_key) == curr_p:
                                 continue
 
                             if asin:
@@ -556,30 +660,27 @@ def main():
                                 final_link = f"https://www.amazon.eg/s?k={urllib.parse.quote_plus(title_str)}"
 
                             saved_egp = round(old_p - curr_p, 2)
-                            msg = (
+                            caption = (
                                 f"⚡ لقطة Amazon Now بخصم فعلي {disc}%!\n"
                                 f"🏷️ القسم: {cat_name}\n\n"
                                 f"📦 {title_str}\n"
                                 f"💰 السعر الجديد: {curr_p} EGP\n"
-                                f"❌ السعر القديم: {old_p} EGP (وفرت {saved_egp} ج)\n\n"
-                                f"🔗 رابط المنتج: {final_link}\n"
-                                f"🛒 قسم ناو: {url}"
+                                f"❌ السعر القديم: {old_p} EGP (وفرت {saved_egp} ج)"
                             )
-                            if send_telegram(msg):
-                                sent_deals[unique_key] = curr_p
-                                sent_deals[title_key] = curr_p
+
+                            # بناء أزرار الشراء السريع تحت الصورة
+                            buttons = []
+                            first_row = []
+                            if asin:
+                                add_cart_url = f"https://www.amazon.eg/gp/aws/cart/add.html?ASIN.1={asin}&Quantity.1=1"
+                                first_row.append({"text": "🛒 أضف للسلة فوراً", "url": add_cart_url})
+                            first_row.append({"text": "📦 صفحة المنتج", "url": final_link})
+                            buttons.append(first_row)
+                            buttons.append([{"text": f"⚡ قسم {cat_name}", "url": url}])
+
+                            if send_telegram_deal(caption, img_url=img_url, buttons=buttons):
+                                record_deal(sent_deals, unique_key, curr_p)
+                                record_deal(sent_deals, title_key, curr_p)
                                 sent_now_cnt += 1
-                                print(f"   ✅ تم إرسال عرض {unique_key} بخصم فعلي {disc}% -> {final_link}")
-                                time.sleep(0.4)
-
-                print(f"   📊 فُحص {len(all_items)} منتج | أعلى خصم فعلي: {max_disc}% | أُرسل: {sent_now_cnt}")
-
-            except Exception as e:
-                print(f"   ❌ خطأ أثناء فحص {cat_name}: {e}")
-
-        browser.close()
-
-    save_sent(sent_deals)
-
-if __name__ == "__main__":
-    main()
+                                print(f"   ✅ تم إرسال عرض {unique_key} بالصورة والأزرار (خصم {disc}%)")
+                               
