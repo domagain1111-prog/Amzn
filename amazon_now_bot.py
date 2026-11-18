@@ -10,12 +10,10 @@ TELEGRAM_TOKEN = (os.environ.get("NOW_TELEGRAM_TOKEN") or os.environ.get("TELEGR
 CHAT_ID = (os.environ.get("NOW_CHAT_ID") or os.environ.get("CHAT_ID") or "").strip()
 AMAZON_COOKIES = os.environ.get("AMAZON_COOKIES", "").strip()
 
-# نسبة الخصم الفعلية المحسوبة من فرق السعر القديم والجديد فقط
-MIN_DISCOUNT_PERCENT = 40
+MIN_DISCOUNT_PERCENT = 33
 STATE_FILE = "sent_now.json"
 QC_BRAND = "sAuWWBROaG"
 
-# القائمة الشاملة لأقسام Amazon Now (12 قسم)
 NOW_TARGETS = [
     ("أقوى العروض (Top Deals)", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=220630950031&title=Top+Deals&ref=EG_Tez_SF_Top_deals"),
     ("الشوكولاتة والحلويات", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215093316031&title=Chocolate+and+Candies"),
@@ -54,7 +52,7 @@ def send_telegram(text):
     sent_ok = False
     for cid in [c.strip() for c in CHAT_ID.split(",") if c.strip()]:
         try:
-            r = requests.post(url, json={"chat_id": cid, "text": text}, timeout=15)
+            r = requests.post(url, json={"chat_id": cid, "text": text, "disable_web_page_preview": False}, timeout=15)
             if r.status_code == 200:
                 sent_ok = True
             else:
@@ -95,7 +93,6 @@ def parse_playwright_cookies(raw_json):
         cleaned.append(item)
     return cleaned
 
-# استخراج الأسعار الفعلية + سحب كود الـ ASIN مباشرة من خصائص React الداخلية للكارت
 EXTRACT_JS = r"""
 () => {
     function arToEn(str) {
@@ -115,6 +112,14 @@ EXTRACT_JS = r"""
         const matches = s.match(/\d+(?:\.\d+)?/g);
         return matches ? matches.map(Number).filter(v => v >= 2) : [];
     }
+    function countCurrencies(str) {
+        const m = arToEn(str || "").match(/(?:EGP|ج\.م\.?|جنيه)/gi);
+        return m ? m.length : 0;
+    }
+    function hasCurrencyAndDigit(str) {
+        const s = arToEn(str || "");
+        return /(?:EGP|ج\.م\.?|جنيه)/i.test(s) && /\d/.test(s);
+    }
     function isStrikeNode(node) {
         if (!node || node.nodeType !== 1) return false;
         if (["S", "DEL", "STRIKE"].includes(node.tagName)) return true;
@@ -126,6 +131,9 @@ EXTRACT_JS = r"""
         const dec = (style.textDecorationLine || style.textDecoration || "").toLowerCase();
         return dec.includes("line-through");
     }
+
+    const BADGE_RE = /(?:وفر|توفير|خصم|تخفيض|كوبون|قسيمة|أقل|توصيل|شحن|مجان|قسط|تقسيط|save|saving|off\b|discount|coupon|voucher|delivery|free|installment|%)/i;
+    const UNIT_RE = /(?:\/|لكل)\s*(?:كجم|جم|جرام|لتر|مل|قطعة|حبة|عبوة|وحدة|kg|g\b|ml|l\b|count|pc|pack|unit)/i;
 
     function getAsinFromReact(rootEl) {
         const asinRe = /^B[0-9A-Z]{9}$/;
@@ -206,14 +214,22 @@ EXTRACT_JS = r"""
             const prodId = asin ? asin : ("TEZ_" + (imgId || img.alt || "")).slice(0, 35);
 
             if (prodId && !cardsMap.has(prodId)) {
-                const origNodes = Array.from(bestCard.querySelectorAll("*"));
+                const origNodes = [bestCard, ...Array.from(bestCard.querySelectorAll("*"))];
                 const clone = bestCard.cloneNode(true);
-                const cloneNodes = Array.from(clone.querySelectorAll("*"));
+                const cloneNodes = [clone, ...Array.from(clone.querySelectorAll("*"))];
+
+                // إصلاح الكسور العشرية المنفصلة في عناصر أمازون القياسية إن وجدت
+                clone.querySelectorAll(".a-price-fraction").forEach(fr => {
+                    if (fr.textContent && !fr.textContent.trim().startsWith(".")) {
+                        fr.textContent = "." + fr.textContent.trim();
+                    }
+                });
 
                 let oldPrices = [];
 
+                // 1. استخراج وحذف الأسعار المشطوبة (السعر القديم)
                 origNodes.forEach((node, idx) => {
-                    if (isStrikeNode(node)) {
+                    if (idx > 0 && isStrikeNode(node)) {
                         let hasStrikeParent = false;
                         let p = node.parentElement;
                         while (p && p !== bestCard) {
@@ -225,31 +241,80 @@ EXTRACT_JS = r"""
                         }
                         if (!hasStrikeParent) {
                             const offscreen = node.querySelector(".a-offscreen");
-                            const rawStrike = offscreen ? offscreen.textContent : (node.innerText || "");
-                            if (!rawStrike.includes("%")) {
+                            const rawStrike = cleanPriceText(offscreen ? offscreen.textContent : (node.innerText || ""));
+                            if (!rawStrike.includes("%") && !UNIT_RE.test(rawStrike)) {
                                 extractNumbers(rawStrike).forEach(v => {
                                     if (!oldPrices.includes(v)) oldPrices.push(v);
                                 });
                             }
                         }
-                        if (cloneNodes[idx]) {
-                            cloneNodes[idx].remove();
+                        if (cloneNodes[idx]) cloneNodes[idx].remove();
+                    }
+                });
+
+                // 2. حذف شارات النسب المئوية أولاً (مثل -14% أو خصم 15%)
+                cloneNodes.forEach((cNode, idx) => {
+                    if (idx === 0 || !clone.contains(cNode)) return;
+                    const t = cleanPriceText(cNode.innerText || "").trim();
+                    if (t.length > 0 && t.length <= 25 && t.includes("%") && countCurrencies(t) === 0) {
+                        cNode.remove();
+                    }
+                });
+
+                // 3. حذف أي شارة توفير أو خصم أو سعر وحدة (مثل "وفر 20 ج.م" أو "Save EGP 12" أو "-12 EGP")
+                cloneNodes.forEach((cNode, idx) => {
+                    if (idx === 0 || !clone.contains(cNode)) return;
+                    const t = cleanPriceText(cNode.innerText || "").trim();
+                    if (t.length > 0 && t.length <= 48 && countCurrencies(t) <= 1) {
+                        if (BADGE_RE.test(t) || UNIT_RE.test(t) || /^\s*-\s*(?:EGP|ج\.م|جنيه|\d)/i.test(t)) {
+                            cNode.remove();
                         }
                     }
                 });
 
-                let remText = cleanPriceText((clone.innerText || "").replace(/\s+/g, " "));
-                remText = remText.replace(/\([^)]*(?:\/|لكل)[^)]*\)/gi, " ");
-                remText = remText.replace(/(?:EGP|ج\.م\.?|جنيه)\s*\d+(?:\.\d+)?\s*(?:\/|لكل)\s*\S+/gi, " ");
-                remText = remText.replace(/\d+(?:\.\d+)?\s*(?:EGP|ج\.م\.?|جنيه)\s*(?:\/|لكل)\s*\S+/gi, " ");
+                // 4. استخراج السعر الحالي من أضيق عنصر سعر فقط (لمنع دمج "20 Pieces" مع "EGP") مع تسجيل حجم الخط
+                let currCandidates = [];
+                cloneNodes.forEach((cNode, idx) => {
+                    if (!clone.contains(cNode)) return;
+                    const rawT = cNode.innerText || "";
+                    if (!hasCurrencyAndDigit(rawT)) return;
 
-                let currPrices = [];
-                const reg = /(?:EGP|ج\.م\.?|جنيه)\s*(\d+(?:\.\d+)?)|(\d+(?:\.\d+)?)\s*(?:EGP|ج\.م\.?|جنيه)/gi;
-                let m;
-                while ((m = reg.exec(remText)) !== null) {
-                    let v = parseFloat(m[1] || m[2]);
-                    if (v && v >= 2 && !currPrices.includes(v)) currPrices.push(v);
-                }
+                    const childHasBoth = Array.from(cNode.children).some(ch => hasCurrencyAndDigit(ch.innerText || ""));
+                    if (childHasBoth) return;
+
+                    let cleaned = cleanPriceText(rawT);
+                    // تنظيف إضافي لأي نص توفير متبقٍ في نفس السطر
+                    cleaned = cleaned.replace(/(?:وفر|توفير|خصم|تخفيض|save|saving|off)\s*[:\-]?\s*(?:EGP|ج\.م\.?|جنيه)?\s*\d+(?:\.\d+)?\s*(?:EGP|ج\.م\.?|جنيه)?/gi, " ");
+                    cleaned = cleaned.replace(/(?:EGP|ج\.م\.?|جنيه)?\s*\d+(?:\.\d+)?\s*(?:EGP|ج\.م\.?|جنيه)?\s*(?:off\b|خصم|توفير|وفر)/gi, " ");
+                    cleaned = cleaned.replace(/\([^)]*(?:\/|لكل)[^)]*\)/gi, " ");
+
+                    if (BADGE_RE.test(cleaned) || UNIT_RE.test(cleaned)) return;
+
+                    const fontSize = parseFloat(window.getComputedStyle(origNodes[idx]).fontSize) || 14;
+
+                    // التطابق الصارم: العملة قبل الرقم (EGP 106) أو الرقم قبل العملة في نفس السطر القصير فقط
+                    let priceRegex;
+                    if (cleaned.trim().length <= 22) {
+                        priceRegex = /(?:EGP|ج\.م\.?|جنيه)\s*(\d+(?:\.\d+)?)|(\d+(?:\.\d+)?)\s*(?:EGP|ج\.م\.?|جنيه)/gi;
+                    } else {
+                        priceRegex = /(?:EGP|ج\.م\.?|جنيه)\s*(\d+(?:\.\d+)?)|(\d+(?:\.\d+)?)[ \t]*(?:ج\.م\.?|جنيه)/gi;
+                    }
+
+                    let m;
+                    while ((m = priceRegex.exec(cleaned)) !== null) {
+                        const val = parseFloat(m[1] || m[2]);
+                        if (val && val >= 2) {
+                            currCandidates.push({ val, fontSize });
+                        }
+                    }
+                });
+
+                // ترتيب المرشحين بحيث يفوز السعر الرئيسي ذو الخط الأكبر دائماً
+                currCandidates.sort((a, b) => b.fontSize - a.fontSize);
+                const currPrices = [];
+                currCandidates.forEach(c => {
+                    if (!currPrices.includes(c.val)) currPrices.push(c.val);
+                });
 
                 let title = (img.alt && img.alt.trim().length > 6) ? img.alt.trim() : "";
                 if (!title) {
@@ -279,13 +344,13 @@ EXTRACT_JS = r"""
 
 SCROLL_JS = """
 () => {
-    window.scrollBy(0, 950);
+    window.scrollBy(0, 900);
     const candidates = Array.from(document.querySelectorAll("main, [role='main'], div"));
     for (const el of candidates) {
         if (el.scrollHeight > el.clientHeight + 300) {
             const st = window.getComputedStyle(el);
             if (st.overflowY === "auto" || st.overflowY === "scroll") {
-                el.scrollBy(0, 950);
+                el.scrollBy(0, 900);
             }
         }
     }
@@ -362,7 +427,7 @@ def main():
         return
 
     sent_deals = load_sent()
-    print(f"⚡ بدء فحص Amazon Now السحابي ({len(NOW_TARGETS)} قسم | خصم فعلي {MIN_DISCOUNT_PERCENT}%+)...")
+    print(f"⚡ بدء فحص Amazon Now السحابي ({len(NOW_TARGETS)} أقسام | خصم فعلي {MIN_DISCOUNT_PERCENT}%+)...")
 
     with sync_playwright() as p:
         browser = p.chromium.launch(
@@ -396,7 +461,7 @@ def main():
             print(f"\n[{idx}/{len(NOW_TARGETS)}] فحص قسم: {cat_name}...")
             try:
                 page.goto(url, wait_until="domcontentloaded", timeout=35000)
-                time.sleep(3.2)
+                time.sleep(4)
 
                 try:
                     next_json_list = page.evaluate(
@@ -420,7 +485,7 @@ def main():
                 stagnant = 0
                 all_items = {}
 
-                for _ in range(16):
+                for _ in range(18):
                     items = page.evaluate(EXTRACT_JS)
                     for it in items:
                         all_items[it["prodId"]] = it
@@ -431,11 +496,11 @@ def main():
                         stagnant = 0
                     last_count = len(all_items)
 
-                    if stagnant >= 3 and len(all_items) > 0:
+                    if stagnant >= 4 and len(all_items) > 0:
                         break
 
                     page.evaluate(SCROLL_JS)
-                    time.sleep(1.1)
+                    time.sleep(1.3)
 
                 if len(all_items) == 0:
                     snippet = " ".join(body_txt.split())[:120]
@@ -451,10 +516,11 @@ def main():
                     if not curr_prices or not old_prices:
                         continue
 
-                    curr_p = min(curr_prices)
+                    # أول عنصر هو السعر الرئيسي ذو الخط الأكبر في الكارت
+                    curr_p = curr_prices[0]
                     old_p = max(old_prices)
 
-                    if old_p <= curr_p or old_p > curr_p * 12:
+                    if old_p <= curr_p or old_p > curr_p * 10:
                         continue
 
                     disc = round(((old_p - curr_p) / old_p) * 100)
@@ -496,7 +562,8 @@ def main():
                                 f"📦 {title_str}\n"
                                 f"💰 السعر الجديد: {curr_p} EGP\n"
                                 f"❌ السعر القديم: {old_p} EGP (وفرت {saved_egp} ج)\n\n"
-                                f"🔗 {final_link}"
+                                f"🔗 رابط المنتج: {final_link}\n"
+                                f"🛒 قسم ناو: {url}"
                             )
                             if send_telegram(msg):
                                 sent_deals[unique_key] = curr_p
