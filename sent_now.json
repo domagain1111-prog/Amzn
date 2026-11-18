@@ -276,8 +276,8 @@
     "ts": 1794968618
   },
   "TITLE_Valley Greens - Navel Orange 1": {
-    "price": 45,
-    "ts": 1794968618
+    "price": 33.75,
+    "ts": 1795039439
   },
   "TEZ_51VYkrhwI1L": {
     "price": 25.95,
@@ -590,5 +590,17 @@
   "TITLE_Agrovate Fresh Lemons": {
     "price": 21.75,
     "ts": 1795027732
+  },
+  "B0HMNCDK5Y": {
+    "price": 33.75,
+    "ts": 1795039439
+  },
+  "B0FX2S9ZWG": {
+    "price": 182.95,
+    "ts": 1795039588
+  },
+  "TITLE_Temry Chicken Nuggets": {
+    "price": 182.95,
+    "ts": 1795039588
   }
 }
