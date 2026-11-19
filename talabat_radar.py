@@ -28,9 +28,9 @@ CACHE_TTL_DAYS = 7
 PRICE_HISTORY_TTL_DAYS = 21
 COOKIE_ALERT_COOLDOWN = 12 * 3600
 STATE_FILE = "sent_talabat.json"
-MAX_CATEGORIES_LIMIT = 115
+MAX_URLS_LIMIT = 220           # يشمل كل الأقسام + صفحاتها الإضافية (?page=2, 3, 4...)
 CONCURRENT_TABS = 5
-MAX_PAGES_PER_CATEGORY = 6     # يقلب حتى 6 صفحات (1, 2, 3, 4, 5, 6) داخل كل قسم
+MAX_PAGES_PER_CATEGORY = 6     # أقصى عدد صفحات مرقمة لكل قسم
 
 # ================= المستوى الأول: أقسام العروض والخصومات =================
 DEALS_PRIORITY_CATEGORIES = [
@@ -450,70 +450,54 @@ EXTRACT_DOM_JS = r"""
 }
 """
 
-# تمرير الصفحة والحاويات الداخلية لأسفل لظهور شريط ترقيم الصفحات (← 1 2 3 4 →)
-SCROLL_ALL_TO_BOTTOM_JS = """
+# استخراج روابط الأقسام ومسار الفرع الفعلي (/egypt/grocery/650267/... أو /talabat-mart/...) + أرقام الصفحات الموجودة في الترقيم
+DISCOVER_LINKS_AND_PAGES_JS = r"""
 () => {
-    window.scrollTo(0, document.body.scrollHeight);
-    document.querySelectorAll("div, main, section").forEach(el => {
-        if (el.scrollHeight > el.clientHeight + 100 && el.clientWidth > 400) {
-            el.scrollTop = el.scrollHeight;
-        }
-    });
-}
-"""
-
-# العثور على شريط الترقيم (← 1 2 3 4 →) وإعطاء إحداثيات زرار الصفحة المطلوبة
-FIND_PAGINATION_BUTTON_JS = r"""
-(targetPageNum) => {
-    const targetStr = String(targetPageNum);
-    const boxes = [];
-    const allEls = Array.from(document.querySelectorAll("button, a, li, div, span"));
-    for (const el of allEls) {
-        if (el.children.length > 0) continue;
-        const txt = (el.innerText || "").trim();
-        if (!/^[1-9]\d?$/.test(txt)) continue;
-        const rect = el.getBoundingClientRect();
-        if (rect.width >= 14 && rect.width <= 70 && rect.height >= 14 && rect.height <= 70 && rect.left > 220) {
-            boxes.push({ el, txt, rect });
-        }
-    }
-
-    for (const b of boxes) {
-        if (b.txt !== targetStr) continue;
-        const hasSiblingInSameRow = boxes.some(other =>
-            other !== b &&
-            other.txt !== b.txt &&
-            Math.abs(other.rect.top - b.rect.top) < 15 &&
-            Math.abs(other.rect.left - b.rect.left) < 400
-        );
-        if (hasSiblingInSameRow) {
-            b.el.scrollIntoView({ block: "center" });
-            const r = b.el.getBoundingClientRect();
-            return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
-        }
-    }
-    return null;
-}
-"""
-
-DISCOVER_SIDEBAR_JS = r"""
-() => {
-    const links = Array.from(document.querySelectorAll("a[href*='/talabat-mart/']"));
+    const links = Array.from(document.querySelectorAll("a[href*='/talabat-mart/'], a[href*='/grocery/']"));
     const found = new Map();
-    for (const a of links) {
-        const cleanUrl = (a.href || "").split("?")[0].split("#")[0].replace(/\/$/, "");
-        if (!cleanUrl || cleanUrl.includes("/product/") || cleanUrl.endsWith("/talabat-mart")) continue;
+    let maxPageDetected = 1;
 
-        const afterMart = cleanUrl.split("/talabat-mart/")[1] || "";
-        const segments = afterMart.split("/").filter(Boolean);
-        if (segments.length < 2) continue;
+    for (const a of links) {
+        const fullHref = a.href || "";
+        const pageMatch = fullHref.match(/[?&]page=(\d+)/);
+        if (pageMatch) {
+            const pNum = parseInt(pageMatch[1], 10);
+            if (pNum > maxPageDetected && pNum <= 15) maxPageDetected = pNum;
+        }
+
+        const cleanUrl = fullHref.split("?")[0].split("#")[0].replace(/\/$/, "");
+        if (!cleanUrl || cleanUrl.includes("/product/")) continue;
+        if (cleanUrl.endsWith("/talabat-mart") || /\/grocery\/\d+\/[^\/]+$/.test(cleanUrl)) continue;
 
         const txt = (a.innerText || "").trim().replace(/\s+/g, " ");
-        if (txt.length >= 2 && txt.length <= 50 && !found.has(cleanUrl)) {
+        if (txt.length >= 2 && txt.length <= 50 && !/^\d+$/.test(txt) && !found.has(cleanUrl)) {
             found.set(cleanUrl, txt);
         }
     }
-    return Array.from(found.entries()).map(([url, name]) => ({ name, url }));
+
+    // اكتشاف أعلى رقم صفحة ظاهر في شريط الترقيم (← 1 2 3 4 →)
+    const boxes = [];
+    document.querySelectorAll("button, a, li, div, span").forEach(el => {
+        if (el.children.length > 0) return;
+        const txt = (el.innerText || "").trim();
+        if (!/^[1-9]\d?$/.test(txt)) return;
+        const r = el.getBoundingClientRect();
+        if (r.width >= 14 && r.width <= 70 && r.height >= 14 && r.height <= 70 && r.left > 220) {
+            boxes.push({ num: parseInt(txt, 10), top: r.top, left: r.left });
+        }
+    });
+
+    for (const b of boxes) {
+        const hasSibling = boxes.some(o => o !== b && o.num !== b.num && Math.abs(o.top - b.top) < 15 && Math.abs(o.left - b.left) < 400);
+        if (hasSibling && b.num > maxPageDetected && b.num <= 15) {
+            maxPageDetected = b.num;
+        }
+    }
+
+    return {
+        categories: Array.from(found.entries()).map(([url, name]) => ({ name, url })),
+        maxPageDetected
+    };
 }
 """
 
@@ -533,16 +517,30 @@ def is_supermarket_category(name, url):
     return any(k.lower() in s for k in SUPERMARKET_PRIORITY_CATEGORIES)
 
 
-def enqueue_category(shared_state, name, url):
-    if is_deals_category(name, url):
-        shared_state["deals_queue"].append((name, url))
-    elif is_supermarket_category(name, url):
-        shared_state["market_queue"].append((name, url))
+def enqueue_url(shared_state, name, url, page_num=1):
+    """إضافة رابط القسم أو رابط الصفحة المرقمة (?page=2, 3...) للطابور حسب الأولوية"""
+    if len(shared_state["visited"]) >= MAX_URLS_LIMIT + shared_state["skipped_count"]:
+        return
+
+    norm_url = url.rstrip("/")
+    if norm_url in shared_state["visited"]:
+        return
+    shared_state["visited"].add(norm_url)
+
+    if is_ignored_category(name, norm_url):
+        shared_state["skipped_count"] += 1
+        return
+
+    item = (name, norm_url, page_num)
+    if is_deals_category(name, norm_url):
+        shared_state["deals_queue"].append(item)
+    elif is_supermarket_category(name, norm_url):
+        shared_state["market_queue"].append(item)
     else:
-        shared_state["other_queue"].append((name, url))
+        shared_state["other_queue"].append(item)
 
 
-def pop_next_category(shared_state):
+def pop_next_url(shared_state):
     if shared_state["deals_queue"]:
         return shared_state["deals_queue"].popleft()
     if shared_state["market_queue"]:
@@ -560,7 +558,7 @@ def total_remaining(shared_state):
     )
 
 
-async def scan_single_category(context, cat_name, url, shared_state):
+async def scan_single_url(context, cat_name, url, page_num, shared_state):
     page = await context.new_page()
     await page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
@@ -580,7 +578,14 @@ async def scan_single_category(context, cat_name, url, shared_state):
 
     try:
         await page.goto(url, wait_until="domcontentloaded", timeout=22000)
-        await asyncio.sleep(0.9)
+        await asyncio.sleep(1.0)
+
+        # حفظ مسار الفرع الفعلي (/egypt/grocery/650267/tmart-...) بعد التحويل التلقائي من طلبات
+        actual_url = page.url.split("?")[0].split("#")[0].rstrip("/")
+        if "/grocery/" in actual_url and not shared_state["store_base_url"]:
+            m = re.match(r"(https://www\.talabat\.com/egypt/grocery/\d+/[^/]+)", actual_url)
+            if m:
+                shared_state["store_base_url"] = m.group(1)
 
         if shared_state["scanned_count"] <= 2:
             body_txt = await page.inner_text("body")
@@ -606,48 +611,30 @@ async def scan_single_category(context, cat_name, url, shared_state):
         except Exception:
             pass
 
-        dom_items = {}
-        pages_visited_in_cat = 1
-        prev_page_signature = None
+        # تمرير سريع لإظهار شريط الترقيم واكتشاف كل روابط الأقسام
+        await page.evaluate("""() => {
+            window.scrollTo(0, document.body.scrollHeight);
+            document.querySelectorAll("div, main, section").forEach(el => {
+                if (el.scrollHeight > el.clientHeight + 100 && el.clientWidth > 400) {
+                    el.scrollTop = el.scrollHeight;
+                }
+            });
+        }""")
+        await asyncio.sleep(0.35)
 
-        for page_num in range(1, MAX_PAGES_PER_CATEGORY + 1):
-            await page.evaluate(SCROLL_ALL_TO_BOTTOM_JS)
-            await asyncio.sleep(0.35)
+        discovery = await page.evaluate(DISCOVER_LINKS_AND_PAGES_JS)
+        for sc in discovery.get("categories", []):
+            sc_url = sc["url"]
+            # تحويل رابط /talabat-mart/ إلى رابط الفرع المباشر /grocery/store_id/slug/ إن وُجد لدعم ?page=N
+            if "/talabat-mart/" in sc_url and shared_state["store_base_url"]:
+                cat_tail = sc_url.split("/talabat-mart/")[1]
+                sc_url = f"{shared_state['store_base_url']}/{cat_tail}"
+            enqueue_url(shared_state, sc["name"], sc_url, page_num=1)
 
-            if page_num > 1:
-                coords = await page.evaluate(FIND_PAGINATION_BUTTON_JS, page_num)
-                if not coords:
-                    break
-                await page.mouse.click(coords["x"], coords["y"])
-                await asyncio.sleep(1.2)
-                await page.evaluate(SCROLL_ALL_TO_BOTTOM_JS)
-                await asyncio.sleep(0.3)
-
-            if page_num == 1:
-                sidebar_cats = await page.evaluate(DISCOVER_SIDEBAR_JS)
-                for sc in sidebar_cats:
-                    sc_url = sc["url"]
-                    if sc_url not in shared_state["visited"]:
-                        shared_state["visited"].add(sc_url)
-                        if is_ignored_category(sc["name"], sc_url):
-                            shared_state["skipped_count"] += 1
-                        elif len(shared_state["visited"]) < MAX_CATEGORIES_LIMIT + shared_state["skipped_count"]:
-                            enqueue_category(shared_state, sc["name"], sc_url)
-
-            res = await page.evaluate(EXTRACT_DOM_JS)
-            current_titles = res.get("allCardTitles", [])
-            current_sig = tuple(sorted(current_titles[:5]))
-
-            if page_num > 1 and (not current_titles or current_sig == prev_page_signature):
-                break
-
-            prev_page_signature = current_sig
-            pages_visited_in_cat = page_num
-
-            for t in current_titles:
-                page_stats["seen_titles"].add(normalize_title(t).lower())
-            for it in res.get("items", []):
-                dom_items[it["prodId"]] = it
+        res = await page.evaluate(EXTRACT_DOM_JS)
+        dom_items = {it["prodId"]: it for it in res.get("items", [])}
+        for t in res.get("allCardTitles", []):
+            page_stats["seen_titles"].add(normalize_title(t).lower())
 
         merged_items = {}
         for v in dom_items.values():
@@ -664,6 +651,16 @@ async def scan_single_category(context, cat_name, url, shared_state):
 
         total_in_cat = max(len(page_stats["seen_titles"]), len(merged_items))
         shared_state["total_products"] += total_in_cat
+
+        # إذا كنا في الصفحة 1 وكان القسم به 20 منتج فأكثر (أو ظهر ترقيم 2, 3, 4) -> نضيف ?page=2, 3, 4 فوراً!
+        if page_num == 1 and total_in_cat >= 20:
+            base_cat_url = actual_url if "/grocery/" in actual_url else url.split("?")[0]
+            if "/grocery/" in base_cat_url:
+                detected_pages = max(discovery.get("maxPageDetected", 1), 3)
+                target_max_p = min(detected_pages, MAX_PAGES_PER_CATEGORY)
+                for next_p in range(2, target_max_p + 1):
+                    sep = "&" if "?" in base_cat_url else "?"
+                    enqueue_url(shared_state, cat_name, f"{base_cat_url}{sep}page={next_p}", page_num=next_p)
 
         if total_in_cat > 0:
             shared_state["sent_deals"].pop("__ALERT_TS__", None)
@@ -702,7 +699,6 @@ async def scan_single_category(context, cat_name, url, shared_state):
                 max_disc = disc
 
             if MIN_DISCOUNT_PERCENT <= disc <= MAX_REALISTIC_DISCOUNT:
-                # منع الإرسال المكرر في نفس اللفة فقط بعد التأكد أن المنتج يستحق الإرسال
                 sent_dedup_key = f"{norm_key}_{curr_p}"
                 if sent_dedup_key in shared_state["sent_in_run"]:
                     continue
@@ -758,8 +754,8 @@ async def scan_single_category(context, cat_name, url, shared_state):
 
         idx = shared_state["scanned_count"]
         rem = total_remaining(shared_state)
-        pg_tag = f"({pages_visited_in_cat}ص)" if pages_visited_in_cat > 1 else ""
-        print(f"[{idx}/{idx + rem}] {cat_name[:23]:<23} {pg_tag:<4} | منتجات: {total_in_cat:<3} | مخفض: {discounted_count:<2} | أعلى خصم: {max_disc}% | أُرسل: {sent_cnt}")
+        pg_tag = f"[ص{page_num}]" if page_num > 1 else ""
+        print(f"[{idx}/{idx + rem}] {cat_name[:22]:<22} {pg_tag:<5} | منتجات: {total_in_cat:<3} | مخفض: {discounted_count:<2} | أعلى خصم: {max_disc}% | أُرسل: {sent_cnt}")
 
     except Exception as e:
         print(f"❌ خطأ في {cat_name}: {e}")
@@ -772,7 +768,7 @@ async def main_async():
     sent_deals = load_and_clean_sent()
     cookies = parse_playwright_cookies(TALABAT_COOKIES)
 
-    print(f"⚡ بدء الرادار المتوازي V7.4 (سكرول الحاوية الداخلية + تقليب الصفحات 1..{MAX_PAGES_PER_CATEGORY})...")
+    print(f"⚡ بدء الرادار المتوازي V8.0 (توليد روابط ?page=2,3,4... تلقائياً | خصم {MIN_DISCOUNT_PERCENT}%+)...")
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(
@@ -805,6 +801,7 @@ async def main_async():
             "visited": set(),
             "sent_deals": sent_deals,
             "sent_in_run": set(),
+            "store_base_url": "",
             "scanned_count": 0,
             "skipped_count": 0,
             "total_products": 0,
@@ -813,18 +810,17 @@ async def main_async():
 
         for label, u in SEED_URLS:
             clean_u = u.split("?")[0].split("#")[0].rstrip("/")
-            shared_state["visited"].add(clean_u)
-            enqueue_category(shared_state, label, clean_u)
+            enqueue_url(shared_state, label, clean_u, page_num=1)
 
-        while total_remaining(shared_state) > 0 and shared_state["scanned_count"] < MAX_CATEGORIES_LIMIT:
+        while total_remaining(shared_state) > 0 and shared_state["scanned_count"] < MAX_URLS_LIMIT:
             batch = []
-            while total_remaining(shared_state) > 0 and len(batch) < CONCURRENT_TABS and shared_state["scanned_count"] < MAX_CATEGORIES_LIMIT:
-                nxt = pop_next_category(shared_state)
+            while total_remaining(shared_state) > 0 and len(batch) < CONCURRENT_TABS and shared_state["scanned_count"] < MAX_URLS_LIMIT:
+                nxt = pop_next_url(shared_state)
                 if nxt:
                     shared_state["scanned_count"] += 1
                     batch.append(nxt)
 
-            tasks = [scan_single_category(context, name, url, shared_state) for name, url in batch]
+            tasks = [scan_single_url(context, name, url, p_num, shared_state) for name, url, p_num in batch]
             await asyncio.gather(*tasks)
 
         await browser.close()
@@ -835,7 +831,7 @@ async def main_async():
     save_sent(sent_deals)
     elapsed = round(time.time() - start_time, 1)
     hist_size = len(sent_deals.get("__PRICE_HISTORY__", {}))
-    print(f"\n🏁 اكتمل المسح المتوازي في {elapsed} ثانية! | قوائم: {shared_state['scanned_count']} | منتجات: {shared_state['total_products']} | سجل الأسعار: {hist_size} | مرسل: {shared_state['total_sent']}")
+    print(f"\n🏁 اكتمل المسح المتوازي في {elapsed} ثانية! | صفحات: {shared_state['scanned_count']} | منتجات: {shared_state['total_products']} | سجل الأسعار: {hist_size} | مرسل: {shared_state['total_sent']}")
 
 
 if __name__ == "__main__":
