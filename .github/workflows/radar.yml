@@ -20,8 +20,18 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('requirements.txt') }}
+
+      - name: Install dependencies and Playwright browser
+        run: |
+          pip install -r requirements.txt
+          playwright install chromium --only-shell
+          playwright install-deps chromium
 
       - name: Run Talabat Mart Radar
         env:
