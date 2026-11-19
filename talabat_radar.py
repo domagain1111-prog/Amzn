@@ -20,24 +20,37 @@ env_url = os.environ.get("TALABAT_MART_URL", "").strip()
 START_URL = (
     env_url
     if env_url.startswith("http") and "/talabat-mart" in env_url
-    else "https://www.talabat.com/egypt/talabat-mart/fruit-veg/best-in-season"
+    else "https://www.talabat.com/egypt/talabat-mart/cooking-baking/rice-pasta-pulses"
 )
 
-MIN_DISCOUNT_PERCENT = 40
+MIN_DISCOUNT_PERCENT = 30
 FLASH_DISCOUNT_PERCENT = 65
 MAX_REALISTIC_DISCOUNT = 92
 CACHE_TTL_DAYS = 7
 COOKIE_ALERT_COOLDOWN = 12 * 3600
 STATE_FILE = "sent_talabat.json"
-MAX_CATEGORIES_LIMIT = 130
-CONCURRENT_TABS = 5  # عدد التبويبات المفتوحة بالتوازي في نفس اللحظة
+MAX_CATEGORIES_LIMIT = 110
+CONCURRENT_TABS = 5
 
+# ================= أقسام الأولوية القصوى (السوبرماركت وخزين البيت أولاً) =================
+PRIORITY_CATEGORIES = [
+    "offer", "deal", "promo", "save", "discount", "عروض", "تخفيض", "خصم", "best-in-season",
+    "cooking", "baking", "pantry", "cupboard", "rice", "pasta", "oil", "ghee", "sugar", "canned", "sauce",
+    "poultry", "meat", "beef", "seafood", "fish", "deli", "cold-cuts",
+    "dairy", "cheese", "milk", "egg", "yogurt", "butter",
+    "chocolate", "biscuit", "snack", "chips", "sweet", "candy", "nuts",
+    "cleaning", "laundry", "detergent", "household", "paper", "tissue",
+    "coffee", "tea", "beverage", "juice", "water"
+]
+
+# ================= قائمة استبعاد الأقسام غير المهمة =================
 IGNORED_CATEGORIES = [
     "pet", "dog", "cat", "حيوانات", "قطط", "كلاب",
-    "baby", "diaper", "infant", "أطفال", "حفاضات", "رضع",
-    "stationery", "office", "مكتبية", "أدوات مدرسية",
-    "tobacco", "cigarette", "vape", "سجائر", "تبغ",
-    "party", "gift", "هدايا", "حفلات"
+    "baby", "diaper", "infant", "أطفال", "حفاضات", "رضع", "formula",
+    "stationery", "office", "مكتبية", "أدوات مدرسية", "school",
+    "tobacco", "cigarette", "vape", "سجائر", "تبغ", "lighter",
+    "party", "gift", "هدايا", "حفلات", "flower", "bouquet", "ورد", "زهور",
+    "toy", "game", "ألعاب", "candle", "شموع", "accessory", "cable", "charger"
 ]
 
 
@@ -85,6 +98,30 @@ def record_deal(sent_deals, key, price):
 def save_sent(data):
     with open(STATE_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+# ================= بناء رابط المنتج المظبوط =================
+def build_best_product_url(item, category_url):
+    raw_link = (item.get("productUrl") or "").strip()
+
+    if raw_link:
+        if raw_link.startswith("http") and "talabat.com" in raw_link:
+            return raw_link.split("?")[0], True
+        if raw_link.startswith("/"):
+            return f"https://www.talabat.com{raw_link.split('?')[0]}", True
+
+    slug = (item.get("slug") or "").strip()
+    prod_id = str(item.get("prodId") or "").strip()
+    if slug and not slug.startswith("http") and not slug.startswith("/"):
+        if prod_id and not prod_id.startswith(("API_", "DOM_")) and prod_id not in slug:
+            return f"https://www.talabat.com/egypt/talabat-mart/product/{slug}/{prod_id}", True
+        return f"https://www.talabat.com/egypt/talabat-mart/product/{slug}", True
+
+    title = item.get("title", "")
+    clean_words = re.sub(r"[\+\-\(\)\[\],/\\\|×\*]+", " ", title)
+    short_query = " ".join(clean_words.split()[:3])
+    encoded_q = urllib.parse.quote(short_query)
+    return f"https://www.talabat.com/egypt/talabat-mart/search?q={encoded_q}", False
 
 
 # ================= حساب سعر الكيلو أو اللتر =================
@@ -257,6 +294,9 @@ def walk_talabat_json(obj, api_products, stats):
         if isinstance(img, dict):
             img = img.get("url") or img.get("src") or ""
 
+        raw_url = obj.get("url") or obj.get("productUrl") or obj.get("href") or ""
+        slug = obj.get("slug") or obj.get("seoSlug") or ""
+
         try:
             p_val = float(price) if price is not None else 0.0
             old_val = float(old_price) if old_price is not None else 0.0
@@ -272,6 +312,8 @@ def walk_talabat_json(obj, api_products, stats):
                         "currPrice": p_val,
                         "oldPrice": old_val,
                         "imgUrl": str(img),
+                        "productUrl": str(raw_url),
+                        "slug": str(slug),
                     }
         except (ValueError, TypeError):
             pass
@@ -368,6 +410,9 @@ EXTRACT_DOM_JS = r"""
         }
         if (!title) return;
 
+        const linkEl = bestCard.querySelector("a[href*='/product/']") || bestCard.querySelector("a[href]") || bestCard.closest("a[href]");
+        const href = linkEl ? linkEl.href : "";
+
         const key = ("DOM_" + title.slice(0, 40));
         if (!discounted.has(key)) {
             discounted.set(key, {
@@ -376,6 +421,8 @@ EXTRACT_DOM_JS = r"""
                 currPrice: Math.min(...currPrices),
                 oldPrice: Math.max(...oldPrices),
                 imgUrl: img.src || "",
+                productUrl: href,
+                slug: ""
             });
         }
     });
@@ -427,7 +474,7 @@ def is_ignored_category(name, url):
 
 def is_priority_category(name, url):
     s = f"{name} {url}".lower()
-    return any(k in s for k in ["offer", "deal", "promo", "save", "discount", "عروض", "تخفيض", "خصم", "best-in-season"])
+    return any(k.lower() in s for k in PRIORITY_CATEGORIES)
 
 
 async def scan_single_category(context, cat_name, url, shared_state):
@@ -506,7 +553,10 @@ async def scan_single_category(context, cat_name, url, shared_state):
         for v in dom_items.values():
             merged_items[v["title"][:40].lower()] = v
         for v in api_products.values():
-            merged_items[v["title"][:40].lower()] = v
+            k = v["title"][:40].lower()
+            if k in merged_items and not v.get("productUrl") and merged_items[k].get("productUrl"):
+                v["productUrl"] = merged_items[k]["productUrl"]
+            merged_items[k] = v
 
         total_in_cat = max(page_stats["total_seen"], max_cards_seen, len(merged_items))
         shared_state["total_products"] += total_in_cat
@@ -540,8 +590,8 @@ async def scan_single_category(context, cat_name, url, shared_state):
                 prev_title_p = get_saved_price(shared_state["sent_deals"], title_cache_key)
 
                 if (not prev_p or prev_p > curr_p) and (prev_title_p != curr_p):
-                    clean_query = urllib.parse.quote_plus(title_str[:45])
-                    search_link = f"https://www.talabat.com/egypt/talabat-mart?q={clean_query}"
+                    best_url, is_direct = build_best_product_url(it, url)
+                    btn_label = "🛍️ فتح المنتج مباشرة" if is_direct else "🔍 ابحث عن المنتج في طلبات"
 
                     saved_egp = round(old_p - curr_p, 2)
                     unit_info = calculate_unit_price_info(title_str, curr_p)
@@ -563,8 +613,8 @@ async def scan_single_category(context, cat_name, url, shared_state):
                     )
 
                     buttons = [
-                        [{"text": "🛒 اطلب المنتج من طلبات مارت", "url": search_link}],
-                        [{"text": f"📂 تصفح قائمة {display_cat[:24]}", "url": url}]
+                        [{"text": btn_label, "url": best_url}],
+                        [{"text": f"📂 فتح قائمة {display_cat[:24]}", "url": url}]
                     ]
 
                     if send_telegram_deal(caption, img_url=it.get("imgUrl", ""), buttons=buttons):
@@ -590,7 +640,7 @@ async def main_async():
     sent_deals = load_and_clean_sent()
     cookies = parse_playwright_cookies(TALABAT_COOKIES)
 
-    print(f"⚡ بدء الرادار المتوازي V6 ({CONCURRENT_TABS} تبويبات معاً | خصم {MIN_DISCOUNT_PERCENT}%+ | تصفية {FLASH_DISCOUNT_PERCENT}%+)...")
+    print(f"⚡ بدء الرادار المتوازي V6.2 (أولوية السوبرماركت وخزين البيت | {CONCURRENT_TABS} تبويبات)...")
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(
@@ -618,7 +668,7 @@ async def main_async():
 
         clean_start = START_URL.split("?")[0].split("#")[0].rstrip("/")
         shared_state = {
-            "queue": deque([("القسم الافتتاحي", clean_start)]),
+            "queue": deque([("خزين المطبخ والأرز", clean_start)]),
             "visited": {clean_start},
             "sent_deals": sent_deals,
             "seen_titles": set(),
