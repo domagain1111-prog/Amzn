@@ -18,7 +18,7 @@ LONGITUDE = float(os.environ.get("TALABAT_LNG") or "29.9553")
 # رابط متجر طلبات مارت الرئيسي
 TALABAT_MART_URL = (os.environ.get("TALABAT_MART_URL") or "https://www.talabat.com/egypt/grocery/623082/talabat-mart").strip()
 
-MIN_DISCOUNT_PERCENT = 40
+MIN_DISCOUNT_PERCENT = 30
 CACHE_TTL_DAYS = 7
 COOKIE_ALERT_COOLDOWN = 12 * 3600
 STATE_FILE = "sent_talabat.json"
