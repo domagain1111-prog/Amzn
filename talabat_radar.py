@@ -23,7 +23,7 @@ SEED_URLS = [
     ("عروض الموسم", f"{STORE_BASE_URL}/fruit-veg/best-in-season"),
 ]
 
-MIN_DISCOUNT_PERCENT = 25      # الحد الأدنى للخصم الفعلي
+MIN_DISCOUNT_PERCENT = 40      # الحد الأدنى للخصم الفعلي
 FLASH_DISCOUNT_PERCENT = 50    # الحد الأدنى للتنبيه الناري
 MAX_REALISTIC_DISCOUNT = 85    # استبعاد أي نسبة غير منطقية
 CACHE_TTL_DAYS = 7
