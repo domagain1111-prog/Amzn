@@ -16,9 +16,11 @@ TALABAT_COOKIES = os.environ.get("TALABAT_COOKIES", "").strip()
 LATITUDE = float(os.environ.get("TALABAT_LAT") or "31.2156")
 LONGITUDE = float(os.environ.get("TALABAT_LNG") or "29.9553")
 
+STORE_BASE_URL = (os.environ.get("TALABAT_MART_URL") or "https://www.talabat.com/egypt/grocery/650267/tmart-new-maadi-taqseem-laselky").rstrip("/")
+
 SEED_URLS = [
-    ("الصفحة الرئيسية لطلبات مارت", "https://www.talabat.com/egypt/talabat-mart"),
-    ("عروض الموسم", "https://www.talabat.com/egypt/talabat-mart/fruit-veg/best-in-season"),
+    ("الصفحة الرئيسية لطلبات مارت", STORE_BASE_URL),
+    ("عروض الموسم", f"{STORE_BASE_URL}/fruit-veg/best-in-season"),
 ]
 
 MIN_DISCOUNT_PERCENT = 25      # الحد الأدنى للخصم أو الهبوط المفاجئ في السعر
@@ -28,7 +30,7 @@ CACHE_TTL_DAYS = 7
 PRICE_HISTORY_TTL_DAYS = 21
 COOKIE_ALERT_COOLDOWN = 12 * 3600
 STATE_FILE = "sent_talabat.json"
-MAX_URLS_LIMIT = 220           # يشمل كل الأقسام + صفحاتها الإضافية (?page=2, 3, 4...)
+MAX_URLS_LIMIT = 240           # يشمل كل الأقسام + صفحاتها الإضافية (?page=2, 3, 4...)
 CONCURRENT_TABS = 5
 MAX_PAGES_PER_CATEGORY = 6     # أقصى عدد صفحات مرقمة لكل قسم
 
@@ -132,8 +134,8 @@ def build_best_product_url(item, category_url):
     prod_id = str(item.get("prodId") or "").strip()
     if slug and not slug.startswith("http") and not slug.startswith("/"):
         if prod_id and not prod_id.startswith(("API_", "DOM_")) and prod_id not in slug:
-            return f"https://www.talabat.com/egypt/talabat-mart/product/{slug}/{prod_id}", True
-        return f"https://www.talabat.com/egypt/talabat-mart/product/{slug}", True
+            return f"{STORE_BASE_URL}/product/{slug}/{prod_id}", True
+        return f"{STORE_BASE_URL}/product/{slug}", True
 
     title = item.get("title", "")
     clean_words = re.sub(r"[\+\-\(\)\[\],/\\\|×\*]+", " ", title)
@@ -245,7 +247,7 @@ def maybe_send_alert(sent_deals, reason):
         alert_msg = (
             "⚠️ تنبيه من رادار Talabat Mart!\n\n"
             f"السبب: {reason}\n"
-            "📍 راجع صلاحية TALABAT_COOKIES لفرع الإسكندرية."
+            "📍 راجع صلاحية TALABAT_COOKIES أو TALABAT_MART_URL."
         )
         if send_telegram_text(alert_msg):
             sent_deals["__ALERT_TS__"] = now
@@ -450,7 +452,7 @@ EXTRACT_DOM_JS = r"""
 }
 """
 
-# استخراج روابط الأقسام ومسار الفرع الفعلي (/egypt/grocery/650267/... أو /talabat-mart/...) + أرقام الصفحات الموجودة في الترقيم
+# استخراج روابط الأقسام + أرقام الصفحات الموجودة في الترقيم (← 1 2 3 4 →)
 DISCOVER_LINKS_AND_PAGES_JS = r"""
 () => {
     const links = Array.from(document.querySelectorAll("a[href*='/talabat-mart/'], a[href*='/grocery/']"));
@@ -475,7 +477,6 @@ DISCOVER_LINKS_AND_PAGES_JS = r"""
         }
     }
 
-    // اكتشاف أعلى رقم صفحة ظاهر في شريط الترقيم (← 1 2 3 4 →)
     const boxes = [];
     document.querySelectorAll("button, a, li, div, span").forEach(el => {
         if (el.children.length > 0) return;
@@ -580,9 +581,8 @@ async def scan_single_url(context, cat_name, url, page_num, shared_state):
         await page.goto(url, wait_until="domcontentloaded", timeout=22000)
         await asyncio.sleep(1.0)
 
-        # حفظ مسار الفرع الفعلي (/egypt/grocery/650267/tmart-...) بعد التحويل التلقائي من طلبات
         actual_url = page.url.split("?")[0].split("#")[0].rstrip("/")
-        if "/grocery/" in actual_url and not shared_state["store_base_url"]:
+        if "/grocery/" in actual_url:
             m = re.match(r"(https://www\.talabat\.com/egypt/grocery/\d+/[^/]+)", actual_url)
             if m:
                 shared_state["store_base_url"] = m.group(1)
@@ -590,7 +590,7 @@ async def scan_single_url(context, cat_name, url, page_num, shared_state):
         if shared_state["scanned_count"] <= 2:
             body_txt = await page.inner_text("body")
             if "غير متاح" in body_txt or "not available in your area" in body_txt.lower():
-                maybe_send_alert(shared_state["sent_deals"], "طلبات مارت غير متاح للإحداثيات الحالية.")
+                maybe_send_alert(shared_state["sent_deals"], "طلبات مارت غير متاح للإحداثيات أو الفرع الحالي.")
 
         heading = await page.evaluate("""() => {
             const h = document.querySelector("h1, h2");
@@ -611,7 +611,6 @@ async def scan_single_url(context, cat_name, url, page_num, shared_state):
         except Exception:
             pass
 
-        # تمرير سريع لإظهار شريط الترقيم واكتشاف كل روابط الأقسام
         await page.evaluate("""() => {
             window.scrollTo(0, document.body.scrollHeight);
             document.querySelectorAll("div, main, section").forEach(el => {
@@ -625,8 +624,8 @@ async def scan_single_url(context, cat_name, url, page_num, shared_state):
         discovery = await page.evaluate(DISCOVER_LINKS_AND_PAGES_JS)
         for sc in discovery.get("categories", []):
             sc_url = sc["url"]
-            # تحويل رابط /talabat-mart/ إلى رابط الفرع المباشر /grocery/store_id/slug/ إن وُجد لدعم ?page=N
-            if "/talabat-mart/" in sc_url and shared_state["store_base_url"]:
+            # توحيد كل روابط الأقسام على مسار الفرع المباشر (/egypt/grocery/...) لدعم ?page=N
+            if "/talabat-mart/" in sc_url:
                 cat_tail = sc_url.split("/talabat-mart/")[1]
                 sc_url = f"{shared_state['store_base_url']}/{cat_tail}"
             enqueue_url(shared_state, sc["name"], sc_url, page_num=1)
@@ -652,7 +651,7 @@ async def scan_single_url(context, cat_name, url, page_num, shared_state):
         total_in_cat = max(len(page_stats["seen_titles"]), len(merged_items))
         shared_state["total_products"] += total_in_cat
 
-        # إذا كنا في الصفحة 1 وكان القسم به 20 منتج فأكثر (أو ظهر ترقيم 2, 3, 4) -> نضيف ?page=2, 3, 4 فوراً!
+        # توليد روابط ?page=2, 3, 4... تلقائياً لأي قسم فيه 20 منتج فأكثر
         if page_num == 1 and total_in_cat >= 20:
             base_cat_url = actual_url if "/grocery/" in actual_url else url.split("?")[0]
             if "/grocery/" in base_cat_url:
@@ -768,7 +767,7 @@ async def main_async():
     sent_deals = load_and_clean_sent()
     cookies = parse_playwright_cookies(TALABAT_COOKIES)
 
-    print(f"⚡ بدء الرادار المتوازي V8.0 (توليد روابط ?page=2,3,4... تلقائياً | خصم {MIN_DISCOUNT_PERCENT}%+)...")
+    print(f"⚡ بدء الرادار المتوازي V8.1 (مسار الفرع المباشر + تقليب الصفحات ?page=2,3,4... | خصم {MIN_DISCOUNT_PERCENT}%+)...")
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(
@@ -801,7 +800,7 @@ async def main_async():
             "visited": set(),
             "sent_deals": sent_deals,
             "sent_in_run": set(),
-            "store_base_url": "",
+            "store_base_url": STORE_BASE_URL,
             "scanned_count": 0,
             "skipped_count": 0,
             "total_products": 0,
@@ -826,7 +825,7 @@ async def main_async():
         await browser.close()
 
     if shared_state["total_products"] == 0:
-        maybe_send_alert(sent_deals, "لم يتم سحب أي منتجات — تأكد من صلاحية TALABAT_COOKIES.")
+        maybe_send_alert(sent_deals, "لم يتم سحب أي منتجات — تأكد من صلاحية TALABAT_COOKIES أو TALABAT_MART_URL.")
 
     save_sent(sent_deals)
     elapsed = round(time.time() - start_time, 1)
