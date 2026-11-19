@@ -28,12 +28,18 @@ MAX_REALISTIC_DISCOUNT = 92
 CACHE_TTL_DAYS = 7
 COOKIE_ALERT_COOLDOWN = 12 * 3600
 STATE_FILE = "sent_talabat.json"
-MAX_CATEGORIES_LIMIT = 110
+MAX_CATEGORIES_LIMIT = 115
 CONCURRENT_TABS = 5
+MAX_SCROLL_PASSES = 8  # 8 لفات تمرير لضمان سحب كل منتجات الأقسام الكبيرة
 
-# ================= أقسام الأولوية القصوى (السوبرماركت وخزين البيت أولاً) =================
-PRIORITY_CATEGORIES = [
-    "offer", "deal", "promo", "save", "discount", "عروض", "تخفيض", "خصم", "best-in-season",
+# ================= المستوى الأول: أقسام العروض والخصومات (تُفحص أولاً قبل أي شيء) =================
+DEALS_PRIORITY_CATEGORIES = [
+    "offer", "deal", "promo", "save", "discount", "clearance", "bundle", "value", "hot",
+    "عروض", "تخفيض", "خصم", "تصفية", "توفير", "best-in-season"
+]
+
+# ================= المستوى الثاني: أقسام السوبرماركت وخزين البيت =================
+SUPERMARKET_PRIORITY_CATEGORIES = [
     "cooking", "baking", "pantry", "cupboard", "rice", "pasta", "oil", "ghee", "sugar", "canned", "sauce",
     "poultry", "meat", "beef", "seafood", "fish", "deli", "cold-cuts",
     "dairy", "cheese", "milk", "egg", "yogurt", "butter",
@@ -451,14 +457,14 @@ DISCOVER_SIDEBAR_JS = r"""
 }
 """
 
-SCROLL_FAST_JS = """
+SCROLL_DEEP_JS = """
 () => {
-    window.scrollBy(0, 1800);
+    window.scrollBy(0, 2200);
     document.querySelectorAll("div, aside, nav, main, section, ul").forEach(el => {
         if (el.scrollHeight > el.clientHeight + 150) {
             const ov = window.getComputedStyle(el).overflowY;
             if (ov === "auto" || ov === "scroll") {
-                el.scrollBy(0, 1800);
+                el.scrollBy(0, 2200);
             }
         }
     });
@@ -471,9 +477,43 @@ def is_ignored_category(name, url):
     return any(k.lower() in s for k in IGNORED_CATEGORIES)
 
 
-def is_priority_category(name, url):
+def is_deals_category(name, url):
     s = f"{name} {url}".lower()
-    return any(k.lower() in s for k in PRIORITY_CATEGORIES)
+    return any(k.lower() in s for k in DEALS_PRIORITY_CATEGORIES)
+
+
+def is_supermarket_category(name, url):
+    s = f"{name} {url}".lower()
+    return any(k.lower() in s for k in SUPERMARKET_PRIORITY_CATEGORIES)
+
+
+def enqueue_category(shared_state, name, url):
+    """ترتيب الأقسام في الطابور حسب الأولوية: 1- العروض والخصومات | 2- السوبرماركت | 3- الباقي"""
+    if is_deals_category(name, url):
+        shared_state["deals_queue"].append((name, url))
+    elif is_supermarket_category(name, url):
+        shared_state["market_queue"].append((name, url))
+    else:
+        shared_state["other_queue"].append((name, url))
+
+
+def pop_next_category(shared_state):
+    """يسحب دائماً من طابور العروض أولاً، ثم السوبرماركت، ثم باقي الأقسام"""
+    if shared_state["deals_queue"]:
+        return shared_state["deals_queue"].popleft()
+    if shared_state["market_queue"]:
+        return shared_state["market_queue"].popleft()
+    if shared_state["other_queue"]:
+        return shared_state["other_queue"].popleft()
+    return None
+
+
+def total_remaining(shared_state):
+    return (
+        len(shared_state["deals_queue"])
+        + len(shared_state["market_queue"])
+        + len(shared_state["other_queue"])
+    )
 
 
 async def scan_single_category(context, cat_name, url, shared_state):
@@ -496,7 +536,7 @@ async def scan_single_category(context, cat_name, url, shared_state):
 
     try:
         await page.goto(url, wait_until="domcontentloaded", timeout=22000)
-        await asyncio.sleep(1.1)
+        await asyncio.sleep(1.0)
 
         if shared_state["scanned_count"] <= 2:
             body_txt = await page.inner_text("body")
@@ -522,9 +562,13 @@ async def scan_single_category(context, cat_name, url, shared_state):
         except Exception:
             pass
 
+        # 8 لفات تمرير عميقة مع توقف ذكي إذا انتهت منتجات القائمة تماماً
         dom_items = {}
         max_cards_seen = 0
-        for _ in range(3):
+        last_total_seen = -1
+        stagnant_passes = 0
+
+        for pass_idx in range(MAX_SCROLL_PASSES):
             sidebar_cats = await page.evaluate(DISCOVER_SIDEBAR_JS)
             for sc in sidebar_cats:
                 sc_url = sc["url"]
@@ -533,10 +577,7 @@ async def scan_single_category(context, cat_name, url, shared_state):
                     if is_ignored_category(sc["name"], sc_url):
                         shared_state["skipped_count"] += 1
                     elif len(shared_state["visited"]) < MAX_CATEGORIES_LIMIT + shared_state["skipped_count"]:
-                        if is_priority_category(sc["name"], sc_url):
-                            shared_state["queue"].appendleft((sc["name"], sc_url))
-                        else:
-                            shared_state["queue"].append((sc["name"], sc_url))
+                        enqueue_category(shared_state, sc["name"], sc_url)
 
             res = await page.evaluate(EXTRACT_DOM_JS)
             cards_now = res.get("totalCards", 0)
@@ -545,8 +586,17 @@ async def scan_single_category(context, cat_name, url, shared_state):
             for it in res.get("items", []):
                 dom_items[it["prodId"]] = it
 
-            await page.evaluate(SCROLL_FAST_JS)
-            await asyncio.sleep(0.4)
+            current_total = max(page_stats["total_seen"], max_cards_seen)
+            if pass_idx >= 2 and current_total == last_total_seen:
+                stagnant_passes += 1
+                if stagnant_passes >= 2:
+                    break
+            else:
+                stagnant_passes = 0
+            last_total_seen = current_total
+
+            await page.evaluate(SCROLL_DEEP_JS)
+            await asyncio.sleep(0.45)
 
         merged_items = {}
         for v in dom_items.values():
@@ -625,7 +675,7 @@ async def scan_single_category(context, cat_name, url, shared_state):
                         print(f"   {tag} [{disc}%]: {title_str[:40]} ({curr_p} ج)")
 
         idx = shared_state["scanned_count"]
-        rem = len(shared_state["queue"])
+        rem = total_remaining(shared_state)
         print(f"[{idx}/{idx + rem}] {cat_name[:26]:<26} | منتجات: {total_in_cat:<3} | مخفض: {len(merged_items):<2} | أعلى خصم: {max_disc}% | أُرسل: {sent_cnt}")
 
     except Exception as e:
@@ -639,7 +689,7 @@ async def main_async():
     sent_deals = load_and_clean_sent()
     cookies = parse_playwright_cookies(TALABAT_COOKIES)
 
-    print(f"⚡ بدء الرادار المتوازي V6.3 (أولوية السوبرماركت وخزين البيت | {CONCURRENT_TABS} تبويبات)...")
+    print(f"⚡ بدء الرادار المتوازي V6.4 (1- العروض أولاً | 2- السوبرماركت | {MAX_SCROLL_PASSES} لفات تمرير)...")
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(
@@ -655,7 +705,6 @@ async def main_async():
             extra_http_headers={"Accept-Language": "ar-EG,ar;q=0.9,en-US;q=0.8"}
         )
 
-        # حظر الصور والميديا والخطوط فقط لضمان ظهور القائمة الجانبية كاملة
         await context.route(
             "**/*",
             lambda route: route.abort()
@@ -666,16 +715,11 @@ async def main_async():
         if cookies:
             await context.add_cookies(cookies)
 
-        initial_queue = deque()
-        visited_set = set()
-        for label, u in SEED_URLS:
-            clean_u = u.split("?")[0].split("#")[0].rstrip("/")
-            initial_queue.append((label, clean_u))
-            visited_set.add(clean_u)
-
         shared_state = {
-            "queue": initial_queue,
-            "visited": visited_set,
+            "deals_queue": deque(),
+            "market_queue": deque(),
+            "other_queue": deque(),
+            "visited": set(),
             "sent_deals": sent_deals,
             "seen_titles": set(),
             "scanned_count": 0,
@@ -684,11 +728,18 @@ async def main_async():
             "total_sent": 0,
         }
 
-        while shared_state["queue"] and shared_state["scanned_count"] < MAX_CATEGORIES_LIMIT:
+        for label, u in SEED_URLS:
+            clean_u = u.split("?")[0].split("#")[0].rstrip("/")
+            shared_state["visited"].add(clean_u)
+            enqueue_category(shared_state, label, clean_u)
+
+        while total_remaining(shared_state) > 0 and shared_state["scanned_count"] < MAX_CATEGORIES_LIMIT:
             batch = []
-            while shared_state["queue"] and len(batch) < CONCURRENT_TABS and shared_state["scanned_count"] < MAX_CATEGORIES_LIMIT:
-                shared_state["scanned_count"] += 1
-                batch.append(shared_state["queue"].popleft())
+            while total_remaining(shared_state) > 0 and len(batch) < CONCURRENT_TABS and shared_state["scanned_count"] < MAX_CATEGORIES_LIMIT:
+                nxt = pop_next_category(shared_state)
+                if nxt:
+                    shared_state["scanned_count"] += 1
+                    batch.append(nxt)
 
             tasks = [scan_single_category(context, name, url, shared_state) for name, url in batch]
             await asyncio.gather(*tasks)
