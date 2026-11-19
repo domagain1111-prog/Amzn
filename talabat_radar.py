@@ -22,7 +22,7 @@ TALABAT_MART_URL = os.environ.get(
     "https://www.talabat.com/egypt/grocery/623082/talabat-mart"
 ).strip()
 
-MIN_DISCOUNT_PERCENT = 40
+MIN_DISCOUNT_PERCENT = 30
 CACHE_TTL_DAYS = 7
 COOKIE_ALERT_COOLDOWN = 12 * 3600
 STATE_FILE = "sent_talabat.json"
