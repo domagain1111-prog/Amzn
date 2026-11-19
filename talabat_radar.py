@@ -12,8 +12,9 @@ CHAT_ID = (os.environ.get("TALABAT_CHAT_ID") or os.environ.get("CHAT_ID") or "")
 TALABAT_COOKIES = os.environ.get("TALABAT_COOKIES", "").strip()
 
 # إحداثيات الموقع لتحديد فرع طلبات مارت الأقرب (مثال افتراضي: القاهرة الجديدة / المعادي - عدلها لإحداثياتك)
-LATITUDE = float(os.environ.get("TALABAT_LAT", "29.9602"))
-LONGITUDE = float(os.environ.get("TALABAT_LNG", "31.2569"))
+LATITUDE = float(os.environ.get("TALABAT_LAT") or "29.9602")
+LONGITUDE = float(os.environ.get("TALABAT_LNG") or "31.2569")
+
 
 # رابط متجر طلبات مارت الرئيسي في مصر (يمكنك وضع رابط فرع منطقتك مباشرة إذا أردت)
 TALABAT_MART_URL = os.environ.get(
