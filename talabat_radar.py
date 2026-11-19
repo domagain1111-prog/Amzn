@@ -450,11 +450,22 @@ EXTRACT_DOM_JS = r"""
 }
 """
 
-# العثور على شريط الترقيم (← 1 2 3 4 →) في أسفل الصفحة بدقة متناهية وإعطاء إحداثيات زرار الصفحة المطلوبة
+# تمرير الصفحة والحاويات الداخلية لأسفل لظهور شريط ترقيم الصفحات (← 1 2 3 4 →)
+SCROLL_ALL_TO_BOTTOM_JS = """
+() => {
+    window.scrollTo(0, document.body.scrollHeight);
+    document.querySelectorAll("div, main, section").forEach(el => {
+        if (el.scrollHeight > el.clientHeight + 100 && el.clientWidth > 400) {
+            el.scrollTop = el.scrollHeight;
+        }
+    });
+}
+"""
+
+# العثور على شريط الترقيم (← 1 2 3 4 →) وإعطاء إحداثيات زرار الصفحة المطلوبة
 FIND_PAGINATION_BUTTON_JS = r"""
 (targetPageNum) => {
     const targetStr = String(targetPageNum);
-    // جمع كل المربعات الصغيرة التي تحتوي على أرقام صفحات (1, 2, 3...)
     const boxes = [];
     const allEls = Array.from(document.querySelectorAll("button, a, li, div, span"));
     for (const el of allEls) {
@@ -462,19 +473,18 @@ FIND_PAGINATION_BUTTON_JS = r"""
         const txt = (el.innerText || "").trim();
         if (!/^[1-9]\d?$/.test(txt)) continue;
         const rect = el.getBoundingClientRect();
-        if (rect.width >= 15 && rect.width <= 65 && rect.height >= 15 && rect.height <= 65 && rect.left > 220) {
+        if (rect.width >= 14 && rect.width <= 70 && rect.height >= 14 && rect.height <= 70 && rect.left > 220) {
             boxes.push({ el, txt, rect });
         }
     }
 
-    // البحث عن عنصر برقم الصفحة المطلوبة بحيث يوجد بجانبه أفقياً رقم صفحة آخر (مثل "1" و "2" في نفس السطر)
     for (const b of boxes) {
         if (b.txt !== targetStr) continue;
         const hasSiblingInSameRow = boxes.some(other =>
             other !== b &&
             other.txt !== b.txt &&
-            Math.abs(other.rect.top - b.rect.top) < 12 &&
-            Math.abs(other.rect.left - b.rect.left) < 350
+            Math.abs(other.rect.top - b.rect.top) < 15 &&
+            Math.abs(other.rect.left - b.rect.left) < 400
         );
         if (hasSiblingInSameRow) {
             b.el.scrollIntoView({ block: "center" });
@@ -601,18 +611,16 @@ async def scan_single_category(context, cat_name, url, shared_state):
         prev_page_signature = None
 
         for page_num in range(1, MAX_PAGES_PER_CATEGORY + 1):
-            # 1. النزول لأسفل الصفحة أولاً ليظهر شريط الترقيم (← 1 2 3 4 →)
-            await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+            await page.evaluate(SCROLL_ALL_TO_BOTTOM_JS)
             await asyncio.sleep(0.35)
 
             if page_num > 1:
-                # 2. البحث عن إحداثيات مربع رقم الصفحة التالية (2, 3, 4...) وضغطه بالماوس الحقيقي
                 coords = await page.evaluate(FIND_PAGINATION_BUTTON_JS, page_num)
                 if not coords:
                     break
                 await page.mouse.click(coords["x"], coords["y"])
                 await asyncio.sleep(1.2)
-                await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+                await page.evaluate(SCROLL_ALL_TO_BOTTOM_JS)
                 await asyncio.sleep(0.3)
 
             if page_num == 1:
@@ -667,10 +675,6 @@ async def scan_single_category(context, cat_name, url, shared_state):
         sent_cnt = 0
 
         for norm_key, it in merged_items.items():
-            if norm_key in shared_state["seen_titles"]:
-                continue
-            shared_state["seen_titles"].add(norm_key)
-
             curr_p = it["currPrice"]
             old_p = it.get("oldPrice", 0)
             is_price_drop = False
@@ -698,6 +702,12 @@ async def scan_single_category(context, cat_name, url, shared_state):
                 max_disc = disc
 
             if MIN_DISCOUNT_PERCENT <= disc <= MAX_REALISTIC_DISCOUNT:
+                # منع الإرسال المكرر في نفس اللفة فقط بعد التأكد أن المنتج يستحق الإرسال
+                sent_dedup_key = f"{norm_key}_{curr_p}"
+                if sent_dedup_key in shared_state["sent_in_run"]:
+                    continue
+                shared_state["sent_in_run"].add(sent_dedup_key)
+
                 title_str = it["title"]
                 unique_key = it["prodId"]
                 title_cache_key = f"TITLE_{norm_key[:32]}"
@@ -762,7 +772,7 @@ async def main_async():
     sent_deals = load_and_clean_sent()
     cookies = parse_playwright_cookies(TALABAT_COOKIES)
 
-    print(f"⚡ بدء الرادار المتوازي V7.3 (تقليب الصفحات 1..{MAX_PAGES_PER_CATEGORY} | خصم {MIN_DISCOUNT_PERCENT}%+)...")
+    print(f"⚡ بدء الرادار المتوازي V7.4 (سكرول الحاوية الداخلية + تقليب الصفحات 1..{MAX_PAGES_PER_CATEGORY})...")
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(
@@ -794,7 +804,7 @@ async def main_async():
             "other_queue": deque(),
             "visited": set(),
             "sent_deals": sent_deals,
-            "seen_titles": set(),
+            "sent_in_run": set(),
             "scanned_count": 0,
             "skipped_count": 0,
             "total_products": 0,
