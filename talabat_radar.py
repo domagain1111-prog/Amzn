@@ -21,10 +21,11 @@ SEED_URLS = [
     ("عروض الموسم", "https://www.talabat.com/egypt/talabat-mart/fruit-veg/best-in-season"),
 ]
 
-MIN_DISCOUNT_PERCENT = 40
-FLASH_DISCOUNT_PERCENT = 65
+MIN_DISCOUNT_PERCENT = 25      # الحد الأدنى للخصم أو الهبوط المفاجئ في السعر
+FLASH_DISCOUNT_PERCENT = 50    # الحد الأدنى للتنبيه الناري
 MAX_REALISTIC_DISCOUNT = 92
 CACHE_TTL_DAYS = 7
+PRICE_HISTORY_TTL_DAYS = 21    # مدة الاحتفاظ بسجل الأسعار التاريخي (3 أسابيع)
 COOKIE_ALERT_COOLDOWN = 12 * 3600
 STATE_FILE = "sent_talabat.json"
 MAX_CATEGORIES_LIMIT = 115
@@ -58,10 +59,11 @@ IGNORED_CATEGORIES = [
 ]
 
 
-# ================= إدارة الكاش ومنع التكرار =================
+# ================= إدارة الكاش وسجل الأسعار التاريخي =================
 def load_and_clean_sent():
     now = int(time.time())
     cutoff = now - (CACHE_TTL_DAYS * 86400)
+    hist_cutoff = now - (PRICE_HISTORY_TTL_DAYS * 86400)
     data = {}
     if os.path.exists(STATE_FILE):
         try:
@@ -73,7 +75,17 @@ def load_and_clean_sent():
             pass
 
     cleaned = {}
+    price_history = {}
+
+    raw_hist = data.get("__PRICE_HISTORY__")
+    if isinstance(raw_hist, dict):
+        for hk, hv in raw_hist.items():
+            if isinstance(hv, dict) and hv.get("ts", 0) >= hist_cutoff and hv.get("p", 0) > 0:
+                price_history[hk] = hv
+
     for k, v in data.items():
+        if k == "__PRICE_HISTORY__":
+            continue
         if k == "__ALERT_TS__":
             if isinstance(v, (int, float)) and (now - v) < 86400:
                 cleaned[k] = v
@@ -83,6 +95,8 @@ def load_and_clean_sent():
                 cleaned[k] = v
         elif isinstance(v, (int, float)):
             cleaned[k] = {"price": v, "ts": now}
+
+    cleaned["__PRICE_HISTORY__"] = price_history
     return cleaned
 
 
@@ -277,7 +291,7 @@ def parse_playwright_cookies(raw_json):
     return cleaned
 
 
-# ================= استخراج المنتجات من JSON والواجهة =================
+# ================= استخراج كل المنتجات (المخفضة والعادية لمراقبة الأسعار) =================
 def normalize_title(title):
     return re.sub(r"\s+", " ", str(title)).strip()
 
@@ -306,15 +320,17 @@ def walk_talabat_json(obj, api_products, stats):
             old_val = float(old_price) if old_price is not None else 0.0
 
             if name and isinstance(name, str) and len(name.strip()) > 3 and p_val >= 2:
-                stats["seen_titles"].add(normalize_title(name).lower())
-                if old_val > p_val:
-                    clean_name = normalize_title(name)
-                    key = str(prod_id) if prod_id else f"API_{clean_name[:40]}"
+                clean_name = normalize_title(name)
+                stats["seen_titles"].add(clean_name.lower())
+                key = str(prod_id) if prod_id else f"API_{clean_name[:40]}"
+                existing = api_products.get(key)
+                # نحفظ المنتج سواء كان عليه oldPrice أو لا، مع تفضيل النسخة التي تحتوي على oldPrice أعلى
+                if not existing or old_val > existing.get("oldPrice", 0):
                     api_products[key] = {
                         "prodId": key,
                         "title": clean_name,
                         "currPrice": p_val,
-                        "oldPrice": old_val,
+                        "oldPrice": old_val if old_val > p_val else 0.0,
                         "imgUrl": str(img),
                         "productUrl": str(raw_url),
                         "slug": str(slug),
@@ -353,7 +369,7 @@ EXTRACT_DOM_JS = r"""
         return (st.textDecorationLine || st.textDecoration || "").includes("line-through");
     }
 
-    const discounted = new Map();
+    const products = new Map();
     const allCardTitles = [];
 
     const imgs = Array.from(document.querySelectorAll("img")).filter(img => {
@@ -384,7 +400,8 @@ EXTRACT_DOM_JS = r"""
             });
             title = lines[0] || "";
         }
-        if (title) allCardTitles.push(title);
+        if (!title) return;
+        allCardTitles.push(title);
 
         const oldPrices = [];
         const currPrices = [];
@@ -411,18 +428,18 @@ EXTRACT_DOM_JS = r"""
             }
         });
 
-        if (currPrices.length === 0 || oldPrices.length === 0 || !title) return;
+        if (currPrices.length === 0) return;
 
         const linkEl = bestCard.querySelector("a[href*='/product/']") || bestCard.querySelector("a[href]") || bestCard.closest("a[href]");
         const href = linkEl ? linkEl.href : "";
 
         const key = ("DOM_" + title.slice(0, 40));
-        if (!discounted.has(key)) {
-            discounted.set(key, {
+        if (!products.has(key)) {
+            products.set(key, {
                 prodId: key,
                 title: title.replace(/\s+/g, " ").trim(),
                 currPrice: Math.min(...currPrices),
-                oldPrice: Math.max(...oldPrices),
+                oldPrice: oldPrices.length > 0 ? Math.max(...oldPrices) : 0,
                 imgUrl: img.src || "",
                 productUrl: href,
                 slug: ""
@@ -430,7 +447,7 @@ EXTRACT_DOM_JS = r"""
         }
     });
 
-    return { allCardTitles, items: Array.from(discounted.values()) };
+    return { allCardTitles, items: Array.from(products.values()) };
 }
 """
 
@@ -499,13 +516,11 @@ def total_remaining(shared_state):
 
 
 async def try_click_next_page(page, target_page_num):
-    """يحاول الضغط بالماوس الحقيقي على رقم الصفحة التالية باستخدام Playwright Locators"""
     target_str = str(target_page_num)
     try:
-        # البحث عن العنصر الذي يحتوي على رقم الصفحة بالضبط في أسفل الصفحة
         candidates = page.get_by_text(target_str, exact=True)
         count = await candidates.count()
-        for i in range(count - 1, -1, -1):  # نبدأ من آخر عنصر في الصفحة (أسفل القائمة)
+        for i in range(count - 1, -1, -1):
             el = candidates.nth(i)
             box = await el.bounding_box()
             if box and 14 <= box["width"] <= 70 and 14 <= box["height"] <= 70 and box["x"] > 240:
@@ -603,13 +618,18 @@ async def scan_single_category(context, cat_name, url, shared_state):
             for it in res.get("items", []):
                 dom_items[it["prodId"]] = it
 
+        # دمج كل المنتجات (سواء عليها oldPrice مشطوب أو لا)
         merged_items = {}
         for v in dom_items.values():
             merged_items[v["title"][:40].lower()] = v
         for v in api_products.values():
             k = v["title"][:40].lower()
-            if k in merged_items and not v.get("productUrl") and merged_items[k].get("productUrl"):
-                v["productUrl"] = merged_items[k]["productUrl"]
+            existing = merged_items.get(k)
+            if existing:
+                if not v.get("productUrl") and existing.get("productUrl"):
+                    v["productUrl"] = existing["productUrl"]
+                if existing.get("oldPrice", 0) > v.get("oldPrice", 0):
+                    v["oldPrice"] = existing["oldPrice"]
             merged_items[k] = v
 
         total_in_cat = max(len(page_stats["seen_titles"]), len(merged_items))
@@ -618,6 +638,9 @@ async def scan_single_category(context, cat_name, url, shared_state):
         if total_in_cat > 0:
             shared_state["sent_deals"].pop("__ALERT_TS__", None)
 
+        price_history = shared_state["sent_deals"].setdefault("__PRICE_HISTORY__", {})
+        now_ts = int(time.time())
+        discounted_count = 0
         max_disc = 0
         sent_cnt = 0
 
@@ -627,10 +650,31 @@ async def scan_single_category(context, cat_name, url, shared_state):
             shared_state["seen_titles"].add(norm_key)
 
             curr_p = it["currPrice"]
-            old_p = it["oldPrice"]
+            old_p = it.get("oldPrice", 0)
+            is_price_drop = False
+
+            # تحديث ومقارنة السعر التاريخي لاكتشاف الهبوط المفاجئ بدون سعر مشطوب
+            hist_entry = price_history.get(norm_key)
+            if hist_entry and isinstance(hist_entry, dict):
+                hist_p = hist_entry.get("p", 0)
+                if old_p <= curr_p and hist_p > curr_p:
+                    # السعر نزل مقارنة بآخر تشغيلة مسجلة!
+                    old_p = hist_p
+                    is_price_drop = True
+                elif curr_p > hist_p:
+                    # السعر رجع ارتفع -> نحدث السعر المرجعي الأعلى
+                    price_history[norm_key] = {"p": curr_p, "ts": now_ts}
+                else:
+                    hist_entry["ts"] = now_ts
+            else:
+                # أول مرة نشوف المنتج -> نسجل سعره الأساسي للمقارنة مستقبلاً
+                base_p = old_p if old_p > curr_p else curr_p
+                price_history[norm_key] = {"p": base_p, "ts": now_ts}
+
             if old_p <= curr_p or old_p > curr_p * 12:
                 continue
 
+            discounted_count += 1
             disc = round(((old_p - curr_p) / old_p) * 100)
             if disc > max_disc and disc <= MAX_REALISTIC_DISCOUNT:
                 max_disc = disc
@@ -651,18 +695,22 @@ async def scan_single_category(context, cat_name, url, shared_state):
                     unit_info = calculate_unit_price_info(title_str, curr_p)
                     unit_line = f"\n{unit_info}" if unit_info else ""
 
-                    header = (
-                        f"🚨 تصفية نارية في Talabat Mart بخصم {disc}%! 🔥"
-                        if disc >= FLASH_DISCOUNT_PERCENT
-                        else f"🟠 لقطة Talabat Mart بخصم {disc}%!"
-                    )
+                    if is_price_drop:
+                        header = f"📉 هبوط مفاجئ في السعر بنسبة {disc}%! 🔥"
+                        old_label = f"❌ السعر السابق المسجل: {old_p} EGP (وفرت {saved_egp} ج)"
+                    elif disc >= FLASH_DISCOUNT_PERCENT:
+                        header = f"🚨 تصفية نارية في Talabat Mart بخصم {disc}%! 🔥"
+                        old_label = f"❌ السعر القديم: {old_p} EGP (وفرت {saved_egp} ج)"
+                    else:
+                        header = f"🟠 لقطة Talabat Mart بخصم {disc}%!"
+                        old_label = f"❌ السعر القديم: {old_p} EGP (وفرت {saved_egp} ج)"
 
                     caption = (
                         f"{header}\n"
                         f"🏷️ القائمة: {display_cat}\n\n"
                         f"📦 {title_str}\n"
                         f"💰 السعر الجديد: {curr_p} EGP\n"
-                        f"❌ السعر القديم: {old_p} EGP (وفرت {saved_egp} ج)"
+                        f"{old_label}"
                         f"{unit_line}"
                     )
 
@@ -674,15 +722,17 @@ async def scan_single_category(context, cat_name, url, shared_state):
                     if send_telegram_deal(caption, img_url=it.get("imgUrl", ""), buttons=buttons):
                         record_deal(shared_state["sent_deals"], unique_key, curr_p)
                         record_deal(shared_state["sent_deals"], title_cache_key, curr_p)
+                        # تحديث السعر التاريخي للسعر الجديد بعد الإرسال حتى لا يتكرر التنبيه
+                        price_history[norm_key] = {"p": curr_p, "ts": now_ts}
                         sent_cnt += 1
                         shared_state["total_sent"] += 1
-                        tag = "🚨 تصفية" if disc >= FLASH_DISCOUNT_PERCENT else "✅ لقطة"
+                        tag = "📉 هبوط" if is_price_drop else ("🚨 تصفية" if disc >= FLASH_DISCOUNT_PERCENT else "✅ لقطة")
                         print(f"   {tag} [{disc}%]: {title_str[:40]} ({curr_p} ج)")
 
         idx = shared_state["scanned_count"]
         rem = total_remaining(shared_state)
         pg_tag = f"({pages_visited_in_cat}ص)" if pages_visited_in_cat > 1 else ""
-        print(f"[{idx}/{idx + rem}] {cat_name[:23]:<23} {pg_tag:<4} | منتجات: {total_in_cat:<3} | مخفض: {len(merged_items):<2} | أعلى خصم: {max_disc}% | أُرسل: {sent_cnt}")
+        print(f"[{idx}/{idx + rem}] {cat_name[:23]:<23} {pg_tag:<4} | منتجات: {total_in_cat:<3} | مخفض: {discounted_count:<2} | أعلى خصم: {max_disc}% | أُرسل: {sent_cnt}")
 
     except Exception as e:
         print(f"❌ خطأ في {cat_name}: {e}")
@@ -695,7 +745,7 @@ async def main_async():
     sent_deals = load_and_clean_sent()
     cookies = parse_playwright_cookies(TALABAT_COOKIES)
 
-    print(f"⚡ بدء الرادار المتوازي V7.1 (سريع + متكامل | {CONCURRENT_TABS} تبويبات)...")
+    print(f"⚡ بدء الرادار المتوازي V7.2 (خصم {MIN_DISCOUNT_PERCENT}%+ | تتبع هبوط الأسعار المفاجئ)...")
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(
@@ -757,7 +807,8 @@ async def main_async():
 
     save_sent(sent_deals)
     elapsed = round(time.time() - start_time, 1)
-    print(f"\n🏁 اكتمل المسح المتوازي في {elapsed} ثانية! | قوائم: {shared_state['scanned_count']} (تخطي {shared_state['skipped_count']}) | منتجات: {shared_state['total_products']} | مرسل: {shared_state['total_sent']}")
+    hist_size = len(sent_deals.get("__PRICE_HISTORY__", {}))
+    print(f"\n🏁 اكتمل المسح المتوازي في {elapsed} ثانية! | قوائم: {shared_state['scanned_count']} | منتجات: {shared_state['total_products']} | سجل الأسعار: {hist_size} | مرسل: {shared_state['total_sent']}")
 
 
 if __name__ == "__main__":
