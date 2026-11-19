@@ -25,7 +25,8 @@ MAX_REALISTIC_DISCOUNT = 92
 CACHE_TTL_DAYS = 7
 COOKIE_ALERT_COOLDOWN = 12 * 3600
 STATE_FILE = "sent_talabat.json"
-MAX_WORKERS = 10  # عدد الأقسام التي تُفحص في نفس اللحظة بالتوازي
+MAX_CATEGORIES_LIMIT = 130
+MAX_WORKERS = 10
 
 IGNORED_CATEGORIES = [
     "pet", "dog", "cat", "حيوانات", "قطط", "كلاب",
@@ -213,7 +214,6 @@ def normalize_title(title):
 
 def walk_talabat_json(obj, products_out, stats, discovered_urls):
     if isinstance(obj, dict):
-        # التقاط روابط الأقسام الفرعية من شجرة التصنيفات إن وجدت في الـ JSON
         slug = obj.get("slug") or obj.get("url") or obj.get("href") or ""
         if isinstance(slug, str) and "/talabat-mart/" in slug and "/product/" not in slug:
             full_u = slug if slug.startswith("http") else f"https://www.talabat.com{slug}"
@@ -223,7 +223,6 @@ def walk_talabat_json(obj, products_out, stats, discovered_urls):
                 cat_label = obj.get("name") or obj.get("title") or after.split("/")[-1].replace("-", " ").title()
                 discovered_urls[clean_u] = normalize_title(cat_label)
 
-        # التقاط المنتجات والأسعار
         name = obj.get("name") or obj.get("title") or obj.get("productName")
         price = obj.get("price") or obj.get("discountedPrice") or obj.get("finalPrice")
         old_price = (
@@ -268,7 +267,6 @@ def walk_talabat_json(obj, products_out, stats, discovered_urls):
 
 
 def extract_links_from_html(html, discovered_urls):
-    # استخراج جميع روابط الأقسام الفرعية من HTML مباشرة باستخدام Regex فائق السرعة
     matches = re.findall(r'href=["\']((?:https://www\.talabat\.com)?/egypt/talabat-mart/[^"\'?#]+)["\']', html)
     for m in matches:
         full_u = m if m.startswith("http") else f"https://www.talabat.com{m}"
@@ -287,7 +285,6 @@ def is_ignored_category(name, url):
 
 
 def fetch_and_parse_category(cat_name, url, cookies_dict):
-    """يجلب الصفحة بـ curl_cffi ويستخرج منها كل المنتجات والروابط الفرعية في جزء من الثانية"""
     products_out = {}
     stats = {"total_seen": 0}
     discovered_urls = {}
@@ -310,14 +307,12 @@ def fetch_and_parse_category(cat_name, url, cookies_dict):
         html = resp.text
         extract_links_from_html(html, discovered_urls)
 
-        # استخراج اسم القسم الحقيقي من <h1> إن وجد
         h1_m = re.search(r"<h1[^>]*>(.*?)</h1>", html, flags=re.IGNORECASE | re.DOTALL)
         if h1_m:
             clean_h1 = re.sub(r"<[^>]+>", "", h1_m.group(1)).strip()
             if len(clean_h1) > 2:
                 cat_title = clean_h1
 
-        # استخراج كل كتل JSON المدمجة في الصفحة (مثل __NEXT_DATA__)
         json_blocks = re.findall(r'<script[^>]*type=["\']application/json["\'][^>]*>(.*?)</script>', html, flags=re.DOTALL)
         for jb in json_blocks:
             try:
@@ -349,7 +344,6 @@ def main():
     total_products_scanned_all = 0
     seen_titles_in_run = set()
 
-    # التشغيل على دفعات متوازية (Batch Parallel Execution)
     while pending and scanned_count < MAX_CATEGORIES_LIMIT:
         batch = pending[:MAX_WORKERS]
         pending = pending[MAX_WORKERS:]
@@ -368,7 +362,6 @@ def main():
                     print(f"[{scanned_count}] ⚠️ {cat_title}: {err}")
                     continue
 
-                # إضافة أي أقسام فرعية جديدة تم اكتشافها
                 for d_url, d_name in discovered_urls.items():
                     if d_url not in visited:
                         visited.add(d_url)
