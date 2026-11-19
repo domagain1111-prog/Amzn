@@ -3,6 +3,7 @@ import re
 import json
 import time
 import urllib.parse
+from collections import deque
 import requests
 from playwright.sync_api import sync_playwright
 
@@ -11,17 +12,20 @@ TELEGRAM_TOKEN = (os.environ.get("TALABAT_TELEGRAM_TOKEN") or os.environ.get("TE
 CHAT_ID = (os.environ.get("TALABAT_CHAT_ID") or os.environ.get("CHAT_ID") or "").strip()
 TALABAT_COOKIES = os.environ.get("TALABAT_COOKIES", "").strip()
 
-# إحداثيات الموقع لتحديد فرع طلبات مارت (الافتراضي: الإسكندرية)
+# إحداثيات الموقع (الإسكندرية كافتراضي)
 LATITUDE = float(os.environ.get("TALABAT_LAT") or "31.2156")
 LONGITUDE = float(os.environ.get("TALABAT_LNG") or "29.9553")
 
-# رابط متجر طلبات مارت الرئيسي
-TALABAT_MART_URL = (os.environ.get("TALABAT_MART_URL") or "https://www.talabat.com/egypt/grocery/623082/talabat-mart").strip()
+# نقطة البداية لاكتشاف كل القوائم الرئيسية والفرعية في طلبات مارت
+START_URL = (os.environ.get("TALABAT_MART_URL") or "https://www.talabat.com/egypt/talabat-mart/fruit-veg/best-in-season").strip()
+if "/talabat-mart" not in START_URL:
+    START_URL = "https://www.talabat.com/egypt/talabat-mart/fruit-veg/best-in-season"
 
-MIN_DISCOUNT_PERCENT = 30
+MIN_DISCOUNT_PERCENT = 40
 CACHE_TTL_DAYS = 7
 COOKIE_ALERT_COOLDOWN = 12 * 3600
 STATE_FILE = "sent_talabat.json"
+MAX_CATEGORIES_LIMIT = 150  # حد أمان لمنع الدوران اللانهائي
 
 
 # ================= إدارة الكاش ومنع التكرار =================
@@ -131,7 +135,7 @@ def maybe_send_alert(sent_deals, reason):
         alert_msg = (
             "⚠️ تنبيه من رادار Talabat Mart!\n\n"
             f"السبب: {reason}\n"
-            "📍 تأكد من صلاحية TALABAT_COOKIES أو إحداثيات العنوان (TALABAT_LAT / TALABAT_LNG) وأن فرع طلبات مارت متاح في المنطقة."
+            "📍 تأكد من صلاحية TALABAT_COOKIES أو إحداثيات العنوان (TALABAT_LAT / TALABAT_LNG)."
         )
         if send_telegram_text(alert_msg):
             sent_deals["__ALERT_TS__"] = now
@@ -144,7 +148,7 @@ def parse_playwright_cookies(raw_json):
     try:
         raw_list = json.loads(raw_json)
     except Exception:
-        print("⚠️ صيغة TALABAT_COOKIES غير صحيحة! تأكد من نسخها بصيغة Export as JSON.")
+        print("⚠️ صيغة TALABAT_COOKIES غير صحيحة!")
         return []
 
     now_sec = int(time.time())
@@ -177,9 +181,8 @@ def parse_playwright_cookies(raw_json):
     return cleaned
 
 
-# ================= التقاط البيانات من API طلبات (Network Sniffer) =================
+# ================= التقاط البيانات من API طلبات =================
 def walk_talabat_json(obj, api_products):
-    """يستخرج المنتجات المخفضة مباشرة من استجابات API الخاصة بطلبات مارت"""
     if isinstance(obj, dict):
         name = obj.get("name") or obj.get("title") or obj.get("productName")
         price = obj.get("price") or obj.get("discountedPrice") or obj.get("finalPrice")
@@ -321,56 +324,71 @@ EXTRACT_DOM_JS = r"""
 }
 """
 
-DISCOVER_CATEGORIES_JS = r"""
+# استخراج جميع روابط القوائم الرئيسية والفرعية من القائمة الجانبية
+DISCOVER_SIDEBAR_JS = r"""
 () => {
-    const links = Array.from(document.querySelectorAll("a[href]"));
-    const cats = new Map();
+    const links = Array.from(document.querySelectorAll("a[href*='/talabat-mart/']"));
+    const found = new Map();
     for (const a of links) {
-        const href = a.href || "";
+        const cleanUrl = (a.href || "").split("?")[0].split("#")[0].replace(/\/$/, "");
+        // استبعاد روابط المنتجات الفردية (التي تحتوي على /product/) والاحتفاظ بروابط القوائم فقط
+        if (!cleanUrl || cleanUrl.includes("/product/") || cleanUrl.endsWith("/talabat-mart")) continue;
+
         const txt = (a.innerText || "").trim().replace(/\s+/g, " ");
-        if (
-            (href.includes("/grocery/") || href.includes("/talabat-mart") || href.includes("/tmart-")) &&
-            (href.includes("category") || href.includes("aisle") || href.includes("collection") || href.split("/").length >= 6) &&
-            txt.length >= 2 && txt.length <= 45 &&
-            !/^(?:الرئيسية|Home|تسجيل|Login|السلة|Cart)$/i.test(txt)
-        ) {
-            if (!cats.has(href)) {
-                cats.set(href, txt);
-            }
+        if (txt.length >= 2 && txt.length <= 50 && !found.has(cleanUrl)) {
+            found.set(cleanUrl, txt);
         }
     }
-    return Array.from(cats.entries()).map(([url, name]) => ({ name, url }));
+    return Array.from(found.entries()).map(([url, name]) => ({ name, url }));
 }
 """
 
-SCROLL_JS = """
+# تمرير القائمة الجانبية وصفحة المنتجات معاً
+SCROLL_ALL_JS = """
 () => {
-    window.scrollBy(0, 850);
-    document.querySelectorAll("div, main, section").forEach(el => {
-        if (el.scrollHeight > el.clientHeight + 250) {
+    window.scrollBy(0, 900);
+    document.querySelectorAll("div, aside, nav, main, section, ul").forEach(el => {
+        if (el.scrollHeight > el.clientHeight + 150) {
             const ov = window.getComputedStyle(el).overflowY;
-            if (ov === "auto" || ov === "scroll") el.scrollBy(0, 850);
+            if (ov === "auto" || ov === "scroll") {
+                el.scrollBy(0, 900);
+            }
         }
     });
 }
 """
 
 
+def get_breadcrumb_or_title(page, fallback_name):
+    """يجلب المسار الكامل للقسم مثل: Fruit & Veg > Best in season"""
+    try:
+        heading = page.evaluate("""() => {
+            const h = document.querySelector("h1, h2");
+            return h ? h.innerText.trim() : "";
+        }""")
+        if heading and len(heading) > 2:
+            return heading
+    except Exception:
+        pass
+    return fallback_name
+
+
 def main():
     sent_deals = load_and_clean_sent()
     cookies = parse_playwright_cookies(TALABAT_COOKIES)
 
-    print(f"⚡ بدء فحص Talabat Mart الشامل (خصم فعلي {MIN_DISCOUNT_PERCENT}%+)...")
+    print(f"⚡ بدء المسح الشجري الشامل لكل قوائم Talabat Mart (خصم فعلي {MIN_DISCOUNT_PERCENT}%+)...")
 
     with sync_playwright() as p:
         browser = p.chromium.launch(
             headless=True,
             args=["--disable-blink-features=AutomationControlled"]
         )
+        # استخدام شاشة Desktop لإظهار القائمة الجانبية (Categories) وكل القوائم الفرعية
         context = browser.new_context(
-            user_agent="Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36",
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
             locale="ar-EG",
-            viewport={"width": 412, "height": 915},
+            viewport={"width": 1366, "height": 900},
             geolocation={"latitude": LATITUDE, "longitude": LONGITUDE},
             permissions=["geolocation"],
             extra_http_headers={"Accept-Language": "ar-EG,ar;q=0.9,en-US;q=0.8"}
@@ -395,51 +413,34 @@ def main():
 
         page.on("response", on_response)
 
-        # 1. فتح الصفحة الرئيسية لطلبات مارت لاكتشاف جميع الأقسام
-        print(f"🔍 فتح متجر طلبات مارت واكتشاف الأقسام...")
-        try:
-            page.goto(TALABAT_MART_URL, wait_until="domcontentloaded", timeout=40000)
-            time.sleep(5)
-        except Exception as e:
-            print(f"❌ تعذر فتح صفحة طلبات مارت: {e}")
-            maybe_send_alert(sent_deals, f"تعذر الوصول لصفحة طلبات مارت: {e}")
-            browser.close()
-            return
+        # طابور الزحف الديناميكي (يبدأ من الرابط المحدد ويكتشف كل القوائم الرئيسية والفرعية تلقائياً)
+        clean_start = START_URL.split("?")[0].split("#")[0].rstrip("/")
+        queue = deque([("القسم الافتتاحي", clean_start)])
+        visited = {clean_start}
 
-        body_txt = page.inner_text("body")
-        if "غير متاح" in body_txt or "not available in your area" in body_txt.lower() or "select your area" in body_txt.lower():
-            print("⚠️ طلبات مارت غير متاح للإحداثيات الحالية أو يطلب تحديد العنوان.")
-            maybe_send_alert(sent_deals, "المتجر يطلب تحديد المنطقة أو غير متاح حالياً في الإحداثيات المضبوطة.")
+        scanned_count = 0
+        total_sent_all = 0
 
-        for _ in range(4):
-            page.evaluate(SCROLL_JS)
-            time.sleep(1.2)
-
-        discovered = page.evaluate(DISCOVER_CATEGORIES_JS)
-        targets = [("الصفحة الرئيسية والعروض", TALABAT_MART_URL)]
-        seen_urls = {TALABAT_MART_URL}
-
-        for cat in discovered:
-            u = cat["url"]
-            if u not in seen_urls:
-                seen_urls.add(u)
-                targets.append((cat["name"], u))
-
-        print(f"📂 تم اكتشاف {len(targets)} قسم/صفحة داخل طلبات مارت للفحص.")
-
-        # تنظيف الرابط الأساسي للمتجر لاستخدامه في البحث المباشر عند فتح الروابط من الموبايل
-        base_store = TALABAT_MART_URL.split("?")[0].rstrip("/")
-
-        # 2. المرور على كل الأقسام واستخراج العروض
-        for idx, (cat_name, url) in enumerate(targets, 1):
-            print(f"\n[{idx}/{len(targets)}] فحص قسم: {cat_name}...")
+        while queue and scanned_count < MAX_CATEGORIES_LIMIT:
+            cat_name, url = queue.popleft()
+            scanned_count += 1
             api_products.clear()
 
+            print(f"\n[{scanned_count} | المتبقي في الطابور: {len(queue)}] فحص قائمة: {cat_name}...")
             try:
-                if idx > 1:
-                    page.goto(url, wait_until="domcontentloaded", timeout=35000)
-                    time.sleep(3.5)
+                page.goto(url, wait_until="domcontentloaded", timeout=35000)
+                time.sleep(3.5)
 
+                if scanned_count == 1:
+                    body_txt = page.inner_text("body")
+                    if "غير متاح" in body_txt or "not available in your area" in body_txt.lower():
+                        print("⚠️ طلبات مارت غير متاح للإحداثيات الحالية.")
+                        maybe_send_alert(sent_deals, "طلبات مارت غير متاح للإحداثيات الحالية.")
+
+                # جلب اسم المسار الكامل للقسم (مثل Fruit & Veg > Best in season)
+                display_cat = get_breadcrumb_or_title(page, cat_name)
+
+                # استخراج JSON المدمج في الصفحة
                 try:
                     next_scripts = page.evaluate(
                         """() => Array.from(document.querySelectorAll("script#__NEXT_DATA__, script[type='application/json']")).map(s => s.textContent)"""
@@ -453,11 +454,20 @@ def main():
                 except Exception:
                     pass
 
+                # التمرير لتحميل جميع منتجات القائمة + تمرير القائمة الجانبية لاكتشاف القوائم الفرعية الجديدة
                 last_total = 0
                 stagnant = 0
                 dom_items = {}
 
-                for _ in range(16):
+                for _ in range(22):
+                    # التقاط أي قوائم رئيسية أو فرعية ظهرت في القائمة الجانبية وإضافتها للطابور
+                    sidebar_cats = page.evaluate(DISCOVER_SIDEBAR_JS)
+                    for sc in sidebar_cats:
+                        sc_url = sc["url"]
+                        if sc_url not in visited and (len(visited) < MAX_CATEGORIES_LIMIT):
+                            visited.add(sc_url)
+                            queue.append((sc["name"], sc_url))
+
                     extracted = page.evaluate(EXTRACT_DOM_JS)
                     for it in extracted:
                         dom_items[it["prodId"]] = it
@@ -472,8 +482,8 @@ def main():
                     if stagnant >= 4 and total_now > 0:
                         break
 
-                    page.evaluate(SCROLL_JS)
-                    time.sleep(1.2)
+                    page.evaluate(SCROLL_ALL_JS)
+                    time.sleep(1.1)
 
                 merged_items = {}
                 for k, v in dom_items.items():
@@ -513,26 +523,27 @@ def main():
 
                         if (not prev_p or prev_p > curr_p) and (prev_title_p != curr_p):
                             clean_query = urllib.parse.quote_plus(title_str[:45])
-                            final_link = f"{base_store}?q={clean_query}"
+                            search_link = f"https://www.talabat.com/egypt/talabat-mart?q={clean_query}"
 
                             saved_egp = round(old_p - curr_p, 2)
                             caption = (
                                 f"🟠 لقطة Talabat Mart بخصم فعلي {disc}%!\n"
-                                f"🏷️ القسم: {cat_name}\n\n"
+                                f"🏷️ القائمة: {display_cat}\n\n"
                                 f"📦 {title_str}\n"
                                 f"💰 السعر الجديد: {curr_p} EGP\n"
                                 f"❌ السعر القديم: {old_p} EGP (وفرت {saved_egp} ج)"
                             )
 
                             buttons = [
-                                [{"text": "🛒 ابحث واطلب من طلبات مارت", "url": final_link}],
-                                [{"text": f"📂 قسم {cat_name}", "url": url}]
+                                [{"text": "🛒 ابحث عن المنتج في طلبات مارت", "url": search_link}],
+                                [{"text": f"📂 فتح قائمة {display_cat[:25]}", "url": url}]
                             ]
 
                             if send_telegram_deal(caption, img_url=it.get("imgUrl", ""), buttons=buttons):
                                 record_deal(sent_deals, unique_key, curr_p)
                                 record_deal(sent_deals, title_cache_key, curr_p)
                                 sent_cnt += 1
+                                total_sent_all += 1
                                 print(f"   ✅ تم إرسال عرض: {title_str[:40]} (خصم {disc}%)")
                                 time.sleep(0.4)
 
@@ -544,7 +555,7 @@ def main():
         browser.close()
 
     save_sent(sent_deals)
-    print("\n🏁 اكتمل فحص طلبات مارت!")
+    print(f"\n🏁 اكتمل المسح الشامل لـ {scanned_count} قائمة | إجمالي العروض المرسلة: {total_sent_all}")
 
 
 if __name__ == "__main__":
