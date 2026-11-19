@@ -324,10 +324,6 @@ def normalize_title(title):
 
 # ================= تصنيف عروض 1+1 والعروض المشروطة =================
 def classify_special_promo(texts):
-    """
-    يفحص نصوص المنتج/العرض الفعلية ويرجع:
-    ("bogo", نص_العرض) أو ("spend_promo", نص_العرض) أو (None, "")
-    """
     cleaned_texts = []
     for t in texts:
         if not t:
@@ -600,10 +596,11 @@ async def scan_single_url(context, cat_name, url, page_num, shared_state):
             if promo_key not in shared_state["sent_in_run"] and get_saved_promo(shared_state["sent_deals"], promo_key) != page_promo_label:
                 shared_state["sent_in_run"].add(promo_key)
                 badge_title = "🎁 عرض 1+1 في طلبات مارت!" if page_promo_type == "bogo" else "🎯 عرض مشروط / باقة في طلبات مارت!"
+                clean_page_promo = page_promo_label.replace("`", "'")
                 promo_caption = (
                     f"{badge_title}\n"
                     f"🏷️ القسم: {display_cat}\n\n"
-                    f"📌 العرض: `{page_promo_label.replace('`', \"'\")}`"
+                    f"📌 العرض: `{clean_page_promo}`"
                 )
                 buttons = [[{"text": f"📂 فتح {display_cat[:22]}", "url": url}]]
                 if send_telegram_deal(promo_caption, buttons=buttons):
@@ -665,7 +662,8 @@ async def scan_single_url(context, cat_name, url, page_num, shared_state):
                         header = "🎯 عرض مشروط (اشتري واكسب) في Talabat Mart!"
 
                     old_line = f"\n❌ السعر قبل الخصم: {old_p} EGP ({disc}%)" if has_valid_discount else ""
-                    promo_line = f"\n✨ الشرط / العرض: `{promo_label.replace('`', \"'\")}`" if promo_label else ""
+                    clean_item_promo = promo_label.replace("`", "'") if promo_label else ""
+                    promo_line = f"\n✨ الشرط / العرض: `{clean_item_promo}`" if clean_item_promo else ""
 
                     caption = (
                         f"{header}\n"
@@ -755,7 +753,7 @@ async def main_async():
     sent_deals = load_and_clean_sent()
     cookies = parse_playwright_cookies(TALABAT_COOKIES)
 
-    print(f"⚡ بدء الرادار المتوازي V9.2 (خصومات {MIN_DISCOUNT_PERCENT}%+ + عروض 1+1 والعروض المشروطة)...")
+    print(f"⚡ بدء الرادار المتوازي V9.2.1 (خصومات {MIN_DISCOUNT_PERCENT}%+ + عروض 1+1 والعروض المشروطة)...")
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(
