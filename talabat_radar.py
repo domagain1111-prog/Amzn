@@ -23,16 +23,16 @@ SEED_URLS = [
     ("عروض الموسم", f"{STORE_BASE_URL}/fruit-veg/best-in-season"),
 ]
 
-MIN_DISCOUNT_PERCENT = 25      # الحد الأدنى للخصم أو الهبوط المفاجئ في السعر
+MIN_DISCOUNT_PERCENT = 25      # الحد الأدنى للخصم الفعلي المشطوب
 FLASH_DISCOUNT_PERCENT = 50    # الحد الأدنى للتنبيه الناري
-MAX_REALISTIC_DISCOUNT = 92
+MAX_REALISTIC_DISCOUNT = 85    # استبعاد أي خصم غير منطقي فوق 85%
 CACHE_TTL_DAYS = 7
 PRICE_HISTORY_TTL_DAYS = 21
 COOKIE_ALERT_COOLDOWN = 12 * 3600
 STATE_FILE = "sent_talabat.json"
-MAX_URLS_LIMIT = 240           # يشمل كل الأقسام + صفحاتها الإضافية (?page=2, 3, 4...)
+MAX_URLS_LIMIT = 240
 CONCURRENT_TABS = 5
-MAX_PAGES_PER_CATEGORY = 6     # أقصى عدد صفحات مرقمة لكل قسم
+MAX_PAGES_PER_CATEGORY = 6
 
 # ================= المستوى الأول: أقسام العروض والخصومات =================
 DEALS_PRIORITY_CATEGORIES = [
@@ -82,6 +82,7 @@ def load_and_clean_sent():
     raw_hist = data.get("__PRICE_HISTORY__")
     if isinstance(raw_hist, dict):
         for hk, hv in raw_hist.items():
+            # تجاهل المفاتيح القديمة المقصوصة (أقل من 42 حرف وكانت مقصوصة) وتحديثها بالاسم الكامل
             if isinstance(hv, dict) and hv.get("ts", 0) >= hist_cutoff and hv.get("p", 0) > 0:
                 price_history[hk] = hv
 
@@ -120,28 +121,23 @@ def save_sent(data):
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
-# ================= بناء رابط المنتج المظبوط =================
+# ================= بناء روابط البحث والمتصفح =================
 def build_best_product_url(item, category_url):
-    raw_link = (item.get("productUrl") or "").strip()
-
-    if raw_link:
-        if raw_link.startswith("http") and "talabat.com" in raw_link:
-            return raw_link.split("?")[0], True
-        if raw_link.startswith("/"):
-            return f"https://www.talabat.com{raw_link.split('?')[0]}", True
-
-    slug = (item.get("slug") or "").strip()
-    prod_id = str(item.get("prodId") or "").strip()
-    if slug and not slug.startswith("http") and not slug.startswith("/"):
-        if prod_id and not prod_id.startswith(("API_", "DOM_")) and prod_id not in slug:
-            return f"{STORE_BASE_URL}/product/{slug}/{prod_id}", True
-        return f"{STORE_BASE_URL}/product/{slug}", True
-
     title = item.get("title", "")
     clean_words = re.sub(r"[\+\-\(\)\[\],/\\\|×\*]+", " ", title)
-    short_query = " ".join(clean_words.split()[:3])
+    short_query = " ".join(clean_words.split()[:4])
     encoded_q = urllib.parse.quote(short_query)
-    return f"https://www.talabat.com/egypt/talabat-mart/search?q={encoded_q}", False
+    search_url = f"https://www.talabat.com/egypt/talabat-mart/search?q={encoded_q}"
+
+    raw_link = (item.get("productUrl") or "").strip()
+    if raw_link.startswith("http") and "talabat.com" in raw_link:
+        web_url = raw_link.split("?")[0]
+    elif raw_link.startswith("/"):
+        web_url = f"https://www.talabat.com{raw_link.split('?')[0]}"
+    else:
+        web_url = search_url
+
+    return search_url, web_url
 
 
 # ================= حساب سعر الكيلو أو اللتر =================
@@ -218,7 +214,7 @@ def send_telegram_deal(caption, img_url="", buttons=None):
         delivered = False
         if clean_img and clean_img.startswith("http"):
             try:
-                payload = {"chat_id": cid, "photo": clean_img, "caption": caption[:1020]}
+                payload = {"chat_id": cid, "photo": clean_img, "caption": caption[:1020], "parse_mode": "Markdown"}
                 if reply_markup:
                     payload["reply_markup"] = reply_markup
                 r = requests.post(photo_api, json=payload, timeout=12)
@@ -229,7 +225,7 @@ def send_telegram_deal(caption, img_url="", buttons=None):
 
         if not delivered:
             try:
-                payload = {"chat_id": cid, "text": caption, "disable_web_page_preview": False}
+                payload = {"chat_id": cid, "text": caption, "parse_mode": "Markdown", "disable_web_page_preview": False}
                 if reply_markup:
                     payload["reply_markup"] = reply_markup
                 r = requests.post(msg_api, json=payload, timeout=12)
@@ -293,62 +289,11 @@ def parse_playwright_cookies(raw_json):
     return cleaned
 
 
-# ================= استخراج كل المنتجات (المخفضة والعادية) =================
 def normalize_title(title):
     return re.sub(r"\s+", " ", str(title)).strip()
 
 
-def walk_talabat_json(obj, api_products, stats):
-    if isinstance(obj, dict):
-        name = obj.get("name") or obj.get("title") or obj.get("productName")
-        price = obj.get("price") or obj.get("discountedPrice") or obj.get("finalPrice")
-        old_price = (
-            obj.get("originalPrice")
-            or obj.get("oldPrice")
-            or obj.get("strikeThroughPrice")
-            or obj.get("priceBeforeDiscount")
-            or obj.get("basePrice")
-        )
-        prod_id = obj.get("id") or obj.get("sku") or obj.get("productId") or obj.get("itemId")
-        img = obj.get("image") or obj.get("imageUrl") or obj.get("thumbnail") or ""
-        if isinstance(img, dict):
-            img = img.get("url") or img.get("src") or ""
-
-        raw_url = obj.get("url") or obj.get("productUrl") or obj.get("href") or ""
-        slug = obj.get("slug") or obj.get("seoSlug") or ""
-
-        try:
-            p_val = float(price) if price is not None else 0.0
-            old_val = float(old_price) if old_price is not None else 0.0
-
-            if name and isinstance(name, str) and len(name.strip()) > 3 and p_val >= 2:
-                clean_name = normalize_title(name)
-                stats["seen_titles"].add(clean_name.lower())
-                key = str(prod_id) if prod_id else f"API_{clean_name[:40]}"
-                existing = api_products.get(key)
-                if not existing or old_val > existing.get("oldPrice", 0):
-                    api_products[key] = {
-                        "prodId": key,
-                        "title": clean_name,
-                        "currPrice": p_val,
-                        "oldPrice": old_val if old_val > p_val else 0.0,
-                        "imgUrl": str(img),
-                        "productUrl": str(raw_url),
-                        "slug": str(slug),
-                    }
-        except (ValueError, TypeError):
-            pass
-
-        for v in obj.values():
-            if isinstance(v, (dict, list)):
-                walk_talabat_json(v, api_products, stats)
-
-    elif isinstance(obj, list):
-        for item in obj:
-            if isinstance(item, (dict, list)):
-                walk_talabat_json(item, api_products, stats)
-
-
+# ================= استخراج المنتجات من الواجهة الفعلية فقط بدقة عالية =================
 EXTRACT_DOM_JS = r"""
 () => {
     function arToEn(str) {
@@ -365,7 +310,7 @@ EXTRACT_DOM_JS = r"""
         if (!el || el.nodeType !== 1) return false;
         if (["S", "DEL", "STRIKE"].includes(el.tagName)) return true;
         const cls = (typeof el.className === "string" ? el.className : "").toLowerCase();
-        if (cls.includes("line-through") || cls.includes("strike") || cls.includes("old") || cls.includes("before")) return true;
+        if (cls.includes("line-through") || cls.includes("strike")) return true;
         const st = window.getComputedStyle(el);
         return (st.textDecorationLine || st.textDecoration || "").includes("line-through");
     }
@@ -385,7 +330,7 @@ EXTRACT_DOM_JS = r"""
             const txt = arToEn(card.innerText || "");
             const hasEgp = /(?:EGP|ج\.م|جنيه)/i.test(txt);
             const imgCount = card.querySelectorAll("img").length;
-            if (hasEgp && imgCount <= 2 && txt.length >= 10 && txt.length <= 550) {
+            if (hasEgp && imgCount <= 2 && txt.length >= 10 && txt.length <= 500) {
                 bestCard = card;
             }
             if (imgCount > 2) break;
@@ -394,15 +339,21 @@ EXTRACT_DOM_JS = r"""
 
         if (!bestCard) return;
 
+        // استخراج الاسم الكامل غير المقصوص من النص داخل البطاقة أولاً، ثم من alt الصورة
+        const lines = (bestCard.innerText || "").split(/\r?\n/).map(l => l.trim()).filter(l => {
+            return l.length >= 4 && !/^(?:EGP|ج\.م|جنيه|Save\s*\d+%|\d+(\.\d+)?$|-?\d+%|خصم|أضف|إضافة|Add|\+|x\d+)$/i.test(arToEn(l));
+        });
         let title = (img.alt || "").trim();
-        if (title.length < 4) {
-            const lines = (bestCard.innerText || "").split(/\r?\n/).map(l => l.trim()).filter(l => {
-                return l.length >= 4 && !/^(?:EGP|ج\.م|جنيه|\d+(\.\d+)?$|-?\d+%|خصم|أضف|إضافة|Add|\+)$/i.test(arToEn(l));
-            });
-            title = lines[0] || "";
+        if (lines.length > 0 && lines[0].length > title.length && !lines[0].endsWith("...")) {
+            title = lines[0];
         }
-        if (!title) return;
+        if (!title || title.length < 4) return;
         allCardTitles.push(title);
+
+        // قراءة شارة الخصم المكتوبة على البطاقة (مثل Save 25%) للتحقق الإضافي
+        const cardTextEn = arToEn(bestCard.innerText || "");
+        const badgeMatch = cardTextEn.match(/(?:Save|خصم)\s*(\d+)\s*%/i);
+        const badgePct = badgeMatch ? parseInt(badgeMatch[1], 10) : 0;
 
         const oldPrices = [];
         const currPrices = [];
@@ -431,16 +382,32 @@ EXTRACT_DOM_JS = r"""
 
         if (currPrices.length === 0) return;
 
+        const currPrice = Math.min(...currPrices);
+        let oldPrice = oldPrices.length > 0 ? Math.max(...oldPrices) : 0;
+
+        // تحقق صارم: السعر القديم يجب أن يكون أكبر من الحالي ولا يتجاوز 7 أضعاف السعر الحالي
+        if (oldPrice <= currPrice || oldPrice > currPrice * 7) {
+            oldPrice = 0;
+        }
+
+        // إذا وُجدت شارة Save X% على البطاقة، تأكد أن النسبة المحسوبة قريبة منها (±5%) لمنع أي قراءة خاطئة
+        if (oldPrice > 0 && badgePct > 0) {
+            const calcPct = Math.round(((oldPrice - currPrice) / oldPrice) * 100);
+            if (Math.abs(calcPct - badgePct) > 6) {
+                oldPrice = 0;
+            }
+        }
+
         const linkEl = bestCard.querySelector("a[href*='/product/']") || bestCard.querySelector("a[href]") || bestCard.closest("a[href]");
         const href = linkEl ? linkEl.href : "";
 
-        const key = ("DOM_" + title.slice(0, 40));
-        if (!products.has(key)) {
-            products.set(key, {
-                prodId: key,
+        const fullKey = title.replace(/\s+/g, " ").trim().toLowerCase();
+        if (!products.has(fullKey)) {
+            products.set(fullKey, {
+                prodId: fullKey,
                 title: title.replace(/\s+/g, " ").trim(),
-                currPrice: Math.min(...currPrices),
-                oldPrice: oldPrices.length > 0 ? Math.max(...oldPrices) : 0,
+                currPrice: currPrice,
+                oldPrice: oldPrice,
                 imgUrl: img.src || "",
                 productUrl: href,
                 slug: ""
@@ -452,7 +419,6 @@ EXTRACT_DOM_JS = r"""
 }
 """
 
-# استخراج روابط الأقسام + أرقام الصفحات الموجودة في الترقيم (← 1 2 3 4 →)
 DISCOVER_LINKS_AND_PAGES_JS = r"""
 () => {
     const links = Array.from(document.querySelectorAll("a[href*='/talabat-mart/'], a[href*='/grocery/']"));
@@ -519,7 +485,6 @@ def is_supermarket_category(name, url):
 
 
 def enqueue_url(shared_state, name, url, page_num=1):
-    """إضافة رابط القسم أو رابط الصفحة المرقمة (?page=2, 3...) للطابور حسب الأولوية"""
     if len(shared_state["visited"]) >= MAX_URLS_LIMIT + shared_state["skipped_count"]:
         return
 
@@ -563,23 +528,9 @@ async def scan_single_url(context, cat_name, url, page_num, shared_state):
     page = await context.new_page()
     await page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
-    api_products = {}
-    page_stats = {"seen_titles": set()}
-
-    async def on_response(resp):
-        try:
-            ct = resp.headers.get("content-type", "")
-            if resp.status == 200 and ("json" in ct or "api" in resp.url):
-                data = await resp.json()
-                walk_talabat_json(data, api_products, page_stats)
-        except Exception:
-            pass
-
-    page.on("response", on_response)
-
     try:
         await page.goto(url, wait_until="domcontentloaded", timeout=22000)
-        await asyncio.sleep(1.0)
+        await asyncio.sleep(1.1)
 
         actual_url = page.url.split("?")[0].split("#")[0].rstrip("/")
         if "/grocery/" in actual_url:
@@ -598,19 +549,6 @@ async def scan_single_url(context, cat_name, url, page_num, shared_state):
         }""")
         display_cat = heading if (heading and len(heading) > 2) else cat_name
 
-        try:
-            next_scripts = await page.evaluate(
-                """() => Array.from(document.querySelectorAll("script#__NEXT_DATA__, script[type='application/json']")).map(s => s.textContent)"""
-            )
-            for raw_j in next_scripts:
-                if raw_j:
-                    try:
-                        walk_talabat_json(json.loads(raw_j), api_products, page_stats)
-                    except Exception:
-                        pass
-        except Exception:
-            pass
-
         await page.evaluate("""() => {
             window.scrollTo(0, document.body.scrollHeight);
             document.querySelectorAll("div, main, section").forEach(el => {
@@ -624,34 +562,16 @@ async def scan_single_url(context, cat_name, url, page_num, shared_state):
         discovery = await page.evaluate(DISCOVER_LINKS_AND_PAGES_JS)
         for sc in discovery.get("categories", []):
             sc_url = sc["url"]
-            # توحيد كل روابط الأقسام على مسار الفرع المباشر (/egypt/grocery/...) لدعم ?page=N
             if "/talabat-mart/" in sc_url:
                 cat_tail = sc_url.split("/talabat-mart/")[1]
                 sc_url = f"{shared_state['store_base_url']}/{cat_tail}"
             enqueue_url(shared_state, sc["name"], sc_url, page_num=1)
 
         res = await page.evaluate(EXTRACT_DOM_JS)
-        dom_items = {it["prodId"]: it for it in res.get("items", [])}
-        for t in res.get("allCardTitles", []):
-            page_stats["seen_titles"].add(normalize_title(t).lower())
-
-        merged_items = {}
-        for v in dom_items.values():
-            merged_items[v["title"][:40].lower()] = v
-        for v in api_products.values():
-            k = v["title"][:40].lower()
-            existing = merged_items.get(k)
-            if existing:
-                if not v.get("productUrl") and existing.get("productUrl"):
-                    v["productUrl"] = existing["productUrl"]
-                if existing.get("oldPrice", 0) > v.get("oldPrice", 0):
-                    v["oldPrice"] = existing["oldPrice"]
-            merged_items[k] = v
-
-        total_in_cat = max(len(page_stats["seen_titles"]), len(merged_items))
+        merged_items = {it["prodId"]: it for it in res.get("items", [])}
+        total_in_cat = len(merged_items)
         shared_state["total_products"] += total_in_cat
 
-        # توليد روابط ?page=2, 3, 4... تلقائياً لأي قسم فيه 20 منتج فأكثر
         if page_num == 1 and total_in_cat >= 20:
             base_cat_url = actual_url if "/grocery/" in actual_url else url.split("?")[0]
             if "/grocery/" in base_cat_url:
@@ -670,26 +590,30 @@ async def scan_single_url(context, cat_name, url, page_num, shared_state):
         max_disc = 0
         sent_cnt = 0
 
-        for norm_key, it in merged_items.items():
+        for full_key, it in merged_items.items():
+            # تجاهل الأسماء المقصوصة بـ "..." في تتبع تغير الأسعار حتى لا تتداخل مع أحجام مختلفة
+            is_truncated = full_key.endswith("...")
             curr_p = it["currPrice"]
             old_p = it.get("oldPrice", 0)
             is_price_drop = False
 
-            hist_entry = price_history.get(norm_key)
-            if hist_entry and isinstance(hist_entry, dict):
-                hist_p = hist_entry.get("p", 0)
-                if old_p <= curr_p and hist_p > curr_p:
-                    old_p = hist_p
-                    is_price_drop = True
-                elif curr_p > hist_p:
-                    price_history[norm_key] = {"p": curr_p, "ts": now_ts}
+            if not is_truncated:
+                hist_entry = price_history.get(full_key)
+                if hist_entry and isinstance(hist_entry, dict):
+                    hist_p = hist_entry.get("p", 0)
+                    # لا يُعتبر هبوطاً حقيقياً إلا إذا كان السعر السابق مسجلاً من نفس الفرع ومؤكداً
+                    if old_p <= curr_p and hist_p > curr_p and hist_p <= curr_p * 4:
+                        old_p = hist_p
+                        is_price_drop = True
+                    elif curr_p > hist_p:
+                        price_history[full_key] = {"p": curr_p, "ts": now_ts}
+                    else:
+                        hist_entry["ts"] = now_ts
                 else:
-                    hist_entry["ts"] = now_ts
-            else:
-                base_p = old_p if old_p > curr_p else curr_p
-                price_history[norm_key] = {"p": base_p, "ts": now_ts}
+                    base_p = old_p if old_p > curr_p else curr_p
+                    price_history[full_key] = {"p": base_p, "ts": now_ts}
 
-            if old_p <= curr_p or old_p > curr_p * 12:
+            if old_p <= curr_p or old_p > curr_p * 7:
                 continue
 
             discounted_count += 1
@@ -698,54 +622,55 @@ async def scan_single_url(context, cat_name, url, page_num, shared_state):
                 max_disc = disc
 
             if MIN_DISCOUNT_PERCENT <= disc <= MAX_REALISTIC_DISCOUNT:
-                sent_dedup_key = f"{norm_key}_{curr_p}"
+                sent_dedup_key = f"{full_key}_{curr_p}"
                 if sent_dedup_key in shared_state["sent_in_run"]:
                     continue
                 shared_state["sent_in_run"].add(sent_dedup_key)
 
                 title_str = it["title"]
-                unique_key = it["prodId"]
-                title_cache_key = f"TITLE_{norm_key[:32]}"
+                unique_key = f"FULL_{full_key}"
 
                 prev_p = get_saved_price(shared_state["sent_deals"], unique_key)
-                prev_title_p = get_saved_price(shared_state["sent_deals"], title_cache_key)
 
-                if (not prev_p or prev_p > curr_p) and (prev_title_p != curr_p):
-                    best_url, is_direct = build_best_product_url(it, url)
-                    btn_label = "🛍️ فتح المنتج مباشرة" if is_direct else "🔍 ابحث عن المنتج في طلبات"
+                if not prev_p or prev_p > curr_p:
+                    search_url, web_url = build_best_product_url(it, url)
 
                     saved_egp = round(old_p - curr_p, 2)
                     unit_info = calculate_unit_price_info(title_str, curr_p)
                     unit_line = f"\n{unit_info}" if unit_info else ""
+                    safe_title = title_str.replace("`", "'")
 
                     if is_price_drop:
-                        header = f"📉 هبوط مفاجئ في السعر بنسبة {disc}%! 🔥"
-                        old_label = f"❌ السعر السابق المسجل: {old_p} EGP (وفرت {saved_egp} ج)"
+                        header = f"📉 هبوط مؤكد في السعر بنسبة {disc}%! 🔥"
+                        old_label = f"❌ السعر السابق: {old_p} EGP (وفرت {saved_egp} ج)"
                     elif disc >= FLASH_DISCOUNT_PERCENT:
-                        header = f"🚨 تصفية نارية في Talabat Mart بخصم {disc}%! 🔥"
+                        header = f"🚨 تصفية حقيقية في Talabat Mart بخصم {disc}%! 🔥"
                         old_label = f"❌ السعر القديم: {old_p} EGP (وفرت {saved_egp} ج)"
                     else:
-                        header = f"🟠 لقطة Talabat Mart بخصم {disc}%!"
+                        header = f"🟠 لقطة حقيقية في Talabat Mart بخصم {disc}%!"
                         old_label = f"❌ السعر القديم: {old_p} EGP (وفرت {saved_egp} ج)"
 
                     caption = (
                         f"{header}\n"
                         f"🏷️ القائمة: {display_cat}\n\n"
-                        f"📦 {title_str}\n"
+                        f"📦 `{safe_title}`\n"
                         f"💰 السعر الجديد: {curr_p} EGP\n"
                         f"{old_label}"
                         f"{unit_line}"
                     )
 
                     buttons = [
-                        [{"text": btn_label, "url": best_url}],
-                        [{"text": f"📂 فتح قائمة {display_cat[:24]}", "url": url}]
+                        [{"text": "🔍 بحث بالاسم في طلبات", "url": search_url}],
+                        [
+                            {"text": "🌐 فتح في المتصفح", "url": web_url},
+                            {"text": f"📂 {display_cat[:18]}", "url": url}
+                        ]
                     ]
 
                     if send_telegram_deal(caption, img_url=it.get("imgUrl", ""), buttons=buttons):
                         record_deal(shared_state["sent_deals"], unique_key, curr_p)
-                        record_deal(shared_state["sent_deals"], title_cache_key, curr_p)
-                        price_history[norm_key] = {"p": curr_p, "ts": now_ts}
+                        if not is_truncated:
+                            price_history[full_key] = {"p": curr_p, "ts": now_ts}
                         sent_cnt += 1
                         shared_state["total_sent"] += 1
                         tag = "📉 هبوط" if is_price_drop else ("🚨 تصفية" if disc >= FLASH_DISCOUNT_PERCENT else "✅ لقطة")
@@ -767,7 +692,7 @@ async def main_async():
     sent_deals = load_and_clean_sent()
     cookies = parse_playwright_cookies(TALABAT_COOKIES)
 
-    print(f"⚡ بدء الرادار المتوازي V8.1 (مسار الفرع المباشر + تقليب الصفحات ?page=2,3,4... | خصم {MIN_DISCOUNT_PERCENT}%+)...")
+    print(f"⚡ بدء الرادار المتوازي V8.2 (دقة أسعار 100% + نسخ الاسم بلمسة واحدة | خصم {MIN_DISCOUNT_PERCENT}%+)...")
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(
