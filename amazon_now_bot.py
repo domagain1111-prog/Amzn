@@ -10,14 +10,16 @@ TELEGRAM_TOKEN = (os.environ.get("NOW_TELEGRAM_TOKEN") or os.environ.get("TELEGR
 CHAT_ID = (os.environ.get("NOW_CHAT_ID") or os.environ.get("CHAT_ID") or "").strip()
 AMAZON_COOKIES = os.environ.get("AMAZON_COOKIES", "").strip()
 
-MIN_DISCOUNT_PERCENT = 30
+MIN_DISCOUNT_PERCENT = 40
 CACHE_TTL_DAYS = 7
-COOKIE_ALERT_COOLDOWN = 6 * 3600
+COOKIE_ALERT_COOLDOWN = 12 * 3600
 STATE_FILE = "sent_now.json"
 QC_BRAND = "sAuWWBROaG"
 
 NOW_TARGETS = [
     ("أقوى العروض (Top Deals)", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=220630950031&title=Top+Deals&ref=EG_Tez_SF_Top_deals"),
+    ("عروض إضافية 1", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=223577117031"),
+    ("عروض إضافية 2", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=223985148031"),
     ("الشوكولاتة والحلويات", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215093316031&title=Chocolate+and+Candies"),
     ("السناكس والحلويات", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215093298031&title=Snack+%26+Sweets"),
     ("القهوة والشاي", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=212925569031&title=Coffee+and+Tea"),
@@ -45,23 +47,16 @@ def load_and_clean_sent():
             pass
 
     cleaned = {}
-    removed_cnt = 0
     for k, v in data.items():
         if k == "__COOKIE_ALERT_TS__":
             if isinstance(v, (int, float)) and (now - v) < 86400:
                 cleaned[k] = v
             continue
-
         if isinstance(v, dict):
             if v.get("ts", 0) >= cutoff and "price" in v:
                 cleaned[k] = v
-            else:
-                removed_cnt += 1
         elif isinstance(v, (int, float)):
             cleaned[k] = {"price": v, "ts": now}
-
-    if removed_cnt > 0:
-        print(f"🧹 تم تنظيف {removed_cnt} عرض قديم مر عليه أكثر من {CACHE_TTL_DAYS} أيام.")
     return cleaned
 
 def get_saved_price(sent_deals, key):
@@ -95,7 +90,6 @@ def send_telegram_text(text):
 
 def send_telegram_deal(caption, img_url="", buttons=None):
     if not TELEGRAM_TOKEN or not CHAT_ID:
-        print("   ⚠️ توكن تيليجرام أو الـ CHAT_ID غير موجود!")
         return False
 
     photo_api = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto"
@@ -126,10 +120,8 @@ def send_telegram_deal(caption, img_url="", buttons=None):
                 r = requests.post(msg_api, json=payload, timeout=15)
                 if r.status_code == 200:
                     sent_ok = True
-                else:
-                    print(f"   ⚠️ رد تيليجرام لـ {cid}: {r.status_code} - {r.text}")
-            except Exception as e:
-                print(f"   ❌ خطأ إرسال تيليجرام لـ {cid}: {e}")
+            except Exception:
+                pass
     return sent_ok
 
 def maybe_send_cookie_alert(sent_deals, reason):
@@ -137,14 +129,12 @@ def maybe_send_cookie_alert(sent_deals, reason):
     last_ts = sent_deals.get("__COOKIE_ALERT_TS__", 0)
     if (now - last_ts) >= COOKIE_ALERT_COOLDOWN:
         alert_msg = (
-            "⚠️ تنبيه مهم من رادار Amazon Now!\n\n"
+            "⚠️ تنبيه من رادار Amazon Now!\n\n"
             f"السبب: {reason}\n"
-            "🔑 جلسة الكوكيز انتهت أو أمازون طلب تسجيل الدخول.\n"
-            "افتح Firefox وتأكد من تفعيل (Keep me signed in ✅) ثم حدّث AMAZON_COOKIES في GitHub Secrets عشان الرادار يكمل صيد."
+            "🔑 الجلسة تحتاج تجديد: افتح تبويب متخفي (Incognito)، سجل دخول في amazon.eg مع تفعيل (تذكرني / Keep me signed in ✅)، انسخ الكوكيز واقفل التبويب دون تسجيل خروج، ثم ضعها في AMAZON_COOKIES."
         )
         if send_telegram_text(alert_msg):
             sent_deals["__COOKIE_ALERT_TS__"] = now
-            print("   🚨 تم إرسال تنبيه انتهاء الكوكيز على تيليجرام.")
 
 def parse_playwright_cookies(raw_json):
     if not raw_json:
@@ -155,17 +145,23 @@ def parse_playwright_cookies(raw_json):
         print("⚠️ صيغة AMAZON_COOKIES غير صحيحة! تأكد من نسخها بصيغة Export as JSON.")
         return []
 
+    now_sec = int(time.time())
+    future_exp = now_sec + (180 * 86400)
     cleaned = []
     for c in raw_list:
         if not isinstance(c, dict) or not c.get("name") or c.get("value") is None:
             continue
+        domain = str(c.get("domain", ".amazon.eg"))
+        if "amazon.eg" not in domain:
+            continue
         item = {
             "name": str(c["name"]),
             "value": str(c["value"]),
-            "domain": c.get("domain", ".amazon.eg"),
+            "domain": domain,
             "path": c.get("path", "/"),
             "secure": bool(c.get("secure", True)),
             "httpOnly": bool(c.get("httpOnly", False)),
+            "expires": future_exp
         }
         ss = str(c.get("sameSite", "")).lower()
         if ss == "strict":
@@ -177,6 +173,13 @@ def parse_playwright_cookies(raw_json):
             item["secure"] = True
         cleaned.append(item)
     return cleaned
+
+def warmup_session(page):
+    try:
+        page.goto("https://www.amazon.eg/?language=ar_AE", wait_until="domcontentloaded", timeout=30000)
+        time.sleep(2.5)
+    except Exception as e:
+        print(f"   ℹ️ تمهيد الصفحة الرئيسية: {e}")
 
 EXTRACT_JS = r"""
 () => {
@@ -523,6 +526,8 @@ def main():
         page = context.new_page()
         page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
+        warmup_session(page)
+
         img_to_asin = {}
         title_to_asin = {}
 
@@ -535,6 +540,7 @@ def main():
                 pass
 
         page.on("response", on_response)
+        lost_conn_streak = 0
 
         for idx, (cat_name, url) in enumerate(NOW_TARGETS, 1):
             print(f"\n[{idx}/{len(NOW_TARGETS)}] فحص قسم: {cat_name}...")
@@ -550,14 +556,24 @@ def main():
                     or "تسجيل الدخول" in page_title
                     or "/ap/signin" in page.url
                 ):
-                    print("   🚨 صفحة تسجيل الدخول ظهرت - الكوكيز انتهت صلاحيتها!")
-                    maybe_send_cookie_alert(sent_deals, "أمازون طلب تسجيل الدخول (Amazon Sign In)")
+                    print("   🚨 صفحة تسجيل الدخول ظهرت - الكوكيز انتهت صلاحيتها فعلياً!")
+                    maybe_send_cookie_alert(sent_deals, "أمازون طلب تسجيل الدخول صراحةً (/ap/signin)")
                     break
 
                 if "لقد فقدت الاتصال" in body_txt:
-                    print("   ⚠️ ظهرت رسالة 'لقد فقدت الاتصال' - الكوكيز تحتاج تحديث أو المخزن مغلق مؤقتاً.")
-                    maybe_send_cookie_alert(sent_deals, "ظهور رسالة 'لقد فقدت الاتصال' في Amazon Now")
-                    break
+                    page.reload(wait_until="domcontentloaded", timeout=25000)
+                    time.sleep(3.5)
+                    body_txt = page.inner_text("body")
+                    if "لقد فقدت الاتصال" in body_txt:
+                        lost_conn_streak += 1
+                        print(f"   ⚠️ ظهرت رسالة 'لقد فقدت الاتصال' ({lost_conn_streak}/3).")
+                        if lost_conn_streak >= 3:
+                            print("   🛑 تكررت في 3 أقسام (إما الكوكيز فصلت أو فرع ناو مغلق مؤقتاً في منطقتك).")
+                            maybe_send_cookie_alert(sent_deals, "استمرار ظهور 'لقد فقدت الاتصال' في أقسام ناو")
+                            break
+                        continue
+
+                lost_conn_streak = 0
 
                 try:
                     next_json_list = page.evaluate(
@@ -595,12 +611,6 @@ def main():
 
                 if len(all_items) > 0:
                     sent_deals.pop("__COOKIE_ALERT_TS__", None)
-                else:
-                    snippet = " ".join(body_txt.split())[:120]
-                    print(f"   ℹ️ تشخيص الصفحة (0 منتج): العنوان='{page_title}' | النص='{snippet}'")
-                    if "password" in body_txt.lower() or "كلمة المرور" in body_txt:
-                        maybe_send_cookie_alert(sent_deals, "ظهور خانة كلمة المرور بدلاً من المنتجات")
-                        break
 
                 max_disc = 0
                 sent_now_cnt = 0
