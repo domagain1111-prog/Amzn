@@ -16,14 +16,13 @@ TALABAT_COOKIES = os.environ.get("TALABAT_COOKIES", "").strip()
 LATITUDE = float(os.environ.get("TALABAT_LAT") or "31.2156")
 LONGITUDE = float(os.environ.get("TALABAT_LNG") or "29.9553")
 
-env_url = os.environ.get("TALABAT_MART_URL", "").strip()
-START_URL = (
-    env_url
-    if env_url.startswith("http") and "/talabat-mart" in env_url
-    else "https://www.talabat.com/egypt/talabat-mart/cooking-baking/rice-pasta-pulses"
-)
+# نقاط بداية مضمونة لاكتشاف شجرة أقسام طلبات مارت بالكامل
+SEED_URLS = [
+    ("الصفحة الرئيسية لطلبات مارت", "https://www.talabat.com/egypt/talabat-mart"),
+    ("عروض الموسم", "https://www.talabat.com/egypt/talabat-mart/fruit-veg/best-in-season"),
+]
 
-MIN_DISCOUNT_PERCENT = 30
+MIN_DISCOUNT_PERCENT = 40
 FLASH_DISCOUNT_PERCENT = 65
 MAX_REALISTIC_DISCOUNT = 92
 CACHE_TTL_DAYS = 7
@@ -497,9 +496,9 @@ async def scan_single_category(context, cat_name, url, shared_state):
 
     try:
         await page.goto(url, wait_until="domcontentloaded", timeout=22000)
-        await asyncio.sleep(0.9)
+        await asyncio.sleep(1.1)
 
-        if shared_state["scanned_count"] == 1:
+        if shared_state["scanned_count"] <= 2:
             body_txt = await page.inner_text("body")
             if "غير متاح" in body_txt or "not available in your area" in body_txt.lower():
                 maybe_send_alert(shared_state["sent_deals"], "طلبات مارت غير متاح للإحداثيات الحالية.")
@@ -547,7 +546,7 @@ async def scan_single_category(context, cat_name, url, shared_state):
                 dom_items[it["prodId"]] = it
 
             await page.evaluate(SCROLL_FAST_JS)
-            await asyncio.sleep(0.35)
+            await asyncio.sleep(0.4)
 
         merged_items = {}
         for v in dom_items.values():
@@ -640,7 +639,7 @@ async def main_async():
     sent_deals = load_and_clean_sent()
     cookies = parse_playwright_cookies(TALABAT_COOKIES)
 
-    print(f"⚡ بدء الرادار المتوازي V6.2 (أولوية السوبرماركت وخزين البيت | {CONCURRENT_TABS} تبويبات)...")
+    print(f"⚡ بدء الرادار المتوازي V6.3 (أولوية السوبرماركت وخزين البيت | {CONCURRENT_TABS} تبويبات)...")
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(
@@ -656,20 +655,27 @@ async def main_async():
             extra_http_headers={"Accept-Language": "ar-EG,ar;q=0.9,en-US;q=0.8"}
         )
 
+        # حظر الصور والميديا والخطوط فقط لضمان ظهور القائمة الجانبية كاملة
         await context.route(
             "**/*",
             lambda route: route.abort()
-            if route.request.resource_type in ("image", "media", "font", "stylesheet")
+            if route.request.resource_type in ("image", "media", "font")
             else route.continue_(),
         )
 
         if cookies:
             await context.add_cookies(cookies)
 
-        clean_start = START_URL.split("?")[0].split("#")[0].rstrip("/")
+        initial_queue = deque()
+        visited_set = set()
+        for label, u in SEED_URLS:
+            clean_u = u.split("?")[0].split("#")[0].rstrip("/")
+            initial_queue.append((label, clean_u))
+            visited_set.add(clean_u)
+
         shared_state = {
-            "queue": deque([("خزين المطبخ والأرز", clean_start)]),
-            "visited": {clean_start},
+            "queue": initial_queue,
+            "visited": visited_set,
             "sent_deals": sent_deals,
             "seen_titles": set(),
             "scanned_count": 0,
