@@ -10,7 +10,7 @@ TELEGRAM_TOKEN = (os.environ.get("NOW_TELEGRAM_TOKEN") or os.environ.get("TELEGR
 CHAT_ID = (os.environ.get("NOW_CHAT_ID") or os.environ.get("CHAT_ID") or "").strip()
 AMAZON_COOKIES = os.environ.get("AMAZON_COOKIES", "").strip()
 
-MIN_DISCOUNT_PERCENT = 40
+MIN_DISCOUNT_PERCENT = 30
 CACHE_TTL_DAYS = 7
 COOKIE_ALERT_COOLDOWN = 6 * 3600
 STATE_FILE = "sent_now.json"
