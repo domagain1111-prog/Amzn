@@ -3,6 +3,10 @@ name: Talabat Mart Radar
 on:
   workflow_dispatch:
 
+concurrency:
+  group: talabat-mart-radar
+  cancel-in-progress: false
+
 permissions:
   contents: write
 
@@ -48,4 +52,10 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add sent_talabat.json || true
-          git diff --staged --quiet || (git commit -m "chore: update sent_talabat cache" && git pull --rebase origin main && git push)
+          git diff --staged --quiet || (
+            git commit -m "chore: update sent_talabat cache"
+            git pull --rebase origin main || (
+              git checkout --theirs sent_talabat.json && git add sent_talabat.json && git rebase --continue
+            )
+            git push
+          )
