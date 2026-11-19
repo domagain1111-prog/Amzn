@@ -90,6 +90,7 @@ def send_telegram_text(text):
 
 def send_telegram_deal(caption, img_url="", buttons=None):
     if not TELEGRAM_TOKEN or not CHAT_ID:
+        print(f"   ⚠️ إعدادات تيليجرام ناقصة: TOKEN={bool(TELEGRAM_TOKEN)} | CHAT_ID={bool(CHAT_ID)}")
         return False
 
     photo_api = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto"
@@ -120,8 +121,10 @@ def send_telegram_deal(caption, img_url="", buttons=None):
                 r = requests.post(msg_api, json=payload, timeout=15)
                 if r.status_code == 200:
                     sent_ok = True
-            except Exception:
-                pass
+                else:
+                    print(f"   ❌ تيليجرام رفض الإرسال لـ {cid} ({r.status_code}): {r.text}")
+            except Exception as e:
+                print(f"   ❌ خطأ اتصال بتيليجرام لـ {cid}: {e}")
     return sent_ok
 
 def maybe_send_cookie_alert(sent_deals, reason):
@@ -509,7 +512,7 @@ def main():
         return
 
     sent_deals = load_and_clean_sent()
-    print(f"⚡ بدء فحص Amazon Now السحابي ({len(NOW_TARGETS)} أقسام | خصم فعلي {MIN_DISCOUNT_PERCENT}%+)...")
+    print(f"⚡ بدء فحص Amazon Now السحابي ({len(NOW_TARGETS)} أقسام | خصم فعلي {MIN_DISCOUNT_PERCENT}%+ | بالذاكرة: {len(sent_deals)})...")
 
     with sync_playwright() as p:
         browser = p.chromium.launch(
@@ -614,6 +617,7 @@ def main():
 
                 max_disc = 0
                 sent_now_cnt = 0
+                cached_skip_cnt = 0
 
                 for prod_id, it in all_items.items():
                     curr_prices = it.get("currPrices") or []
@@ -654,6 +658,7 @@ def main():
 
                             unique_key = asin if asin else prod_id
                             if get_saved_price(sent_deals, unique_key) == curr_p:
+                                cached_skip_cnt += 1
                                 continue
 
                             if asin:
@@ -687,8 +692,10 @@ def main():
                                 sent_now_cnt += 1
                                 print(f"   ✅ تم إرسال عرض {unique_key} بالصورة والأزرار (خصم {disc}%)")
                                 time.sleep(0.4)
+                        else:
+                            cached_skip_cnt += 1
 
-                print(f"   📊 فُحص {len(all_items)} منتج | أعلى خصم فعلي: {max_disc}% | أُرسل: {sent_now_cnt}")
+                print(f"   📊 فُحص {len(all_items)} منتج | أعلى خصم فعلي: {max_disc}% | أُرسل: {sent_now_cnt} | بالذاكرة مسبقاً: {cached_skip_cnt}")
 
             except Exception as e:
                 print(f"   ❌ خطأ أثناء فحص {cat_name}: {e}")
