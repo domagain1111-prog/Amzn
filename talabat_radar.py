@@ -3,17 +3,14 @@ import re
 import json
 import time
 import urllib.parse
-from collections import deque
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import requests
-from playwright.sync_api import sync_playwright
+from curl_cffi import requests as cffi_requests
 
 # ================= الإعدادات والمتغيرات البيئية =================
 TELEGRAM_TOKEN = (os.environ.get("TALABAT_TELEGRAM_TOKEN") or os.environ.get("TELEGRAM_TOKEN") or "").strip()
 CHAT_ID = (os.environ.get("TALABAT_CHAT_ID") or os.environ.get("CHAT_ID") or "").strip()
 TALABAT_COOKIES = os.environ.get("TALABAT_COOKIES", "").strip()
-
-LATITUDE = float(os.environ.get("TALABAT_LAT") or "31.2156")
-LONGITUDE = float(os.environ.get("TALABAT_LNG") or "29.9553")
 
 env_url = os.environ.get("TALABAT_MART_URL", "").strip()
 START_URL = (
@@ -23,15 +20,13 @@ START_URL = (
 )
 
 MIN_DISCOUNT_PERCENT = 40
-FLASH_DISCOUNT_PERCENT = 65     # الحد الأدنى للتصفية النارية العاجلة
+FLASH_DISCOUNT_PERCENT = 65
 MAX_REALISTIC_DISCOUNT = 92
 CACHE_TTL_DAYS = 7
 COOKIE_ALERT_COOLDOWN = 12 * 3600
 STATE_FILE = "sent_talabat.json"
-MAX_CATEGORIES_LIMIT = 130
+MAX_WORKERS = 10  # عدد الأقسام التي تُفحص في نفس اللحظة بالتوازي
 
-# ================= قائمة استبعاد الأقسام غير المهمة (لتسريع الدورة) =================
-# أي قسم يحتوي اسمه أو رابطه على إحدى هذه الكلمات سيتم تخطيه فوراً
 IGNORED_CATEGORIES = [
     "pet", "dog", "cat", "حيوانات", "قطط", "كلاب",
     "baby", "diaper", "infant", "أطفال", "حفاضات", "رضع",
@@ -87,21 +82,31 @@ def save_sent(data):
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
-# ================= حساب سعر الكيلو أو اللتر أوتوماتيك =================
+# ================= تجهيز الكوكيز لـ curl_cffi =================
+def parse_cookies_dict(raw_json):
+    if not raw_json:
+        return {}
+    try:
+        raw_list = json.loads(raw_json)
+        return {
+            str(c["name"]): str(c["value"])
+            for c in raw_list
+            if isinstance(c, dict) and c.get("name") and c.get("value") is not None
+        }
+    except Exception:
+        return {}
+
+
+# ================= حساب سعر الكيلو أو اللتر =================
 def calculate_unit_price_info(title, price):
-    """يستخرج الوزن أو الحجم (مع دعم العبوات المجمعة مثل 500g X 2) ويحسب سعر الكيلو/اللتر"""
     if not title or price <= 0:
         return ""
-
-    # تحويل الأرقام العربية إلى إنجليزية
     ar_digits = "٠١٢٣٤٥٦٧٨٩"
     en_digits = "0123456789"
     clean = title.translate(str.maketrans(ar_digits, en_digits))
 
-    # البحث عن نمط الوزن + معامل التكرار الاختياري (مثل: 1kg X 2 أو 500g*3 أو 250 ml)
     pattern = r"(\d+(?:\.\d+)?)\s*(kg|g|gm|gram|grams|l|ltr|liter|ml|كيلو|كجم|جم|جرام|لتر|مل|مللي)\b(?:\s*[xX\*×]\s*(\d+))?"
     match = re.search(pattern, clean, flags=re.IGNORECASE)
-
     if not match:
         return ""
 
@@ -109,7 +114,6 @@ def calculate_unit_price_info(title, price):
     unit_raw = match.group(2).lower()
     multiplier = int(match.group(3)) if match.group(3) else 1
 
-    # البحث عن معامل تكرار قبل الوزن أيضاً (مثل: 2 x 500g)
     if multiplier == 1:
         pre_match = re.search(r"(\d+)\s*[xX\*×]\s*" + re.escape(match.group(1)), clean)
         if pre_match:
@@ -120,21 +124,16 @@ def calculate_unit_price_info(title, price):
         return ""
 
     if unit_raw in ("kg", "كيلو", "كجم"):
-        kg_amount = total_val
-        unit_label = "الكيلو"
+        kg_amount, unit_label = total_val, "الكيلو"
     elif unit_raw in ("g", "gm", "gram", "grams", "جم", "جرام"):
-        kg_amount = total_val / 1000.0
-        unit_label = "الكيلو"
+        kg_amount, unit_label = total_val / 1000.0, "الكيلو"
     elif unit_raw in ("l", "ltr", "liter", "لتر"):
-        kg_amount = total_val
-        unit_label = "اللتر"
+        kg_amount, unit_label = total_val, "اللتر"
     elif unit_raw in ("ml", "مل", "مللي"):
-        kg_amount = total_val / 1000.0
-        unit_label = "اللتر"
+        kg_amount, unit_label = total_val / 1000.0, "اللتر"
     else:
         return ""
 
-    # تجنب الحساب على عبوات صغيرة جداً غير منطقية (أقل من 50 جرام/مل)
     if kg_amount < 0.05:
         return ""
 
@@ -150,7 +149,7 @@ def send_telegram_text(text):
     sent_ok = False
     for cid in [c.strip() for c in CHAT_ID.split(",") if c.strip()]:
         try:
-            r = requests.post(url, json={"chat_id": cid, "text": text}, timeout=15)
+            r = requests.post(url, json={"chat_id": cid, "text": text}, timeout=12)
             if r.status_code == 200:
                 sent_ok = True
         except Exception:
@@ -175,10 +174,9 @@ def send_telegram_deal(caption, img_url="", buttons=None):
                 payload = {"chat_id": cid, "photo": clean_img, "caption": caption[:1020]}
                 if reply_markup:
                     payload["reply_markup"] = reply_markup
-                r = requests.post(photo_api, json=payload, timeout=15)
+                r = requests.post(photo_api, json=payload, timeout=12)
                 if r.status_code == 200:
-                    delivered = True
-                    sent_ok = True
+                    delivered, sent_ok = True, True
             except Exception:
                 pass
 
@@ -187,7 +185,7 @@ def send_telegram_deal(caption, img_url="", buttons=None):
                 payload = {"chat_id": cid, "text": caption, "disable_web_page_preview": False}
                 if reply_markup:
                     payload["reply_markup"] = reply_markup
-                r = requests.post(msg_api, json=payload, timeout=15)
+                r = requests.post(msg_api, json=payload, timeout=12)
                 if r.status_code == 200:
                     sent_ok = True
             except Exception:
@@ -208,53 +206,24 @@ def maybe_send_alert(sent_deals, reason):
             sent_deals["__ALERT_TS__"] = now
 
 
-# ================= تجهيز الكوكيز والجلسة =================
-def parse_playwright_cookies(raw_json):
-    if not raw_json:
-        return []
-    try:
-        raw_list = json.loads(raw_json)
-    except Exception:
-        print("⚠️ صيغة TALABAT_COOKIES غير صحيحة!")
-        return []
-
-    now_sec = int(time.time())
-    future_exp = now_sec + (180 * 86400)
-    cleaned = []
-    for c in raw_list:
-        if not isinstance(c, dict) or not c.get("name") or c.get("value") is None:
-            continue
-        domain = str(c.get("domain", ".talabat.com"))
-        if "talabat.com" not in domain:
-            continue
-        item = {
-            "name": str(c["name"]),
-            "value": str(c["value"]),
-            "domain": domain,
-            "path": c.get("path", "/"),
-            "secure": bool(c.get("secure", True)),
-            "httpOnly": bool(c.get("httpOnly", False)),
-            "expires": future_exp
-        }
-        ss = str(c.get("sameSite", "")).lower()
-        if ss == "strict":
-            item["sameSite"] = "Strict"
-        elif ss == "lax":
-            item["sameSite"] = "Lax"
-        elif ss in ("none", "no_restriction"):
-            item["sameSite"] = "None"
-            item["secure"] = True
-        cleaned.append(item)
-    return cleaned
-
-
-# ================= المحرك الأساسي: استخراج المنتجات من JSON / API =================
+# ================= استخراج البيانات من JSON والروابط =================
 def normalize_title(title):
     return re.sub(r"\s+", " ", str(title)).strip()
 
 
-def walk_talabat_json(obj, api_products, stats):
+def walk_talabat_json(obj, products_out, stats, discovered_urls):
     if isinstance(obj, dict):
+        # التقاط روابط الأقسام الفرعية من شجرة التصنيفات إن وجدت في الـ JSON
+        slug = obj.get("slug") or obj.get("url") or obj.get("href") or ""
+        if isinstance(slug, str) and "/talabat-mart/" in slug and "/product/" not in slug:
+            full_u = slug if slug.startswith("http") else f"https://www.talabat.com{slug}"
+            clean_u = full_u.split("?")[0].split("#")[0].rstrip("/")
+            after = clean_u.split("/talabat-mart/")[1] if "/talabat-mart/" in clean_u else ""
+            if len([s for s in after.split("/") if s]) >= 2:
+                cat_label = obj.get("name") or obj.get("title") or after.split("/")[-1].replace("-", " ").title()
+                discovered_urls[clean_u] = normalize_title(cat_label)
+
+        # التقاط المنتجات والأسعار
         name = obj.get("name") or obj.get("title") or obj.get("productName")
         price = obj.get("price") or obj.get("discountedPrice") or obj.get("finalPrice")
         old_price = (
@@ -269,8 +238,6 @@ def walk_talabat_json(obj, api_products, stats):
         if isinstance(img, dict):
             img = img.get("url") or img.get("src") or ""
 
-        slug = obj.get("slug") or obj.get("url") or obj.get("deepLink") or ""
-
         try:
             p_val = float(price) if price is not None else 0.0
             old_val = float(old_price) if old_price is not None else 0.0
@@ -280,174 +247,38 @@ def walk_talabat_json(obj, api_products, stats):
                 if old_val > p_val:
                     clean_name = normalize_title(name)
                     key = str(prod_id) if prod_id else f"API_{clean_name[:40]}"
-                    api_products[key] = {
+                    products_out[key] = {
                         "prodId": key,
                         "title": clean_name,
                         "currPrice": p_val,
                         "oldPrice": old_val,
                         "imgUrl": str(img),
-                        "slug": str(slug)
                     }
         except (ValueError, TypeError):
             pass
 
         for v in obj.values():
             if isinstance(v, (dict, list)):
-                walk_talabat_json(v, api_products, stats)
+                walk_talabat_json(v, products_out, stats, discovered_urls)
 
     elif isinstance(obj, list):
         for item in obj:
             if isinstance(item, (dict, list)):
-                walk_talabat_json(item, api_products, stats)
+                walk_talabat_json(item, products_out, stats, discovered_urls)
 
 
-# ================= المحرك الاحتياطي: استخراج المنتجات من DOM =================
-EXTRACT_DOM_JS = r"""
-() => {
-    function arToEn(str) {
-        if (!str) return "";
-        const ar = "٠١٢٣٤٥٦٧٨٩", en = "0123456789";
-        return str.replace(/[٠-٩]/g, d => en[ar.indexOf(d)]);
-    }
-    function cleanNum(str) {
-        const s = arToEn(str || "").replace(/,/g, "").replace(/٬/g, "");
-        const m = s.match(/\d+(?:\.\d+)?/g);
-        return m ? m.map(Number).filter(v => v >= 2 && v <= 50000) : [];
-    }
-    function isStrike(el) {
-        if (!el || el.nodeType !== 1) return false;
-        if (["S", "DEL", "STRIKE"].includes(el.tagName)) return true;
-        const cls = (typeof el.className === "string" ? el.className : "").toLowerCase();
-        if (cls.includes("line-through") || cls.includes("strike") || cls.includes("old") || cls.includes("before")) return true;
-        const st = window.getComputedStyle(el);
-        return (st.textDecorationLine || st.textDecoration || "").includes("line-through");
-    }
-
-    const discounted = new Map();
-    let totalCards = 0;
-
-    const imgs = Array.from(document.querySelectorAll("img")).filter(img => {
-        const src = img.src || "";
-        return (src.includes("talabat") || src.includes("deliveryhero") || src.includes("dhmedia"));
-    });
-
-    imgs.forEach(img => {
-        let card = img.parentElement;
-        let bestCard = null;
-        for (let i = 0; i < 8 && card && card !== document.body; i++) {
-            const txt = arToEn(card.innerText || "");
-            const hasEgp = /(?:EGP|ج\.م|جنيه)/i.test(txt);
-            const imgCount = card.querySelectorAll("img").length;
-            if (hasEgp && imgCount <= 2 && txt.length >= 10 && txt.length <= 550) {
-                bestCard = card;
-            }
-            if (imgCount > 2) break;
-            card = card.parentElement;
-        }
-
-        if (!bestCard) return;
-        totalCards++;
-
-        const oldPrices = [];
-        const currPrices = [];
-        const allNodes = Array.from(bestCard.querySelectorAll("*"));
-
-        allNodes.forEach(node => {
-            if (node.children.length > 0) return;
-            const raw = (node.innerText || "").trim();
-            if (!raw || raw.includes("%")) return;
-            if (!/(?:EGP|ج\.م|جنيه|\d)/i.test(arToEn(raw))) return;
-
-            let struck = false;
-            let p = node;
-            while (p && p !== bestCard) {
-                if (isStrike(p)) { struck = true; break; }
-                p = p.parentElement;
-            }
-
-            const nums = cleanNum(raw);
-            if (struck) {
-                nums.forEach(n => { if (!oldPrices.includes(n)) oldPrices.push(n); });
-            } else if (/(?:EGP|ج\.م|جنيه)/i.test(arToEn(raw))) {
-                nums.forEach(n => { if (!currPrices.includes(n)) currPrices.push(n); });
-            }
-        });
-
-        if (currPrices.length === 0 || oldPrices.length === 0) return;
-
-        let title = (img.alt || "").trim();
-        if (title.length < 4) {
-            const lines = (bestCard.innerText || "").split(/\r?\n/).map(l => l.trim()).filter(l => {
-                return l.length >= 4 && !/^(?:EGP|ج\.م|جنيه|\d+(\.\d+)?$|-?\d+%|خصم|أضف|إضافة|Add|\+)$/i.test(arToEn(l));
-            });
-            title = lines[0] || "";
-        }
-        if (!title) return;
-
-        const key = ("DOM_" + title.slice(0, 40));
-        if (!discounted.has(key)) {
-            discounted.set(key, {
-                prodId: key,
-                title: title.replace(/\s+/g, " ").trim(),
-                currPrice: Math.min(...currPrices),
-                oldPrice: Math.max(...oldPrices),
-                imgUrl: img.src || "",
-                slug: ""
-            });
-        }
-    });
-
-    return { totalCards, items: Array.from(discounted.values()) };
-}
-"""
-
-DISCOVER_SIDEBAR_JS = r"""
-() => {
-    const links = Array.from(document.querySelectorAll("a[href*='/talabat-mart/']"));
-    const found = new Map();
-    for (const a of links) {
-        const cleanUrl = (a.href || "").split("?")[0].split("#")[0].replace(/\/$/, "");
-        if (!cleanUrl || cleanUrl.includes("/product/") || cleanUrl.endsWith("/talabat-mart")) continue;
-
-        const afterMart = cleanUrl.split("/talabat-mart/")[1] || "";
-        const segments = afterMart.split("/").filter(Boolean);
-        if (segments.length < 2) continue;
-
-        const txt = (a.innerText || "").trim().replace(/\s+/g, " ");
-        if (txt.length >= 2 && txt.length <= 50 && !found.has(cleanUrl)) {
-            found.set(cleanUrl, txt);
-        }
-    }
-    return Array.from(found.entries()).map(([url, name]) => ({ name, url }));
-}
-"""
-
-SCROLL_FAST_JS = """
-() => {
-    window.scrollBy(0, 1800);
-    document.querySelectorAll("div, aside, nav, main, section, ul").forEach(el => {
-        if (el.scrollHeight > el.clientHeight + 150) {
-            const ov = window.getComputedStyle(el).overflowY;
-            if (ov === "auto" || ov === "scroll") {
-                el.scrollBy(0, 1800);
-            }
-        }
-    });
-}
-"""
-
-
-def get_breadcrumb_or_title(page, fallback_name):
-    try:
-        heading = page.evaluate("""() => {
-            const h = document.querySelector("h1, h2");
-            return h ? h.innerText.trim() : "";
-        }""")
-        if heading and len(heading) > 2:
-            return heading
-    except Exception:
-        pass
-    return fallback_name
+def extract_links_from_html(html, discovered_urls):
+    # استخراج جميع روابط الأقسام الفرعية من HTML مباشرة باستخدام Regex فائق السرعة
+    matches = re.findall(r'href=["\']((?:https://www\.talabat\.com)?/egypt/talabat-mart/[^"\'?#]+)["\']', html)
+    for m in matches:
+        full_u = m if m.startswith("http") else f"https://www.talabat.com{m}"
+        clean_u = full_u.rstrip("/")
+        if "/product/" in clean_u:
+            continue
+        after = clean_u.split("/talabat-mart/")[1] if "/talabat-mart/" in clean_u else ""
+        parts = [p for p in after.split("/") if p]
+        if len(parts) >= 2 and clean_u not in discovered_urls:
+            discovered_urls[clean_u] = parts[-1].replace("-", " ").title()
 
 
 def is_ignored_category(name, url):
@@ -455,135 +286,98 @@ def is_ignored_category(name, url):
     return any(k.lower() in s for k in IGNORED_CATEGORIES)
 
 
-def is_priority_category(name, url):
-    s = f"{name} {url}".lower()
-    return any(k in s for k in ["offer", "deal", "promo", "save", "discount", "عروض", "تخفيض", "خصم", "best-in-season"])
+def fetch_and_parse_category(cat_name, url, cookies_dict):
+    """يجلب الصفحة بـ curl_cffi ويستخرج منها كل المنتجات والروابط الفرعية في جزء من الثانية"""
+    products_out = {}
+    stats = {"total_seen": 0}
+    discovered_urls = {}
+    cat_title = cat_name
+
+    try:
+        resp = cffi_requests.get(
+            url,
+            cookies=cookies_dict,
+            impersonate="chrome124",
+            headers={
+                "Accept-Language": "ar-EG,ar;q=0.9,en-US;q=0.8",
+                "Referer": "https://www.talabat.com/egypt/talabat-mart",
+            },
+            timeout=15
+        )
+        if resp.status_code != 200:
+            return cat_title, url, products_out, stats["total_seen"], discovered_urls, f"HTTP {resp.status_code}"
+
+        html = resp.text
+        extract_links_from_html(html, discovered_urls)
+
+        # استخراج اسم القسم الحقيقي من <h1> إن وجد
+        h1_m = re.search(r"<h1[^>]*>(.*?)</h1>", html, flags=re.IGNORECASE | re.DOTALL)
+        if h1_m:
+            clean_h1 = re.sub(r"<[^>]+>", "", h1_m.group(1)).strip()
+            if len(clean_h1) > 2:
+                cat_title = clean_h1
+
+        # استخراج كل كتل JSON المدمجة في الصفحة (مثل __NEXT_DATA__)
+        json_blocks = re.findall(r'<script[^>]*type=["\']application/json["\'][^>]*>(.*?)</script>', html, flags=re.DOTALL)
+        for jb in json_blocks:
+            try:
+                data = json.loads(jb)
+                walk_talabat_json(data, products_out, stats, discovered_urls)
+            except Exception:
+                pass
+
+        return cat_title, url, products_out, stats["total_seen"], discovered_urls, None
+
+    except Exception as e:
+        return cat_title, url, products_out, 0, discovered_urls, str(e)
 
 
 def main():
     start_time = time.time()
     sent_deals = load_and_clean_sent()
-    cookies = parse_playwright_cookies(TALABAT_COOKIES)
+    cookies_dict = parse_cookies_dict(TALABAT_COOKIES)
 
-    print(f"⚡ بدء الرادار المطور V4 لـ Talabat Mart (خصم {MIN_DISCOUNT_PERCENT}%+ | تصفية نارية {FLASH_DISCOUNT_PERCENT}%+)...")
+    print(f"🚀 بدء الرادار الصاروخي V5 (بدون متصفح | {MAX_WORKERS} مسارات متوازية)...")
 
-    with sync_playwright() as p:
-        browser = p.chromium.launch(
-            headless=True,
-            args=["--disable-blink-features=AutomationControlled", "--no-sandbox", "--disable-dev-shm-usage"]
-        )
-        context = browser.new_context(
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-            locale="ar-EG",
-            viewport={"width": 1366, "height": 900},
-            geolocation={"latitude": LATITUDE, "longitude": LONGITUDE},
-            permissions=["geolocation"],
-            extra_http_headers={"Accept-Language": "ar-EG,ar;q=0.9,en-US;q=0.8"}
-        )
+    clean_start = START_URL.split("?")[0].split("#")[0].rstrip("/")
+    visited = {clean_start}
+    pending = [("القسم الافتتاحي", clean_start)]
 
-        context.route(
-            "**/*",
-            lambda route: route.abort()
-            if route.request.resource_type in ("image", "media", "font", "stylesheet")
-            else route.continue_(),
-        )
+    scanned_count = 0
+    skipped_count = 0
+    total_sent_all = 0
+    total_products_scanned_all = 0
+    seen_titles_in_run = set()
 
-        if cookies:
-            context.add_cookies(cookies)
+    # التشغيل على دفعات متوازية (Batch Parallel Execution)
+    while pending and scanned_count < MAX_CATEGORIES_LIMIT:
+        batch = pending[:MAX_WORKERS]
+        pending = pending[MAX_WORKERS:]
 
-        page = context.new_page()
-        page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+            futures = {
+                executor.submit(fetch_and_parse_category, name, url, cookies_dict): (name, url)
+                for name, url in batch
+            }
 
-        api_products = {}
-        page_stats = {"total_seen": 0}
+            for future in as_completed(futures):
+                scanned_count += 1
+                cat_title, url, products_out, total_seen, discovered_urls, err = future.result()
 
-        def on_response(resp):
-            try:
-                ct = resp.headers.get("content-type", "")
-                if resp.status == 200 and ("json" in ct or "api" in resp.url):
-                    data = resp.json()
-                    walk_talabat_json(data, api_products, page_stats)
-            except Exception:
-                pass
+                if err:
+                    print(f"[{scanned_count}] ⚠️ {cat_title}: {err}")
+                    continue
 
-        page.on("response", on_response)
+                # إضافة أي أقسام فرعية جديدة تم اكتشافها
+                for d_url, d_name in discovered_urls.items():
+                    if d_url not in visited:
+                        visited.add(d_url)
+                        if is_ignored_category(d_name, d_url):
+                            skipped_count += 1
+                        elif len(visited) < MAX_CATEGORIES_LIMIT + skipped_count:
+                            pending.append((d_name, d_url))
 
-        clean_start = START_URL.split("?")[0].split("#")[0].rstrip("/")
-        queue = deque([("القسم الافتتاحي", clean_start)])
-        visited = {clean_start}
-
-        scanned_count = 0
-        skipped_count = 0
-        total_sent_all = 0
-        total_products_scanned_all = 0
-        seen_titles_in_run = set()
-
-        while queue and scanned_count < MAX_CATEGORIES_LIMIT:
-            cat_name, url = queue.popleft()
-            scanned_count += 1
-            api_products.clear()
-            page_stats["total_seen"] = 0
-
-            try:
-                page.goto(url, wait_until="domcontentloaded", timeout=20000)
-                time.sleep(0.9)
-
-                if scanned_count == 1:
-                    body_txt = page.inner_text("body")
-                    if "غير متاح" in body_txt or "not available in your area" in body_txt.lower():
-                        print("⚠️ طلبات مارت غير متاح للإحداثيات الحالية.")
-                        maybe_send_alert(sent_deals, "طلبات مارت غير متاح للإحداثيات الحالية.")
-
-                display_cat = get_breadcrumb_or_title(page, cat_name)
-
-                try:
-                    next_scripts = page.evaluate(
-                        """() => Array.from(document.querySelectorAll("script#__NEXT_DATA__, script[type='application/json']")).map(s => s.textContent)"""
-                    )
-                    for raw_j in next_scripts:
-                        if raw_j:
-                            try:
-                                walk_talabat_json(json.loads(raw_j), api_products, page_stats)
-                            except Exception:
-                                pass
-                except Exception:
-                    pass
-
-                dom_items = {}
-                max_cards_seen = 0
-                for _ in range(3):
-                    sidebar_cats = page.evaluate(DISCOVER_SIDEBAR_JS)
-                    for sc in sidebar_cats:
-                        sc_url = sc["url"]
-                        if sc_url not in visited:
-                            visited.add(sc_url)
-                            # تخطي الأقسام المستبعدة فوراً دون إضافتها للطابور
-                            if is_ignored_category(sc["name"], sc_url):
-                                skipped_count += 1
-                                continue
-                            if len(visited) < MAX_CATEGORIES_LIMIT + skipped_count:
-                                if is_priority_category(sc["name"], sc_url):
-                                    queue.appendleft((sc["name"], sc_url))
-                                else:
-                                    queue.append((sc["name"], sc_url))
-
-                    res = page.evaluate(EXTRACT_DOM_JS)
-                    cards_now = res.get("totalCards", 0)
-                    if cards_now > max_cards_seen:
-                        max_cards_seen = cards_now
-                    for it in res.get("items", []):
-                        dom_items[it["prodId"]] = it
-
-                    page.evaluate(SCROLL_FAST_JS)
-                    time.sleep(0.35)
-
-                merged_items = {}
-                for v in dom_items.values():
-                    merged_items[v["title"][:40].lower()] = v
-                for v in api_products.values():
-                    merged_items[v["title"][:40].lower()] = v
-
-                total_in_cat = max(page_stats["total_seen"], max_cards_seen, len(merged_items))
+                total_in_cat = max(total_seen, len(products_out))
                 total_products_scanned_all += total_in_cat
 
                 if total_in_cat > 0:
@@ -592,14 +386,14 @@ def main():
                 max_disc = 0
                 sent_cnt = 0
 
-                for norm_key, it in merged_items.items():
+                for it in products_out.values():
+                    norm_key = it["title"][:40].lower()
                     if norm_key in seen_titles_in_run:
                         continue
                     seen_titles_in_run.add(norm_key)
 
                     curr_p = it["currPrice"]
                     old_p = it["oldPrice"]
-
                     if old_p <= curr_p or old_p > curr_p * 12:
                         continue
 
@@ -623,15 +417,15 @@ def main():
                             unit_info = calculate_unit_price_info(title_str, curr_p)
                             unit_line = f"\n{unit_info}" if unit_info else ""
 
-                            # تمييز التصفية النارية (65%+) عن العروض العادية
-                            if disc >= FLASH_DISCOUNT_PERCENT:
-                                header = f"🚨 تصفية نارية في Talabat Mart بخصم {disc}%! 🔥"
-                            else:
-                                header = f"🟠 لقطة Talabat Mart بخصم {disc}%!"
+                            header = (
+                                f"🚨 تصفية نارية في Talabat Mart بخصم {disc}%! 🔥"
+                                if disc >= FLASH_DISCOUNT_PERCENT
+                                else f"🟠 لقطة Talabat Mart بخصم {disc}%!"
+                            )
 
                             caption = (
                                 f"{header}\n"
-                                f"🏷️ القائمة: {display_cat}\n\n"
+                                f"🏷️ القائمة: {cat_title}\n\n"
                                 f"📦 {title_str}\n"
                                 f"💰 السعر الجديد: {curr_p} EGP\n"
                                 f"❌ السعر القديم: {old_p} EGP (وفرت {saved_egp} ج)"
@@ -640,7 +434,7 @@ def main():
 
                             buttons = [
                                 [{"text": "🛒 اطلب المنتج من طلبات مارت", "url": search_link}],
-                                [{"text": f"📂 تصفح قائمة {display_cat[:24]}", "url": url}]
+                                [{"text": f"📂 تصفح قائمة {cat_title[:24]}", "url": url}]
                             ]
 
                             if send_telegram_deal(caption, img_url=it.get("imgUrl", ""), buttons=buttons):
@@ -649,22 +443,16 @@ def main():
                                 sent_cnt += 1
                                 total_sent_all += 1
                                 tag = "🚨 تصفية" if disc >= FLASH_DISCOUNT_PERCENT else "✅ لقطة"
-                                print(f"   {tag} [{disc}%]: {title_str[:40]} ({curr_p} ج بدلاً من {old_p} ج)")
-                                time.sleep(0.25)
+                                print(f"   {tag} [{disc}%]: {title_str[:40]} ({curr_p} ج)")
 
-                print(f"[{scanned_count}/{scanned_count + len(queue)}] {cat_name[:28]:<28} | منتجات: {total_in_cat:<3} | مخفض: {len(merged_items):<2} | أعلى خصم: {max_disc}% | أُرسل: {sent_cnt}")
-
-            except Exception as e:
-                print(f"[{scanned_count}] ❌ خطأ في {cat_name}: {e}")
-
-        browser.close()
+                print(f"[{scanned_count}] {cat_title[:26]:<26} | منتجات: {total_in_cat:<3} | مخفض: {len(products_out):<2} | أعلى خصم: {max_disc}% | أُرسل: {sent_cnt}")
 
     if total_products_scanned_all == 0:
-        maybe_send_alert(sent_deals, "لم يتم العثور على أي منتجات في جميع الأقسام — غالباً الكوكيز انتهت صلاحيتها.")
+        maybe_send_alert(sent_deals, "لم يتم سحب أي منتجات — تأكد من صلاحية TALABAT_COOKIES.")
 
     save_sent(sent_deals)
     elapsed = round(time.time() - start_time, 1)
-    print(f"\n🏁 اكتمل المسح في {elapsed} ثانية | قوائم مفحوصة: {scanned_count} (تم تخطي {skipped_count} قسم مستبعد) | منتجات: {total_products_scanned_all} | عروض مرسلة: {total_sent_all}")
+    print(f"\n🏁 اكتمل المسح الصاروخي في {elapsed} ثانية فقط! | قوائم: {scanned_count} (تخطي {skipped_count}) | منتجات: {total_products_scanned_all} | مرسل: {total_sent_all}")
 
 
 if __name__ == "__main__":
