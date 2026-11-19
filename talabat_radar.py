@@ -17,15 +17,18 @@ LATITUDE = float(os.environ.get("TALABAT_LAT") or "31.2156")
 LONGITUDE = float(os.environ.get("TALABAT_LNG") or "29.9553")
 
 # نقطة البداية لاكتشاف كل القوائم الرئيسية والفرعية في طلبات مارت
-START_URL = (os.environ.get("TALABAT_MART_URL") or "https://www.talabat.com/egypt/talabat-mart/fruit-veg/best-in-season").strip()
-if "/talabat-mart" not in START_URL:
-    START_URL = "https://www.talabat.com/egypt/talabat-mart/fruit-veg/best-in-season"
+env_url = os.environ.get("TALABAT_MART_URL", "").strip()
+START_URL = (
+    env_url
+    if env_url.startswith("http") and "/talabat-mart" in env_url
+    else "https://www.talabat.com/egypt/talabat-mart/fruit-veg/best-in-season"
+)
 
 MIN_DISCOUNT_PERCENT = 40
 CACHE_TTL_DAYS = 7
 COOKIE_ALERT_COOLDOWN = 12 * 3600
 STATE_FILE = "sent_talabat.json"
-MAX_CATEGORIES_LIMIT = 150  # حد أمان لمنع الدوران اللانهائي
+MAX_CATEGORIES_LIMIT = 150
 
 
 # ================= إدارة الكاش ومنع التكرار =================
@@ -331,7 +334,6 @@ DISCOVER_SIDEBAR_JS = r"""
     const found = new Map();
     for (const a of links) {
         const cleanUrl = (a.href || "").split("?")[0].split("#")[0].replace(/\/$/, "");
-        // استبعاد روابط المنتجات الفردية (التي تحتوي على /product/) والاحتفاظ بروابط القوائم فقط
         if (!cleanUrl || cleanUrl.includes("/product/") || cleanUrl.endsWith("/talabat-mart")) continue;
 
         const txt = (a.innerText || "").trim().replace(/\s+/g, " ");
@@ -360,7 +362,6 @@ SCROLL_ALL_JS = """
 
 
 def get_breadcrumb_or_title(page, fallback_name):
-    """يجلب المسار الكامل للقسم مثل: Fruit & Veg > Best in season"""
     try:
         heading = page.evaluate("""() => {
             const h = document.querySelector("h1, h2");
@@ -384,7 +385,6 @@ def main():
             headless=True,
             args=["--disable-blink-features=AutomationControlled"]
         )
-        # استخدام شاشة Desktop لإظهار القائمة الجانبية (Categories) وكل القوائم الفرعية
         context = browser.new_context(
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
             locale="ar-EG",
@@ -413,7 +413,6 @@ def main():
 
         page.on("response", on_response)
 
-        # طابور الزحف الديناميكي (يبدأ من الرابط المحدد ويكتشف كل القوائم الرئيسية والفرعية تلقائياً)
         clean_start = START_URL.split("?")[0].split("#")[0].rstrip("/")
         queue = deque([("القسم الافتتاحي", clean_start)])
         visited = {clean_start}
@@ -437,10 +436,8 @@ def main():
                         print("⚠️ طلبات مارت غير متاح للإحداثيات الحالية.")
                         maybe_send_alert(sent_deals, "طلبات مارت غير متاح للإحداثيات الحالية.")
 
-                # جلب اسم المسار الكامل للقسم (مثل Fruit & Veg > Best in season)
                 display_cat = get_breadcrumb_or_title(page, cat_name)
 
-                # استخراج JSON المدمج في الصفحة
                 try:
                     next_scripts = page.evaluate(
                         """() => Array.from(document.querySelectorAll("script#__NEXT_DATA__, script[type='application/json']")).map(s => s.textContent)"""
@@ -454,13 +451,11 @@ def main():
                 except Exception:
                     pass
 
-                # التمرير لتحميل جميع منتجات القائمة + تمرير القائمة الجانبية لاكتشاف القوائم الفرعية الجديدة
                 last_total = 0
                 stagnant = 0
                 dom_items = {}
 
                 for _ in range(22):
-                    # التقاط أي قوائم رئيسية أو فرعية ظهرت في القائمة الجانبية وإضافتها للطابور
                     sidebar_cats = page.evaluate(DISCOVER_SIDEBAR_JS)
                     for sc in sidebar_cats:
                         sc_url = sc["url"]
