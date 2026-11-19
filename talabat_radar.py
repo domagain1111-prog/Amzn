@@ -29,7 +29,7 @@ COOKIE_ALERT_COOLDOWN = 12 * 3600
 STATE_FILE = "sent_talabat.json"
 MAX_CATEGORIES_LIMIT = 115
 CONCURRENT_TABS = 5
-MAX_PAGES_PER_CATEGORY = 5  # أقصى عدد صفحات مرقمة (1, 2, 3...) داخل كل قسم
+MAX_PAGES_PER_CATEGORY = 5
 
 # ================= المستوى الأول: أقسام العروض والخصومات =================
 DEALS_PRIORITY_CATEGORIES = [
@@ -434,25 +434,24 @@ EXTRACT_DOM_JS = r"""
 }
 """
 
-# دالة للضغط على رقم الصفحة التالية (2, 3, 4...) في ترقيم الصفحات أسفل القائمة
-CLICK_NEXT_PAGE_JS = r"""
+# دالة شاملة للضغط على رقم الصفحة التالية أياً كان نوع العنصر (div, span, button, a, li)
+CLICK_PAGINATION_JS = r"""
 (targetPageNum) => {
     const targetStr = String(targetPageNum);
-    // البحث عن أزرار أو روابط الترقيم في أسفل الصفحة
-    const candidates = Array.from(document.querySelectorAll("button, a, li[role='button'], [role='button']"));
-    for (const el of candidates) {
-        if (el.disabled || el.getAttribute("aria-disabled") === "true") continue;
+    // البحث في كل العناصر الورقية (Leaf elements) في أسفل الصفحة
+    const allEls = Array.from(document.querySelectorAll("a, button, li, div, span"));
+    for (const el of allEls) {
+        if (el.children.length > 0) continue;
         const txt = (el.innerText || "").trim();
-        const aria = (el.getAttribute("aria-label") || "").toLowerCase();
+        if (txt !== targetStr) continue;
 
-        // مطابقة رقم الصفحة المطلوب (مثل "2" أو "3") في النصف السفلي من الصفحة
         const rect = el.getBoundingClientRect();
-        if (rect.width > 0 && rect.height > 0 && rect.width < 120) {
-            if (txt === targetStr || aria.includes("page " + targetStr) || aria.includes("صفحة " + targetStr)) {
-                el.scrollIntoView({ block: "center" });
-                el.click();
-                return true;
-            }
+        // التأكد أن العنصر مربع/دائري صغير في أسفل الصفحة (وليس رقماً داخل وصف أو قائمة جانبية)
+        if (rect.width >= 16 && rect.width <= 70 && rect.height >= 16 && rect.height <= 70 && rect.left > 250) {
+            const clickable = el.closest("a, button, [role='button'], li") || el;
+            clickable.scrollIntoView({ block: "center" });
+            clickable.click();
+            return true;
         }
     }
     return false;
@@ -571,17 +570,19 @@ async def scan_single_category(context, cat_name, url, shared_state):
 
         dom_items = {}
         pages_visited_in_cat = 1
+        prev_page_signature = None
 
-        # التنقل بين الصفحات المرقمة (1, 2, 3...) داخل القسم
         for page_num in range(1, MAX_PAGES_PER_CATEGORY + 1):
             if page_num > 1:
-                clicked = await page.evaluate(CLICK_NEXT_PAGE_JS, page_num)
-                if not clicked:
-                    break
-                pages_visited_in_cat = page_num
-                await asyncio.sleep(1.1)
+                clicked = await page.evaluate(CLICK_PAGINATION_JS, page_num)
+                if clicked:
+                    await asyncio.sleep(1.2)
+                else:
+                    # محاولة احتياطية عبر معامل الرابط ?page=2 في حال عدم وجود زر مرئي
+                    sep = "&" if "?" in url else "?"
+                    await page.goto(f"{url}{sep}page={page_num}", wait_until="domcontentloaded", timeout=18000)
+                    await asyncio.sleep(1.0)
 
-            # تمرير سريع لأسفل الصفحة لإظهار ترقيم الصفحات واكتشاف القائمة الجانبية
             await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
             await asyncio.sleep(0.35)
 
@@ -597,7 +598,17 @@ async def scan_single_category(context, cat_name, url, shared_state):
                             enqueue_category(shared_state, sc["name"], sc_url)
 
             res = await page.evaluate(EXTRACT_DOM_JS)
-            for t in res.get("allCardTitles", []):
+            current_titles = res.get("allCardTitles", [])
+            current_sig = tuple(sorted(current_titles[:5]))
+
+            # إذا كانت نفس منتجات الصفحة السابقة أو لا توجد منتجات، توقف فوراً
+            if page_num > 1 and (not current_titles or current_sig == prev_page_signature):
+                break
+
+            prev_page_signature = current_sig
+            pages_visited_in_cat = page_num
+
+            for t in current_titles:
                 page_stats["seen_titles"].add(normalize_title(t).lower())
             for it in res.get("items", []):
                 dom_items[it["prodId"]] = it
@@ -694,7 +705,7 @@ async def main_async():
     sent_deals = load_and_clean_sent()
     cookies = parse_playwright_cookies(TALABAT_COOKIES)
 
-    print(f"⚡ بدء الرادار المتوازي V6.5 (دعم الصفحات المرقمة 1..{MAX_PAGES_PER_CATEGORY} | العروض أولاً)...")
+    print(f"⚡ بدء الرادار المتوازي V6.6 (نقر ذكي + رابط ?page=N | العروض أولاً)...")
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(
