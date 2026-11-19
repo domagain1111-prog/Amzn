@@ -23,11 +23,22 @@ START_URL = (
 )
 
 MIN_DISCOUNT_PERCENT = 40
-MAX_REALISTIC_DISCOUNT = 92  # استبعاد أخطاء قراءة الأرقام الشاذة
+FLASH_DISCOUNT_PERCENT = 65     # الحد الأدنى للتصفية النارية العاجلة
+MAX_REALISTIC_DISCOUNT = 92
 CACHE_TTL_DAYS = 7
 COOKIE_ALERT_COOLDOWN = 12 * 3600
 STATE_FILE = "sent_talabat.json"
 MAX_CATEGORIES_LIMIT = 130
+
+# ================= قائمة استبعاد الأقسام غير المهمة (لتسريع الدورة) =================
+# أي قسم يحتوي اسمه أو رابطه على إحدى هذه الكلمات سيتم تخطيه فوراً
+IGNORED_CATEGORIES = [
+    "pet", "dog", "cat", "حيوانات", "قطط", "كلاب",
+    "baby", "diaper", "infant", "أطفال", "حفاضات", "رضع",
+    "stationery", "office", "مكتبية", "أدوات مدرسية",
+    "tobacco", "cigarette", "vape", "سجائر", "تبغ",
+    "party", "gift", "هدايا", "حفلات"
+]
 
 
 # ================= إدارة الكاش ومنع التكرار =================
@@ -74,6 +85,61 @@ def record_deal(sent_deals, key, price):
 def save_sent(data):
     with open(STATE_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+# ================= حساب سعر الكيلو أو اللتر أوتوماتيك =================
+def calculate_unit_price_info(title, price):
+    """يستخرج الوزن أو الحجم (مع دعم العبوات المجمعة مثل 500g X 2) ويحسب سعر الكيلو/اللتر"""
+    if not title or price <= 0:
+        return ""
+
+    # تحويل الأرقام العربية إلى إنجليزية
+    ar_digits = "٠١٢٣٤٥٦٧٨٩"
+    en_digits = "0123456789"
+    clean = title.translate(str.maketrans(ar_digits, en_digits))
+
+    # البحث عن نمط الوزن + معامل التكرار الاختياري (مثل: 1kg X 2 أو 500g*3 أو 250 ml)
+    pattern = r"(\d+(?:\.\d+)?)\s*(kg|g|gm|gram|grams|l|ltr|liter|ml|كيلو|كجم|جم|جرام|لتر|مل|مللي)\b(?:\s*[xX\*×]\s*(\d+))?"
+    match = re.search(pattern, clean, flags=re.IGNORECASE)
+
+    if not match:
+        return ""
+
+    val = float(match.group(1))
+    unit_raw = match.group(2).lower()
+    multiplier = int(match.group(3)) if match.group(3) else 1
+
+    # البحث عن معامل تكرار قبل الوزن أيضاً (مثل: 2 x 500g)
+    if multiplier == 1:
+        pre_match = re.search(r"(\d+)\s*[xX\*×]\s*" + re.escape(match.group(1)), clean)
+        if pre_match:
+            multiplier = int(pre_match.group(1))
+
+    total_val = val * multiplier
+    if total_val <= 0:
+        return ""
+
+    if unit_raw in ("kg", "كيلو", "كجم"):
+        kg_amount = total_val
+        unit_label = "الكيلو"
+    elif unit_raw in ("g", "gm", "gram", "grams", "جم", "جرام"):
+        kg_amount = total_val / 1000.0
+        unit_label = "الكيلو"
+    elif unit_raw in ("l", "ltr", "liter", "لتر"):
+        kg_amount = total_val
+        unit_label = "اللتر"
+    elif unit_raw in ("ml", "مل", "مللي"):
+        kg_amount = total_val / 1000.0
+        unit_label = "اللتر"
+    else:
+        return ""
+
+    # تجنب الحساب على عبوات صغيرة جداً غير منطقية (أقل من 50 جرام/مل)
+    if kg_amount < 0.05:
+        return ""
+
+    unit_price = round(price / kg_amount, 2)
+    return f"⚖️ السعر الصافي لـ{unit_label}: {unit_price} EGP"
 
 
 # ================= إرسال تنبيهات تليجرام =================
@@ -188,7 +254,6 @@ def normalize_title(title):
 
 
 def walk_talabat_json(obj, api_products, stats):
-    """يستخرج كل المنتجات (العادية والمخفضة) بدقة عالية من هيكل JSON الخاص بطلبات"""
     if isinstance(obj, dict):
         name = obj.get("name") or obj.get("title") or obj.get("productName")
         price = obj.get("price") or obj.get("discountedPrice") or obj.get("finalPrice")
@@ -385,6 +450,11 @@ def get_breadcrumb_or_title(page, fallback_name):
     return fallback_name
 
 
+def is_ignored_category(name, url):
+    s = f"{name} {url}".lower()
+    return any(k.lower() in s for k in IGNORED_CATEGORIES)
+
+
 def is_priority_category(name, url):
     s = f"{name} {url}".lower()
     return any(k in s for k in ["offer", "deal", "promo", "save", "discount", "عروض", "تخفيض", "خصم", "best-in-season"])
@@ -395,7 +465,7 @@ def main():
     sent_deals = load_and_clean_sent()
     cookies = parse_playwright_cookies(TALABAT_COOKIES)
 
-    print(f"⚡ بدء الرادار المطور V3 لـ Talabat Mart (خصم {MIN_DISCOUNT_PERCENT}% - {MAX_REALISTIC_DISCOUNT}%)...")
+    print(f"⚡ بدء الرادار المطور V4 لـ Talabat Mart (خصم {MIN_DISCOUNT_PERCENT}%+ | تصفية نارية {FLASH_DISCOUNT_PERCENT}%+)...")
 
     with sync_playwright() as p:
         browser = p.chromium.launch(
@@ -411,7 +481,6 @@ def main():
             extra_http_headers={"Accept-Language": "ar-EG,ar;q=0.9,en-US;q=0.8"}
         )
 
-        # حظر تحميل الموارد الثقيلة غير الضرورية لتسريع التحميل لأقصى درجة
         context.route(
             "**/*",
             lambda route: route.abort()
@@ -444,9 +513,10 @@ def main():
         visited = {clean_start}
 
         scanned_count = 0
+        skipped_count = 0
         total_sent_all = 0
         total_products_scanned_all = 0
-        seen_titles_in_run = set()  # منع تكرار فحص نفس المنتج في أكثر من قسم خلال نفس الدورة
+        seen_titles_in_run = set()
 
         while queue and scanned_count < MAX_CATEGORIES_LIMIT:
             cat_name, url = queue.popleft()
@@ -466,7 +536,6 @@ def main():
 
                 display_cat = get_breadcrumb_or_title(page, cat_name)
 
-                # استخراج فوري من بيانات Next.js المدمجة في HTML
                 try:
                     next_scripts = page.evaluate(
                         """() => Array.from(document.querySelectorAll("script#__NEXT_DATA__, script[type='application/json']")).map(s => s.textContent)"""
@@ -480,19 +549,23 @@ def main():
                 except Exception:
                     pass
 
-                # تمرير سريع 3 مرات فقط لاكتشاف القوائم الجانبية وتنشيط أي منتجات إضافية
                 dom_items = {}
                 max_cards_seen = 0
                 for _ in range(3):
                     sidebar_cats = page.evaluate(DISCOVER_SIDEBAR_JS)
                     for sc in sidebar_cats:
                         sc_url = sc["url"]
-                        if sc_url not in visited and (len(visited) < MAX_CATEGORIES_LIMIT):
+                        if sc_url not in visited:
                             visited.add(sc_url)
-                            if is_priority_category(sc["name"], sc_url):
-                                queue.appendleft((sc["name"], sc_url))
-                            else:
-                                queue.append((sc["name"], sc_url))
+                            # تخطي الأقسام المستبعدة فوراً دون إضافتها للطابور
+                            if is_ignored_category(sc["name"], sc_url):
+                                skipped_count += 1
+                                continue
+                            if len(visited) < MAX_CATEGORIES_LIMIT + skipped_count:
+                                if is_priority_category(sc["name"], sc_url):
+                                    queue.appendleft((sc["name"], sc_url))
+                                else:
+                                    queue.append((sc["name"], sc_url))
 
                     res = page.evaluate(EXTRACT_DOM_JS)
                     cards_now = res.get("totalCards", 0)
@@ -504,7 +577,6 @@ def main():
                     page.evaluate(SCROLL_FAST_JS)
                     time.sleep(0.35)
 
-                # دمج نتائج الـ API (الأدق والأشمل) مع نتائج الواجهة
                 merged_items = {}
                 for v in dom_items.values():
                     merged_items[v["title"][:40].lower()] = v
@@ -548,12 +620,22 @@ def main():
                             search_link = f"https://www.talabat.com/egypt/talabat-mart?q={clean_query}"
 
                             saved_egp = round(old_p - curr_p, 2)
+                            unit_info = calculate_unit_price_info(title_str, curr_p)
+                            unit_line = f"\n{unit_info}" if unit_info else ""
+
+                            # تمييز التصفية النارية (65%+) عن العروض العادية
+                            if disc >= FLASH_DISCOUNT_PERCENT:
+                                header = f"🚨 تصفية نارية في Talabat Mart بخصم {disc}%! 🔥"
+                            else:
+                                header = f"🟠 لقطة Talabat Mart بخصم {disc}%!"
+
                             caption = (
-                                f"🟠 لقطة Talabat Mart بخصم {disc}%!\n"
+                                f"{header}\n"
                                 f"🏷️ القائمة: {display_cat}\n\n"
                                 f"📦 {title_str}\n"
                                 f"💰 السعر الجديد: {curr_p} EGP\n"
                                 f"❌ السعر القديم: {old_p} EGP (وفرت {saved_egp} ج)"
+                                f"{unit_line}"
                             )
 
                             buttons = [
@@ -566,7 +648,8 @@ def main():
                                 record_deal(sent_deals, title_cache_key, curr_p)
                                 sent_cnt += 1
                                 total_sent_all += 1
-                                print(f"   ✅ لقطة [{disc}%]: {title_str[:42]} ({curr_p} ج بدلاً من {old_p} ج)")
+                                tag = "🚨 تصفية" if disc >= FLASH_DISCOUNT_PERCENT else "✅ لقطة"
+                                print(f"   {tag} [{disc}%]: {title_str[:40]} ({curr_p} ج بدلاً من {old_p} ج)")
                                 time.sleep(0.25)
 
                 print(f"[{scanned_count}/{scanned_count + len(queue)}] {cat_name[:28]:<28} | منتجات: {total_in_cat:<3} | مخفض: {len(merged_items):<2} | أعلى خصم: {max_disc}% | أُرسل: {sent_cnt}")
@@ -581,7 +664,7 @@ def main():
 
     save_sent(sent_deals)
     elapsed = round(time.time() - start_time, 1)
-    print(f"\n🏁 اكتمل المسح في {elapsed} ثانية | قوائم: {scanned_count} | منتجات مفحوصة: {total_products_scanned_all} | عروض مرسلة: {total_sent_all}")
+    print(f"\n🏁 اكتمل المسح في {elapsed} ثانية | قوائم مفحوصة: {scanned_count} (تم تخطي {skipped_count} قسم مستبعد) | منتجات: {total_products_scanned_all} | عروض مرسلة: {total_sent_all}")
 
 
 if __name__ == "__main__":
