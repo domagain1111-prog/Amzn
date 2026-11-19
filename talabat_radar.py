@@ -11,18 +11,14 @@ TELEGRAM_TOKEN = (os.environ.get("TALABAT_TELEGRAM_TOKEN") or os.environ.get("TE
 CHAT_ID = (os.environ.get("TALABAT_CHAT_ID") or os.environ.get("CHAT_ID") or "").strip()
 TALABAT_COOKIES = os.environ.get("TALABAT_COOKIES", "").strip()
 
-# إحداثيات الموقع لتحديد فرع طلبات مارت الأقرب (مثال افتراضي: القاهرة الجديدة / المعادي - عدلها لإحداثياتك)
-LATITUDE = float(os.environ.get("TALABAT_LAT") or "29.9602")
-LONGITUDE = float(os.environ.get("TALABAT_LNG") or "31.2569")
+# إحداثيات الموقع لتحديد فرع طلبات مارت (الافتراضي: الإسكندرية)
+LATITUDE = float(os.environ.get("TALABAT_LAT") or "31.2156")
+LONGITUDE = float(os.environ.get("TALABAT_LNG") or "29.9553")
 
+# رابط متجر طلبات مارت الرئيسي
+TALABAT_MART_URL = (os.environ.get("TALABAT_MART_URL") or "https://www.talabat.com/egypt/grocery/623082/talabat-mart").strip()
 
-# رابط متجر طلبات مارت الرئيسي في مصر (يمكنك وضع رابط فرع منطقتك مباشرة إذا أردت)
-TALABAT_MART_URL = os.environ.get(
-    "TALABAT_MART_URL",
-    "https://www.talabat.com/egypt/grocery/623082/talabat-mart"
-).strip()
-
-MIN_DISCOUNT_PERCENT = 30
+MIN_DISCOUNT_PERCENT = 40
 CACHE_TTL_DAYS = 7
 COOKIE_ALERT_COOLDOWN = 12 * 3600
 STATE_FILE = "sent_talabat.json"
@@ -98,7 +94,6 @@ def send_telegram_deal(caption, img_url="", buttons=None):
     msg_api = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     reply_markup = {"inline_keyboard": buttons} if buttons else None
 
-    # تحسين جودة صورة طلبات إن أمكن
     clean_img = img_url.split("?")[0] if img_url else ""
 
     sent_ok = False
@@ -186,7 +181,6 @@ def parse_playwright_cookies(raw_json):
 def walk_talabat_json(obj, api_products):
     """يستخرج المنتجات المخفضة مباشرة من استجابات API الخاصة بطلبات مارت"""
     if isinstance(obj, dict):
-        # البحث عن أنماط كائنات المنتجات في API طلبات
         name = obj.get("name") or obj.get("title") or obj.get("productName")
         price = obj.get("price") or obj.get("discountedPrice") or obj.get("finalPrice")
         old_price = (
@@ -281,7 +275,6 @@ EXTRACT_DOM_JS = r"""
             if (!raw || raw.includes("%")) return;
             if (!/(?:EGP|ج\.م|جنيه|\d)/i.test(arToEn(raw))) return;
 
-            // فحص ما إذا كان العنصر أو أحد آبائه مشطوباً
             let struck = false;
             let p = node;
             while (p && p !== bestCard) {
@@ -335,9 +328,8 @@ DISCOVER_CATEGORIES_JS = r"""
     for (const a of links) {
         const href = a.href || "";
         const txt = (a.innerText || "").trim().replace(/\s+/g, " ");
-        // روابط أقسام طلبات مارت عادة تحتوي على category أو aisle أو نفس مسار المتجر
         if (
-            (href.includes("/grocery/") || href.includes("/talabat-mart")) &&
+            (href.includes("/grocery/") || href.includes("/talabat-mart") || href.includes("/tmart-")) &&
             (href.includes("category") || href.includes("aisle") || href.includes("collection") || href.split("/").length >= 6) &&
             txt.length >= 2 && txt.length <= 45 &&
             !/^(?:الرئيسية|Home|تسجيل|Login|السلة|Cart)$/i.test(txt)
@@ -419,7 +411,6 @@ def main():
             print("⚠️ طلبات مارت غير متاح للإحداثيات الحالية أو يطلب تحديد العنوان.")
             maybe_send_alert(sent_deals, "المتجر يطلب تحديد المنطقة أو غير متاح حالياً في الإحداثيات المضبوطة.")
 
-        # التمرير قليلاً في الصفحة الرئيسية لتحميل شريط الأقسام
         for _ in range(4):
             page.evaluate(SCROLL_JS)
             time.sleep(1.2)
@@ -436,6 +427,9 @@ def main():
 
         print(f"📂 تم اكتشاف {len(targets)} قسم/صفحة داخل طلبات مارت للفحص.")
 
+        # تنظيف الرابط الأساسي للمتجر لاستخدامه في البحث المباشر عند فتح الروابط من الموبايل
+        base_store = TALABAT_MART_URL.split("?")[0].rstrip("/")
+
         # 2. المرور على كل الأقسام واستخراج العروض
         for idx, (cat_name, url) in enumerate(targets, 1):
             print(f"\n[{idx}/{len(targets)}] فحص قسم: {cat_name}...")
@@ -446,7 +440,6 @@ def main():
                     page.goto(url, wait_until="domcontentloaded", timeout=35000)
                     time.sleep(3.5)
 
-                # استخراج __NEXT_DATA__ إن وجد
                 try:
                     next_scripts = page.evaluate(
                         """() => Array.from(document.querySelectorAll("script#__NEXT_DATA__, script[type='application/json']")).map(s => s.textContent)"""
@@ -482,12 +475,11 @@ def main():
                     page.evaluate(SCROLL_JS)
                     time.sleep(1.2)
 
-                # دمج نتائج API (الأدق) مع نتائج DOM
                 merged_items = {}
                 for k, v in dom_items.items():
                     merged_items[v["title"][:35]] = v
                 for k, v in api_products.items():
-                    merged_items[v["title"][:35]] = v  # أولوية لبيانات API
+                    merged_items[v["title"][:35]] = v
 
                 if len(merged_items) > 0:
                     sent_deals.pop("__ALERT_TS__", None)
@@ -520,13 +512,8 @@ def main():
                         prev_title_p = get_saved_price(sent_deals, title_cache_key)
 
                         if (not prev_p or prev_p > curr_p) and (prev_title_p != curr_p):
-                            raw_href = it.get("href", "")
-                            if raw_href and raw_href.startswith("/"):
-                                final_link = f"https://www.talabat.com{raw_href}"
-                            elif raw_href.startswith("http"):
-                                final_link = raw_href
-                            else:
-                                final_link = url
+                            clean_query = urllib.parse.quote_plus(title_str[:45])
+                            final_link = f"{base_store}?q={clean_query}"
 
                             saved_egp = round(old_p - curr_p, 2)
                             caption = (
@@ -538,7 +525,7 @@ def main():
                             )
 
                             buttons = [
-                                [{"text": "🛒 اطلب من طلبات مارت", "url": final_link}],
+                                [{"text": "🛒 ابحث واطلب من طلبات مارت", "url": final_link}],
                                 [{"text": f"📂 قسم {cat_name}", "url": url}]
                             ]
 
