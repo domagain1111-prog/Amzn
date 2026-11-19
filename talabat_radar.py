@@ -25,12 +25,12 @@ MIN_DISCOUNT_PERCENT = 25      # الحد الأدنى للخصم أو الهب�
 FLASH_DISCOUNT_PERCENT = 50    # الحد الأدنى للتنبيه الناري
 MAX_REALISTIC_DISCOUNT = 92
 CACHE_TTL_DAYS = 7
-PRICE_HISTORY_TTL_DAYS = 21    # مدة الاحتفاظ بسجل الأسعار التاريخي (3 أسابيع)
+PRICE_HISTORY_TTL_DAYS = 21
 COOKIE_ALERT_COOLDOWN = 12 * 3600
 STATE_FILE = "sent_talabat.json"
 MAX_CATEGORIES_LIMIT = 115
 CONCURRENT_TABS = 5
-MAX_PAGES_PER_CATEGORY = 6
+MAX_PAGES_PER_CATEGORY = 6     # يقلب حتى 6 صفحات (1, 2, 3, 4, 5, 6) داخل كل قسم
 
 # ================= المستوى الأول: أقسام العروض والخصومات =================
 DEALS_PRIORITY_CATEGORIES = [
@@ -291,7 +291,7 @@ def parse_playwright_cookies(raw_json):
     return cleaned
 
 
-# ================= استخراج كل المنتجات (المخفضة والعادية لمراقبة الأسعار) =================
+# ================= استخراج كل المنتجات (المخفضة والعادية) =================
 def normalize_title(title):
     return re.sub(r"\s+", " ", str(title)).strip()
 
@@ -324,7 +324,6 @@ def walk_talabat_json(obj, api_products, stats):
                 stats["seen_titles"].add(clean_name.lower())
                 key = str(prod_id) if prod_id else f"API_{clean_name[:40]}"
                 existing = api_products.get(key)
-                # نحفظ المنتج سواء كان عليه oldPrice أو لا، مع تفضيل النسخة التي تحتوي على oldPrice أعلى
                 if not existing or old_val > existing.get("oldPrice", 0):
                     api_products[key] = {
                         "prodId": key,
@@ -451,6 +450,42 @@ EXTRACT_DOM_JS = r"""
 }
 """
 
+# العثور على شريط الترقيم (← 1 2 3 4 →) في أسفل الصفحة بدقة متناهية وإعطاء إحداثيات زرار الصفحة المطلوبة
+FIND_PAGINATION_BUTTON_JS = r"""
+(targetPageNum) => {
+    const targetStr = String(targetPageNum);
+    // جمع كل المربعات الصغيرة التي تحتوي على أرقام صفحات (1, 2, 3...)
+    const boxes = [];
+    const allEls = Array.from(document.querySelectorAll("button, a, li, div, span"));
+    for (const el of allEls) {
+        if (el.children.length > 0) continue;
+        const txt = (el.innerText || "").trim();
+        if (!/^[1-9]\d?$/.test(txt)) continue;
+        const rect = el.getBoundingClientRect();
+        if (rect.width >= 15 && rect.width <= 65 && rect.height >= 15 && rect.height <= 65 && rect.left > 220) {
+            boxes.push({ el, txt, rect });
+        }
+    }
+
+    // البحث عن عنصر برقم الصفحة المطلوبة بحيث يوجد بجانبه أفقياً رقم صفحة آخر (مثل "1" و "2" في نفس السطر)
+    for (const b of boxes) {
+        if (b.txt !== targetStr) continue;
+        const hasSiblingInSameRow = boxes.some(other =>
+            other !== b &&
+            other.txt !== b.txt &&
+            Math.abs(other.rect.top - b.rect.top) < 12 &&
+            Math.abs(other.rect.left - b.rect.left) < 350
+        );
+        if (hasSiblingInSameRow) {
+            b.el.scrollIntoView({ block: "center" });
+            const r = b.el.getBoundingClientRect();
+            return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+        }
+    }
+    return null;
+}
+"""
+
 DISCOVER_SIDEBAR_JS = r"""
 () => {
     const links = Array.from(document.querySelectorAll("a[href*='/talabat-mart/']"));
@@ -515,23 +550,6 @@ def total_remaining(shared_state):
     )
 
 
-async def try_click_next_page(page, target_page_num):
-    target_str = str(target_page_num)
-    try:
-        candidates = page.get_by_text(target_str, exact=True)
-        count = await candidates.count()
-        for i in range(count - 1, -1, -1):
-            el = candidates.nth(i)
-            box = await el.bounding_box()
-            if box and 14 <= box["width"] <= 70 and 14 <= box["height"] <= 70 and box["x"] > 240:
-                await el.scroll_into_view_if_needed(timeout=2000)
-                await el.click(timeout=2000)
-                return True
-    except Exception:
-        pass
-    return False
-
-
 async def scan_single_category(context, cat_name, url, shared_state):
     page = await context.new_page()
     await page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
@@ -583,14 +601,19 @@ async def scan_single_category(context, cat_name, url, shared_state):
         prev_page_signature = None
 
         for page_num in range(1, MAX_PAGES_PER_CATEGORY + 1):
-            if page_num > 1:
-                clicked = await try_click_next_page(page, page_num)
-                if not clicked:
-                    break
-                await asyncio.sleep(1.1)
-
+            # 1. النزول لأسفل الصفحة أولاً ليظهر شريط الترقيم (← 1 2 3 4 →)
             await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-            await asyncio.sleep(0.3)
+            await asyncio.sleep(0.35)
+
+            if page_num > 1:
+                # 2. البحث عن إحداثيات مربع رقم الصفحة التالية (2, 3, 4...) وضغطه بالماوس الحقيقي
+                coords = await page.evaluate(FIND_PAGINATION_BUTTON_JS, page_num)
+                if not coords:
+                    break
+                await page.mouse.click(coords["x"], coords["y"])
+                await asyncio.sleep(1.2)
+                await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+                await asyncio.sleep(0.3)
 
             if page_num == 1:
                 sidebar_cats = await page.evaluate(DISCOVER_SIDEBAR_JS)
@@ -618,7 +641,6 @@ async def scan_single_category(context, cat_name, url, shared_state):
             for it in res.get("items", []):
                 dom_items[it["prodId"]] = it
 
-        # دمج كل المنتجات (سواء عليها oldPrice مشطوب أو لا)
         merged_items = {}
         for v in dom_items.values():
             merged_items[v["title"][:40].lower()] = v
@@ -653,21 +675,17 @@ async def scan_single_category(context, cat_name, url, shared_state):
             old_p = it.get("oldPrice", 0)
             is_price_drop = False
 
-            # تحديث ومقارنة السعر التاريخي لاكتشاف الهبوط المفاجئ بدون سعر مشطوب
             hist_entry = price_history.get(norm_key)
             if hist_entry and isinstance(hist_entry, dict):
                 hist_p = hist_entry.get("p", 0)
                 if old_p <= curr_p and hist_p > curr_p:
-                    # السعر نزل مقارنة بآخر تشغيلة مسجلة!
                     old_p = hist_p
                     is_price_drop = True
                 elif curr_p > hist_p:
-                    # السعر رجع ارتفع -> نحدث السعر المرجعي الأعلى
                     price_history[norm_key] = {"p": curr_p, "ts": now_ts}
                 else:
                     hist_entry["ts"] = now_ts
             else:
-                # أول مرة نشوف المنتج -> نسجل سعره الأساسي للمقارنة مستقبلاً
                 base_p = old_p if old_p > curr_p else curr_p
                 price_history[norm_key] = {"p": base_p, "ts": now_ts}
 
@@ -722,7 +740,6 @@ async def scan_single_category(context, cat_name, url, shared_state):
                     if send_telegram_deal(caption, img_url=it.get("imgUrl", ""), buttons=buttons):
                         record_deal(shared_state["sent_deals"], unique_key, curr_p)
                         record_deal(shared_state["sent_deals"], title_cache_key, curr_p)
-                        # تحديث السعر التاريخي للسعر الجديد بعد الإرسال حتى لا يتكرر التنبيه
                         price_history[norm_key] = {"p": curr_p, "ts": now_ts}
                         sent_cnt += 1
                         shared_state["total_sent"] += 1
@@ -745,7 +762,7 @@ async def main_async():
     sent_deals = load_and_clean_sent()
     cookies = parse_playwright_cookies(TALABAT_COOKIES)
 
-    print(f"⚡ بدء الرادار المتوازي V7.2 (خصم {MIN_DISCOUNT_PERCENT}%+ | تتبع هبوط الأسعار المفاجئ)...")
+    print(f"⚡ بدء الرادار المتوازي V7.3 (تقليب الصفحات 1..{MAX_PAGES_PER_CATEGORY} | خصم {MIN_DISCOUNT_PERCENT}%+)...")
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(
