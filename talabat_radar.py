@@ -82,7 +82,6 @@ def load_and_clean_sent():
     raw_hist = data.get("__PRICE_HISTORY__")
     if isinstance(raw_hist, dict):
         for hk, hv in raw_hist.items():
-            # تجاهل المفاتيح القديمة المقصوصة (أقل من 42 حرف وكانت مقصوصة) وتحديثها بالاسم الكامل
             if isinstance(hv, dict) and hv.get("ts", 0) >= hist_cutoff and hv.get("p", 0) > 0:
                 price_history[hk] = hv
 
@@ -318,40 +317,35 @@ EXTRACT_DOM_JS = r"""
     const products = new Map();
     const allCardTitles = [];
 
-    const imgs = Array.from(document.querySelectorAll("img")).filter(img => {
-        const src = img.src || "";
-        return (src.includes("talabat") || src.includes("deliveryhero") || src.includes("dhmedia"));
-    });
+    // الاعتماد على روابط المنتجات نفسها (a[href*='/product/']) بدل الصور عشان الـ Lazy Loading
+    const productLinks = Array.from(document.querySelectorAll("a[href*='/product/']"));
 
-    imgs.forEach(img => {
-        let card = img.parentElement;
-        let bestCard = null;
-        for (let i = 0; i < 8 && card && card !== document.body; i++) {
-            const txt = arToEn(card.innerText || "");
-            const hasEgp = /(?:EGP|ج\.م|جنيه)/i.test(txt);
-            const imgCount = card.querySelectorAll("img").length;
-            if (hasEgp && imgCount <= 2 && txt.length >= 10 && txt.length <= 500) {
-                bestCard = card;
+    productLinks.forEach(linkEl => {
+        let bestCard = linkEl;
+        for (let i = 0; i < 4 && bestCard && bestCard !== document.body; i++) {
+            const txt = arToEn(bestCard.innerText || "");
+            const linkCount = bestCard.querySelectorAll("a[href*='/product/']").length;
+            if (/(?:EGP|ج\.م|جنيه)/i.test(txt) && linkCount === 1) {
+                break;
             }
-            if (imgCount > 2) break;
-            card = card.parentElement;
+            if (linkCount > 1) {
+                bestCard = linkEl;
+                break;
+            }
+            bestCard = bestCard.parentElement;
         }
 
-        if (!bestCard) return;
-
-        // استخراج الاسم الكامل غير المقصوص من النص داخل البطاقة أولاً، ثم من alt الصورة
-        const lines = (bestCard.innerText || "").split(/\r?\n/).map(l => l.trim()).filter(l => {
+        const cardText = bestCard.innerText || "";
+        const lines = cardText.split(/\r?\n/).map(l => l.trim()).filter(l => {
             return l.length >= 4 && !/^(?:EGP|ج\.م|جنيه|Save\s*\d+%|\d+(\.\d+)?$|-?\d+%|خصم|أضف|إضافة|Add|\+|x\d+)$/i.test(arToEn(l));
         });
-        let title = (img.alt || "").trim();
-        if (lines.length > 0 && lines[0].length > title.length && !lines[0].endsWith("...")) {
-            title = lines[0];
-        }
+
+        const img = bestCard.querySelector("img");
+        let title = lines[0] || (img ? (img.alt || "").trim() : "");
         if (!title || title.length < 4) return;
         allCardTitles.push(title);
 
-        // قراءة شارة الخصم المكتوبة على البطاقة (مثل Save 25%) للتحقق الإضافي
-        const cardTextEn = arToEn(bestCard.innerText || "");
+        const cardTextEn = arToEn(cardText);
         const badgeMatch = cardTextEn.match(/(?:Save|خصم)\s*(\d+)\s*%/i);
         const badgePct = badgeMatch ? parseInt(badgeMatch[1], 10) : 0;
 
@@ -385,21 +379,15 @@ EXTRACT_DOM_JS = r"""
         const currPrice = Math.min(...currPrices);
         let oldPrice = oldPrices.length > 0 ? Math.max(...oldPrices) : 0;
 
-        // تحقق صارم: السعر القديم يجب أن يكون أكبر من الحالي ولا يتجاوز 7 أضعاف السعر الحالي
         if (oldPrice <= currPrice || oldPrice > currPrice * 7) {
             oldPrice = 0;
         }
-
-        // إذا وُجدت شارة Save X% على البطاقة، تأكد أن النسبة المحسوبة قريبة منها (±5%) لمنع أي قراءة خاطئة
         if (oldPrice > 0 && badgePct > 0) {
             const calcPct = Math.round(((oldPrice - currPrice) / oldPrice) * 100);
             if (Math.abs(calcPct - badgePct) > 6) {
                 oldPrice = 0;
             }
         }
-
-        const linkEl = bestCard.querySelector("a[href*='/product/']") || bestCard.querySelector("a[href]") || bestCard.closest("a[href]");
-        const href = linkEl ? linkEl.href : "";
 
         const fullKey = title.replace(/\s+/g, " ").trim().toLowerCase();
         if (!products.has(fullKey)) {
@@ -408,8 +396,8 @@ EXTRACT_DOM_JS = r"""
                 title: title.replace(/\s+/g, " ").trim(),
                 currPrice: currPrice,
                 oldPrice: oldPrice,
-                imgUrl: img.src || "",
-                productUrl: href,
+                imgUrl: img ? (img.src || "") : "",
+                productUrl: linkEl.href || "",
                 slug: ""
             });
         }
@@ -591,7 +579,6 @@ async def scan_single_url(context, cat_name, url, page_num, shared_state):
         sent_cnt = 0
 
         for full_key, it in merged_items.items():
-            # تجاهل الأسماء المقصوصة بـ "..." في تتبع تغير الأسعار حتى لا تتداخل مع أحجام مختلفة
             is_truncated = full_key.endswith("...")
             curr_p = it["currPrice"]
             old_p = it.get("oldPrice", 0)
@@ -601,7 +588,6 @@ async def scan_single_url(context, cat_name, url, page_num, shared_state):
                 hist_entry = price_history.get(full_key)
                 if hist_entry and isinstance(hist_entry, dict):
                     hist_p = hist_entry.get("p", 0)
-                    # لا يُعتبر هبوطاً حقيقياً إلا إذا كان السعر السابق مسجلاً من نفس الفرع ومؤكداً
                     if old_p <= curr_p and hist_p > curr_p and hist_p <= curr_p * 4:
                         old_p = hist_p
                         is_price_drop = True
@@ -692,7 +678,7 @@ async def main_async():
     sent_deals = load_and_clean_sent()
     cookies = parse_playwright_cookies(TALABAT_COOKIES)
 
-    print(f"⚡ بدء الرادار المتوازي V8.2 (دقة أسعار 100% + نسخ الاسم بلمسة واحدة | خصم {MIN_DISCOUNT_PERCENT}%+)...")
+    print(f"⚡ بدء الرادار المتوازي V8.3 (سحب كل الكروت دون تأثر بالـ Lazy Loading + دقة أسعار 100% | خصم {MIN_DISCOUNT_PERCENT}%+)...")
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(
