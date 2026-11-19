@@ -134,7 +134,7 @@ def build_best_product_url(item, category_url):
     elif raw_link.startswith("/"):
         web_url = f"https://www.talabat.com{raw_link.split('?')[0]}"
     else:
-        web_url = search_url
+        web_url = category_url
 
     return search_url, web_url
 
@@ -292,7 +292,7 @@ def normalize_title(title):
     return re.sub(r"\s+", " ", str(title)).strip()
 
 
-# ================= استخراج المنتجات من الواجهة الفعلية فقط بدقة عالية =================
+# ================= استخراج كل بطاقات المنتجات عبر نصوص الأسعار EGP مباشرة (بدون الاعتماد على الصور أو الروابط) =================
 EXTRACT_DOM_JS = r"""
 () => {
     function arToEn(str) {
@@ -316,28 +316,47 @@ EXTRACT_DOM_JS = r"""
 
     const products = new Map();
     const allCardTitles = [];
+    const seenCards = new Set();
 
-    // الاعتماد على روابط المنتجات نفسها (a[href*='/product/']) بدل الصور عشان الـ Lazy Loading
-    const productLinks = Array.from(document.querySelectorAll("a[href*='/product/']"));
+    // إيجاد كل العقد النصية التي تحتوي على عملة EGP أو ج.م داخل شبكة المنتجات
+    const leafNodes = Array.from(document.querySelectorAll("div, span, p, strong, b, s, del")).filter(el => {
+        if (el.children.length > 0) return false;
+        const txt = arToEn((el.innerText || "").trim());
+        return /(?:EGP|ج\.م|جنيه)\s*\d|\d\s*(?:EGP|ج\.م|جنيه)/i.test(txt);
+    });
 
-    productLinks.forEach(linkEl => {
-        let bestCard = linkEl;
-        for (let i = 0; i < 4 && bestCard && bestCard !== document.body; i++) {
-            const txt = arToEn(bestCard.innerText || "");
-            const linkCount = bestCard.querySelectorAll("a[href*='/product/']").length;
-            if (/(?:EGP|ج\.م|جنيه)/i.test(txt) && linkCount === 1) {
+    leafNodes.forEach(priceNode => {
+        const rect = priceNode.getBoundingClientRect();
+        // تجاهل الشريط العلوي (مثل الحد الأدنى للطلب EGP 40.00 في الهيدر)
+        if (rect.top > 0 && rect.top < 140) return;
+
+        // الصعود لأعلى للعثور على بطاقة المنتج الواحدة (التي تحتوي على اسم المنتج + السعر، بدون احتواء بطاقة أخرى)
+        let card = priceNode.parentElement;
+        let bestCard = null;
+        for (let i = 0; i < 7 && card && card !== document.body; i++) {
+            const rawTxt = card.innerText || "";
+            const txtEn = arToEn(rawTxt);
+            const egpMatches = txtEn.match(/(?:EGP|ج\.م|جنيه)/gi) || [];
+            // بطاقة المنتج الواحدة تحتوي على 1 أو 2 سعر بحد أقصى (سعر حالي + سعر قديم مشطوب)
+            if (egpMatches.length > 2) break;
+
+            const lines = rawTxt.split(/\r?\n/).map(l => l.trim()).filter(l => {
+                return l.length >= 4 && !/^(?:EGP|ج\.م|جنيه|Save\s*\d+%|\d+(\.\d+)?$|-?\d+%|خصم|أضف|إضافة|Add|\+|x\d+|Min\.|Delivery)/i.test(arToEn(l));
+            });
+
+            if (lines.length >= 1 && rawTxt.length >= 12 && rawTxt.length <= 450) {
+                bestCard = card;
                 break;
             }
-            if (linkCount > 1) {
-                bestCard = linkEl;
-                break;
-            }
-            bestCard = bestCard.parentElement;
+            card = card.parentElement;
         }
+
+        if (!bestCard || seenCards.has(bestCard)) return;
+        seenCards.add(bestCard);
 
         const cardText = bestCard.innerText || "";
         const lines = cardText.split(/\r?\n/).map(l => l.trim()).filter(l => {
-            return l.length >= 4 && !/^(?:EGP|ج\.م|جنيه|Save\s*\d+%|\d+(\.\d+)?$|-?\d+%|خصم|أضف|إضافة|Add|\+|x\d+)$/i.test(arToEn(l));
+            return l.length >= 4 && !/^(?:EGP|ج\.م|جنيه|Save\s*\d+%|\d+(\.\d+)?$|-?\d+%|خصم|أضف|إضافة|Add|\+|x\d+|Min\.|Delivery)/i.test(arToEn(l));
         });
 
         const img = bestCard.querySelector("img");
@@ -389,6 +408,9 @@ EXTRACT_DOM_JS = r"""
             }
         }
 
+        const linkEl = bestCard.querySelector("a[href]") || bestCard.closest("a[href]");
+        const href = linkEl ? linkEl.href : "";
+
         const fullKey = title.replace(/\s+/g, " ").trim().toLowerCase();
         if (!products.has(fullKey)) {
             products.set(fullKey, {
@@ -397,7 +419,7 @@ EXTRACT_DOM_JS = r"""
                 currPrice: currPrice,
                 oldPrice: oldPrice,
                 imgUrl: img ? (img.src || "") : "",
-                productUrl: linkEl.href || "",
+                productUrl: href,
                 slug: ""
             });
         }
@@ -678,7 +700,7 @@ async def main_async():
     sent_deals = load_and_clean_sent()
     cookies = parse_playwright_cookies(TALABAT_COOKIES)
 
-    print(f"⚡ بدء الرادار المتوازي V8.3 (سحب كل الكروت دون تأثر بالـ Lazy Loading + دقة أسعار 100% | خصم {MIN_DISCOUNT_PERCENT}%+)...")
+    print(f"⚡ بدء الرادار المتوازي V8.4 (سحب كل الكروت عبر الأسعار + دقة 100% + تقليب الصفحات | خصم {MIN_DISCOUNT_PERCENT}%+)...")
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(
