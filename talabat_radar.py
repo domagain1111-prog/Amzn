@@ -23,7 +23,7 @@ SEED_URLS = [
     ("عروض الموسم", f"{STORE_BASE_URL}/fruit-veg/best-in-season"),
 ]
 
-MIN_DISCOUNT_PERCENT = 50      # الحد الأدنى للخصم الفعلي
+MIN_DISCOUNT_PERCENT = 25      # الحد الأدنى للخصم الفعلي
 FLASH_DISCOUNT_PERCENT = 50    # الحد الأدنى للتنبيه الناري
 MAX_REALISTIC_DISCOUNT = 85    # استبعاد أي نسبة غير منطقية
 CACHE_TTL_DAYS = 7
@@ -33,6 +33,24 @@ STATE_FILE = "sent_talabat.json"
 MAX_URLS_LIMIT = 260
 CONCURRENT_TABS = 5
 MAX_PAGES_PER_CATEGORY = 6
+
+# ================= أنماط عروض 1+1 والعروض المشروطة (مثل اشتري بـ 200 وخذ 50%) =================
+BOGO_REGEX = re.compile(
+    r"(?:\b1\s*\+\s*1\b|\b2\s*for\s*1\b|\bbuy\s*1\s*get\s*1\b|\bbogo\b|واحد\s*\+\s*واحد|قطعة\s*\+\s*قطعة)",
+    flags=re.IGNORECASE,
+)
+
+SPEND_PROMO_REGEX = re.compile(
+    r"(?:spend|buy|اشتر[يِ]?|اطلب)\s*(?:for\s*)?(?:egp\s*)?\d+(?:\.\d+)?(?:\s*(?:egp|ج\.م|جنيه))?\s*(?:and\s*)?(?:get|save|خد|خذ|احصل\s*على|وفر|خصم)",
+    flags=re.IGNORECASE,
+)
+
+PROMO_TEXT_KEYS = {
+    "promotion", "promotiontext", "promo", "promotext", "badge", "badgetext",
+    "offer", "offertext", "offertag", "dealtext", "tag", "tags", "label",
+    "subtitle", "description", "shortdescription", "marketingtext", "bundletext",
+    "conditions", "condition", "discountlabel", "discounttext"
+}
 
 # ================= المستوى الأول: أقسام العروض والخصومات =================
 DEALS_PRIORITY_CATEGORIES = [
@@ -93,7 +111,7 @@ def load_and_clean_sent():
                 cleaned[k] = v
             continue
         if isinstance(v, dict):
-            if v.get("ts", 0) >= cutoff and "price" in v:
+            if v.get("ts", 0) >= cutoff and ("price" in v or "promo" in v):
                 cleaned[k] = v
         elif isinstance(v, (int, float)):
             cleaned[k] = {"price": v, "ts": now}
@@ -111,8 +129,18 @@ def get_saved_price(sent_deals, key):
     return None
 
 
-def record_deal(sent_deals, key, price):
-    sent_deals[key] = {"price": price, "ts": int(time.time())}
+def get_saved_promo(sent_deals, key):
+    val = sent_deals.get(key)
+    if isinstance(val, dict):
+        return val.get("promo")
+    return None
+
+
+def record_deal(sent_deals, key, price, promo=None):
+    entry = {"price": price, "ts": int(time.time())}
+    if promo:
+        entry["promo"] = promo
+    sent_deals[key] = entry
 
 
 def save_sent(data):
@@ -294,7 +322,49 @@ def normalize_title(title):
     return re.sub(r"\s+", " ", str(title)).strip()
 
 
-# ================= استخراج المنتجات من __NEXT_DATA__ للصفحة الحالية بدقة 100% =================
+# ================= تصنيف عروض 1+1 والعروض المشروطة =================
+def classify_special_promo(texts):
+    """
+    يفحص نصوص المنتج/العرض الفعلية ويرجع:
+    ("bogo", نص_العرض) أو ("spend_promo", نص_العرض) أو (None, "")
+    """
+    cleaned_texts = []
+    for t in texts:
+        if not t:
+            continue
+        nt = normalize_title(t)
+        if 3 <= len(nt) <= 220 and nt not in cleaned_texts:
+            cleaned_texts.append(nt)
+
+    for nt in cleaned_texts:
+        if BOGO_REGEX.search(nt):
+            return "bogo", nt
+
+    for nt in cleaned_texts:
+        if SPEND_PROMO_REGEX.search(nt):
+            return "spend_promo", nt
+
+    return None, ""
+
+
+def collect_promo_strings(obj, out_list, depth=0):
+    if depth > 4 or obj is None:
+        return
+    if isinstance(obj, str):
+        s = normalize_title(obj)
+        if 3 <= len(s) <= 200 and s not in out_list:
+            out_list.append(s)
+    elif isinstance(obj, list):
+        for el in obj[:15]:
+            collect_promo_strings(el, out_list, depth + 1)
+    elif isinstance(obj, dict):
+        for k, v in obj.items():
+            kl = str(k).lower()
+            if any(pk in kl for pk in PROMO_TEXT_KEYS):
+                collect_promo_strings(v, out_list, depth + 1)
+
+
+# ================= استخراج المنتجات وعروض 1+1 والمشروطة من __NEXT_DATA__ =================
 def extract_products_from_next_data(obj, results, meta):
     if isinstance(obj, dict):
         for pg_key in ("totalPages", "pageCount", "lastPage", "total_pages"):
@@ -333,8 +403,12 @@ def extract_products_from_next_data(obj, results, meta):
                     slug = str(obj.get("slug") or obj.get("seoSlug") or "")
                     full_key = clean_name.lower()
 
+                    promo_texts = [clean_name]
+                    collect_promo_strings(obj, promo_texts)
+                    promo_type, promo_label = classify_special_promo(promo_texts)
+
                     existing = results.get(full_key)
-                    if not existing or old_val > existing.get("oldPrice", 0):
+                    if not existing or old_val > existing.get("oldPrice", 0) or (promo_type and not existing.get("promoType")):
                         results[full_key] = {
                             "prodId": str(prod_id) if prod_id else full_key,
                             "title": clean_name,
@@ -342,6 +416,8 @@ def extract_products_from_next_data(obj, results, meta):
                             "oldPrice": old_val,
                             "imgUrl": str(img),
                             "slug": slug,
+                            "promoType": promo_type,
+                            "promoLabel": promo_label,
                         }
             except (ValueError, TypeError):
                 pass
@@ -356,7 +432,7 @@ def extract_products_from_next_data(obj, results, meta):
                 extract_products_from_next_data(item, results, meta)
 
 
-DISCOVER_CATEGORIES_JS = r"""
+DISCOVER_CATEGORIES_AND_PROMOS_JS = r"""
 () => {
     const links = Array.from(document.querySelectorAll("a[href*='/talabat-mart/'], a[href*='/grocery/']"));
     const found = new Map();
@@ -371,7 +447,23 @@ DISCOVER_CATEGORIES_JS = r"""
             found.set(cleanUrl, txt);
         }
     }
-    return Array.from(found.entries()).map(([url, name]) => ({ name, url }));
+
+    const promoBanners = [];
+    const nodes = Array.from(document.querySelectorAll("banner, [role='banner'], section, div, span, p, a, button"));
+    for (const el of nodes) {
+        if (el.children.length > 3) continue;
+        const txt = (el.innerText || "").trim().replace(/\s+/g, " ");
+        if (txt.length >= 5 && txt.length <= 160) {
+            if (/(?:1\s*\+\s*1|2\s*for\s*1|buy\s*1\s*get\s*1|bogo|spend\s*\d+|buy\s*\d+.*get|اشتر[يِ]?\s*(?:بـ|\d+).*?(?:خد|خذ|خصم|وفر))/i.test(txt)) {
+                if (!promoBanners.includes(txt)) promoBanners.push(txt);
+            }
+        }
+    }
+
+    return {
+        categories: Array.from(found.entries()).map(([url, name]) => ({ name, url })),
+        promoBanners: promoBanners.slice(0, 20)
+    };
 }
 """
 
@@ -471,14 +563,16 @@ async def scan_single_url(context, cat_name, url, page_num, shared_state):
             except Exception:
                 pass
 
-        # 2. اكتشاف روابط الأقسام الجانبية
-        sidebar_cats = await page.evaluate(DISCOVER_CATEGORIES_JS)
-        for sc in sidebar_cats:
+        # 2. اكتشاف روابط الأقسام الجانبية وبانرات العروض الخاصة في الصفحة الحالية
+        discovered = await page.evaluate(DISCOVER_CATEGORIES_AND_PROMOS_JS)
+        for sc in discovered.get("categories", []):
             sc_url = sc["url"]
             if "/talabat-mart/" in sc_url:
                 cat_tail = sc_url.split("/talabat-mart/")[1]
                 sc_url = f"{shared_state['store_base_url']}/{cat_tail}"
             enqueue_url(shared_state, sc["name"], sc_url, page_num=1)
+
+        page_promo_type, page_promo_label = classify_special_promo(discovered.get("promoBanners", []))
 
         total_in_cat = len(merged_items)
         shared_state["total_products"] += total_in_cat
@@ -500,10 +594,29 @@ async def scan_single_url(context, cat_name, url, page_num, shared_state):
         max_disc = 0
         sent_cnt = 0
 
+        # إرسال عرض القسم العام المشروط (مثل اشتري بـ 200 وخذ 50%) مرة واحدة للقسم
+        if page_promo_type and not is_ignored_category(display_cat, url):
+            promo_key = f"PROMO_{display_cat.lower()}_{page_promo_label.lower()[:80]}"
+            if promo_key not in shared_state["sent_in_run"] and get_saved_promo(shared_state["sent_deals"], promo_key) != page_promo_label:
+                shared_state["sent_in_run"].add(promo_key)
+                badge_title = "🎁 عرض 1+1 في طلبات مارت!" if page_promo_type == "bogo" else "🎯 عرض مشروط / باقة في طلبات مارت!"
+                promo_caption = (
+                    f"{badge_title}\n"
+                    f"🏷️ القسم: {display_cat}\n\n"
+                    f"📌 العرض: `{page_promo_label.replace('`', \"'\")}`"
+                )
+                buttons = [[{"text": f"📂 فتح {display_cat[:22]}", "url": url}]]
+                if send_telegram_deal(promo_caption, buttons=buttons):
+                    record_deal(shared_state["sent_deals"], promo_key, 0, promo=page_promo_label)
+                    sent_cnt += 1
+                    shared_state["total_sent"] += 1
+
         for full_key, it in merged_items.items():
             curr_p = it["currPrice"]
             old_p = it.get("oldPrice", 0)
             is_price_drop = False
+            promo_type = it.get("promoType")
+            promo_label = it.get("promoLabel", "")
 
             hist_entry = price_history.get(full_key)
             if hist_entry and isinstance(hist_entry, dict):
@@ -519,31 +632,77 @@ async def scan_single_url(context, cat_name, url, page_num, shared_state):
                 base_p = old_p if old_p > curr_p else curr_p
                 price_history[full_key] = {"p": base_p, "ts": now_ts}
 
-            if old_p <= curr_p or old_p > curr_p * 7:
-                continue
+            has_valid_discount = (old_p > curr_p and old_p <= curr_p * 7)
+            disc = round(((old_p - curr_p) / old_p) * 100) if has_valid_discount else 0
+            if has_valid_discount:
+                discounted_count += 1
+                if disc > max_disc and disc <= MAX_REALISTIC_DISCOUNT:
+                    max_disc = disc
 
-            discounted_count += 1
-            disc = round(((old_p - curr_p) / old_p) * 100)
-            if disc > max_disc and disc <= MAX_REALISTIC_DISCOUNT:
-                max_disc = disc
+            qualifies_discount = has_valid_discount and (MIN_DISCOUNT_PERCENT <= disc <= MAX_REALISTIC_DISCOUNT)
+            qualifies_special = promo_type in ("bogo", "spend_promo")
 
-            if MIN_DISCOUNT_PERCENT <= disc <= MAX_REALISTIC_DISCOUNT:
+            if qualifies_discount or qualifies_special:
+                title_str = it["title"]
+                safe_title = title_str.replace("`", "'")
+                search_url, web_url = build_best_product_url(it, url)
+                unit_info = calculate_unit_price_info(title_str, curr_p)
+                unit_line = f"\n{unit_info}" if unit_info else ""
+
+                if qualifies_special:
+                    sent_dedup_key = f"SPECIAL_{full_key}_{curr_p}_{promo_label[:50]}"
+                    if sent_dedup_key in shared_state["sent_in_run"]:
+                        continue
+                    shared_state["sent_in_run"].add(sent_dedup_key)
+
+                    unique_key = f"V92_SP_{full_key}"
+                    if get_saved_promo(shared_state["sent_deals"], unique_key) == promo_label and get_saved_price(shared_state["sent_deals"], unique_key) == curr_p:
+                        continue
+
+                    if promo_type == "bogo":
+                        header = "🎁 عرض 1+1 مجاناً في Talabat Mart!"
+                    else:
+                        header = "🎯 عرض مشروط (اشتري واكسب) في Talabat Mart!"
+
+                    old_line = f"\n❌ السعر قبل الخصم: {old_p} EGP ({disc}%)" if has_valid_discount else ""
+                    promo_line = f"\n✨ الشرط / العرض: `{promo_label.replace('`', \"'\")}`" if promo_label else ""
+
+                    caption = (
+                        f"{header}\n"
+                        f"🏷️ القائمة: {display_cat}\n\n"
+                        f"📦 `{safe_title}`\n"
+                        f"💰 السعر الظاهر: {curr_p} EGP"
+                        f"{old_line}"
+                        f"{promo_line}"
+                        f"{unit_line}"
+                    )
+
+                    buttons = [
+                        [{"text": "🔍 بحث بالاسم في طلبات", "url": search_url}],
+                        [
+                            {"text": "🌐 فتح في المتصفح", "url": web_url},
+                            {"text": f"📂 {display_cat[:18]}", "url": url}
+                        ]
+                    ]
+
+                    if send_telegram_deal(caption, img_url=it.get("imgUrl", ""), buttons=buttons):
+                        record_deal(shared_state["sent_deals"], unique_key, curr_p, promo=promo_label)
+                        sent_cnt += 1
+                        shared_state["total_sent"] += 1
+                        tag = "🎁 1+1" if promo_type == "bogo" else "🎯 مشروط"
+                        print(f"   {tag}: {title_str[:40]} ({curr_p} ج)")
+                    continue
+
                 sent_dedup_key = f"{full_key}_{curr_p}"
                 if sent_dedup_key in shared_state["sent_in_run"]:
                     continue
                 shared_state["sent_in_run"].add(sent_dedup_key)
 
-                title_str = it["title"]
                 unique_key = f"V9_{full_key}"
                 prev_p = get_saved_price(shared_state["sent_deals"], unique_key)
 
                 if not prev_p or prev_p > curr_p:
-                    search_url, web_url = build_best_product_url(it, url)
-
                     saved_egp = round(old_p - curr_p, 2)
-                    unit_info = calculate_unit_price_info(title_str, curr_p)
-                    unit_line = f"\n{unit_info}" if unit_info else ""
-                    safe_title = title_str.replace("`", "'")
 
                     if is_price_drop:
                         header = f"📉 هبوط مؤكد في السعر بنسبة {disc}%! 🔥"
@@ -596,7 +755,7 @@ async def main_async():
     sent_deals = load_and_clean_sent()
     cookies = parse_playwright_cookies(TALABAT_COOKIES)
 
-    print(f"⚡ بدء الرادار المتوازي V9.1 (تقليب ذكي بالتسلسل + __NEXT_DATA__ بدقة 100% | خصم {MIN_DISCOUNT_PERCENT}%+)...")
+    print(f"⚡ بدء الرادار المتوازي V9.2 (خصومات {MIN_DISCOUNT_PERCENT}%+ + عروض 1+1 والعروض المشروطة)...")
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(
