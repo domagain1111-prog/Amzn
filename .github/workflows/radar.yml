@@ -1,8 +1,6 @@
 name: Talabat Mart Radar
 
 on:
-  schedule:
-    - cron: '15 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -35,6 +33,16 @@ jobs:
           TALABAT_LAT: ${{ secrets.TALABAT_LAT }}
           TALABAT_LNG: ${{ secrets.TALABAT_LNG }}
           TALABAT_MART_URL: ${{ secrets.TALABAT_MART_URL }}
+        run: python talabat_radar.py
+
+      - name: Save sent deals cache (sent_talabat.json)
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add sent_talabat.json || true
+          git diff --staged --quiet || git commit -m "chore: update sent_talabat cache"
+          git push
+         TALABAT_MART_URL: ${{ secrets.TALABAT_MART_URL }}
         run: python talabat_radar.py
 
       - name: Save sent deals cache (sent_talabat.json)
