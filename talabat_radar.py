@@ -16,7 +16,6 @@ TALABAT_COOKIES = os.environ.get("TALABAT_COOKIES", "").strip()
 LATITUDE = float(os.environ.get("TALABAT_LAT") or "31.2156")
 LONGITUDE = float(os.environ.get("TALABAT_LNG") or "29.9553")
 
-# نقاط بداية مضمونة لاكتشاف شجرة أقسام طلبات مارت بالكامل
 SEED_URLS = [
     ("الصفحة الرئيسية لطلبات مارت", "https://www.talabat.com/egypt/talabat-mart"),
     ("عروض الموسم", "https://www.talabat.com/egypt/talabat-mart/fruit-veg/best-in-season"),
@@ -30,9 +29,9 @@ COOKIE_ALERT_COOLDOWN = 12 * 3600
 STATE_FILE = "sent_talabat.json"
 MAX_CATEGORIES_LIMIT = 115
 CONCURRENT_TABS = 5
-MAX_SCROLL_PASSES = 8  # 8 لفات تمرير لضمان سحب كل منتجات الأقسام الكبيرة
+MAX_PAGES_PER_CATEGORY = 5  # أقصى عدد صفحات مرقمة (1, 2, 3...) داخل كل قسم
 
-# ================= المستوى الأول: أقسام العروض والخصومات (تُفحص أولاً قبل أي شيء) =================
+# ================= المستوى الأول: أقسام العروض والخصومات =================
 DEALS_PRIORITY_CATEGORIES = [
     "offer", "deal", "promo", "save", "discount", "clearance", "bundle", "value", "hot",
     "عروض", "تخفيض", "خصم", "تصفية", "توفير", "best-in-season"
@@ -307,7 +306,7 @@ def walk_talabat_json(obj, api_products, stats):
             old_val = float(old_price) if old_price is not None else 0.0
 
             if name and isinstance(name, str) and len(name.strip()) > 3 and p_val >= 2:
-                stats["total_seen"] += 1
+                stats["seen_titles"].add(normalize_title(name).lower())
                 if old_val > p_val:
                     clean_name = normalize_title(name)
                     key = str(prod_id) if prod_id else f"API_{clean_name[:40]}"
@@ -355,7 +354,7 @@ EXTRACT_DOM_JS = r"""
     }
 
     const discounted = new Map();
-    let totalCards = 0;
+    const allCardTitles = [];
 
     const imgs = Array.from(document.querySelectorAll("img")).filter(img => {
         const src = img.src || "";
@@ -377,7 +376,15 @@ EXTRACT_DOM_JS = r"""
         }
 
         if (!bestCard) return;
-        totalCards++;
+
+        let title = (img.alt || "").trim();
+        if (title.length < 4) {
+            const lines = (bestCard.innerText || "").split(/\r?\n/).map(l => l.trim()).filter(l => {
+                return l.length >= 4 && !/^(?:EGP|ج\.م|جنيه|\d+(\.\d+)?$|-?\d+%|خصم|أضف|إضافة|Add|\+)$/i.test(arToEn(l));
+            });
+            title = lines[0] || "";
+        }
+        if (title) allCardTitles.push(title);
 
         const oldPrices = [];
         const currPrices = [];
@@ -404,16 +411,7 @@ EXTRACT_DOM_JS = r"""
             }
         });
 
-        if (currPrices.length === 0 || oldPrices.length === 0) return;
-
-        let title = (img.alt || "").trim();
-        if (title.length < 4) {
-            const lines = (bestCard.innerText || "").split(/\r?\n/).map(l => l.trim()).filter(l => {
-                return l.length >= 4 && !/^(?:EGP|ج\.م|جنيه|\d+(\.\d+)?$|-?\d+%|خصم|أضف|إضافة|Add|\+)$/i.test(arToEn(l));
-            });
-            title = lines[0] || "";
-        }
-        if (!title) return;
+        if (currPrices.length === 0 || oldPrices.length === 0 || !title) return;
 
         const linkEl = bestCard.querySelector("a[href*='/product/']") || bestCard.querySelector("a[href]") || bestCard.closest("a[href]");
         const href = linkEl ? linkEl.href : "";
@@ -432,7 +430,32 @@ EXTRACT_DOM_JS = r"""
         }
     });
 
-    return { totalCards, items: Array.from(discounted.values()) };
+    return { allCardTitles, items: Array.from(discounted.values()) };
+}
+"""
+
+# دالة للضغط على رقم الصفحة التالية (2, 3, 4...) في ترقيم الصفحات أسفل القائمة
+CLICK_NEXT_PAGE_JS = r"""
+(targetPageNum) => {
+    const targetStr = String(targetPageNum);
+    // البحث عن أزرار أو روابط الترقيم في أسفل الصفحة
+    const candidates = Array.from(document.querySelectorAll("button, a, li[role='button'], [role='button']"));
+    for (const el of candidates) {
+        if (el.disabled || el.getAttribute("aria-disabled") === "true") continue;
+        const txt = (el.innerText || "").trim();
+        const aria = (el.getAttribute("aria-label") || "").toLowerCase();
+
+        // مطابقة رقم الصفحة المطلوب (مثل "2" أو "3") في النصف السفلي من الصفحة
+        const rect = el.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0 && rect.width < 120) {
+            if (txt === targetStr || aria.includes("page " + targetStr) || aria.includes("صفحة " + targetStr)) {
+                el.scrollIntoView({ block: "center" });
+                el.click();
+                return true;
+            }
+        }
+    }
+    return false;
 }
 """
 
@@ -457,20 +480,6 @@ DISCOVER_SIDEBAR_JS = r"""
 }
 """
 
-SCROLL_DEEP_JS = """
-() => {
-    window.scrollBy(0, 2200);
-    document.querySelectorAll("div, aside, nav, main, section, ul").forEach(el => {
-        if (el.scrollHeight > el.clientHeight + 150) {
-            const ov = window.getComputedStyle(el).overflowY;
-            if (ov === "auto" || ov === "scroll") {
-                el.scrollBy(0, 2200);
-            }
-        }
-    });
-}
-"""
-
 
 def is_ignored_category(name, url):
     s = f"{name} {url}".lower()
@@ -488,7 +497,6 @@ def is_supermarket_category(name, url):
 
 
 def enqueue_category(shared_state, name, url):
-    """ترتيب الأقسام في الطابور حسب الأولوية: 1- العروض والخصومات | 2- السوبرماركت | 3- الباقي"""
     if is_deals_category(name, url):
         shared_state["deals_queue"].append((name, url))
     elif is_supermarket_category(name, url):
@@ -498,7 +506,6 @@ def enqueue_category(shared_state, name, url):
 
 
 def pop_next_category(shared_state):
-    """يسحب دائماً من طابور العروض أولاً، ثم السوبرماركت، ثم باقي الأقسام"""
     if shared_state["deals_queue"]:
         return shared_state["deals_queue"].popleft()
     if shared_state["market_queue"]:
@@ -521,7 +528,7 @@ async def scan_single_category(context, cat_name, url, shared_state):
     await page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
     api_products = {}
-    page_stats = {"total_seen": 0}
+    page_stats = {"seen_titles": set()}
 
     async def on_response(resp):
         try:
@@ -562,41 +569,38 @@ async def scan_single_category(context, cat_name, url, shared_state):
         except Exception:
             pass
 
-        # 8 لفات تمرير عميقة مع توقف ذكي إذا انتهت منتجات القائمة تماماً
         dom_items = {}
-        max_cards_seen = 0
-        last_total_seen = -1
-        stagnant_passes = 0
+        pages_visited_in_cat = 1
 
-        for pass_idx in range(MAX_SCROLL_PASSES):
-            sidebar_cats = await page.evaluate(DISCOVER_SIDEBAR_JS)
-            for sc in sidebar_cats:
-                sc_url = sc["url"]
-                if sc_url not in shared_state["visited"]:
-                    shared_state["visited"].add(sc_url)
-                    if is_ignored_category(sc["name"], sc_url):
-                        shared_state["skipped_count"] += 1
-                    elif len(shared_state["visited"]) < MAX_CATEGORIES_LIMIT + shared_state["skipped_count"]:
-                        enqueue_category(shared_state, sc["name"], sc_url)
+        # التنقل بين الصفحات المرقمة (1, 2, 3...) داخل القسم
+        for page_num in range(1, MAX_PAGES_PER_CATEGORY + 1):
+            if page_num > 1:
+                clicked = await page.evaluate(CLICK_NEXT_PAGE_JS, page_num)
+                if not clicked:
+                    break
+                pages_visited_in_cat = page_num
+                await asyncio.sleep(1.1)
+
+            # تمرير سريع لأسفل الصفحة لإظهار ترقيم الصفحات واكتشاف القائمة الجانبية
+            await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+            await asyncio.sleep(0.35)
+
+            if page_num == 1:
+                sidebar_cats = await page.evaluate(DISCOVER_SIDEBAR_JS)
+                for sc in sidebar_cats:
+                    sc_url = sc["url"]
+                    if sc_url not in shared_state["visited"]:
+                        shared_state["visited"].add(sc_url)
+                        if is_ignored_category(sc["name"], sc_url):
+                            shared_state["skipped_count"] += 1
+                        elif len(shared_state["visited"]) < MAX_CATEGORIES_LIMIT + shared_state["skipped_count"]:
+                            enqueue_category(shared_state, sc["name"], sc_url)
 
             res = await page.evaluate(EXTRACT_DOM_JS)
-            cards_now = res.get("totalCards", 0)
-            if cards_now > max_cards_seen:
-                max_cards_seen = cards_now
+            for t in res.get("allCardTitles", []):
+                page_stats["seen_titles"].add(normalize_title(t).lower())
             for it in res.get("items", []):
                 dom_items[it["prodId"]] = it
-
-            current_total = max(page_stats["total_seen"], max_cards_seen)
-            if pass_idx >= 2 and current_total == last_total_seen:
-                stagnant_passes += 1
-                if stagnant_passes >= 2:
-                    break
-            else:
-                stagnant_passes = 0
-            last_total_seen = current_total
-
-            await page.evaluate(SCROLL_DEEP_JS)
-            await asyncio.sleep(0.45)
 
         merged_items = {}
         for v in dom_items.values():
@@ -607,7 +611,7 @@ async def scan_single_category(context, cat_name, url, shared_state):
                 v["productUrl"] = merged_items[k]["productUrl"]
             merged_items[k] = v
 
-        total_in_cat = max(page_stats["total_seen"], max_cards_seen, len(merged_items))
+        total_in_cat = max(len(page_stats["seen_titles"]), len(merged_items))
         shared_state["total_products"] += total_in_cat
 
         if total_in_cat > 0:
@@ -676,7 +680,8 @@ async def scan_single_category(context, cat_name, url, shared_state):
 
         idx = shared_state["scanned_count"]
         rem = total_remaining(shared_state)
-        print(f"[{idx}/{idx + rem}] {cat_name[:26]:<26} | منتجات: {total_in_cat:<3} | مخفض: {len(merged_items):<2} | أعلى خصم: {max_disc}% | أُرسل: {sent_cnt}")
+        pg_tag = f"({pages_visited_in_cat}ص)" if pages_visited_in_cat > 1 else ""
+        print(f"[{idx}/{idx + rem}] {cat_name[:23]:<23} {pg_tag:<4} | منتجات: {total_in_cat:<3} | مخفض: {len(merged_items):<2} | أعلى خصم: {max_disc}% | أُرسل: {sent_cnt}")
 
     except Exception as e:
         print(f"❌ خطأ في {cat_name}: {e}")
@@ -689,7 +694,7 @@ async def main_async():
     sent_deals = load_and_clean_sent()
     cookies = parse_playwright_cookies(TALABAT_COOKIES)
 
-    print(f"⚡ بدء الرادار المتوازي V6.4 (1- العروض أولاً | 2- السوبرماركت | {MAX_SCROLL_PASSES} لفات تمرير)...")
+    print(f"⚡ بدء الرادار المتوازي V6.5 (دعم الصفحات المرقمة 1..{MAX_PAGES_PER_CATEGORY} | العروض أولاً)...")
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(
