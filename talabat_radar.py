@@ -29,7 +29,7 @@ COOKIE_ALERT_COOLDOWN = 12 * 3600
 STATE_FILE = "sent_talabat.json"
 MAX_CATEGORIES_LIMIT = 115
 CONCURRENT_TABS = 5
-MAX_PAGES_PER_CATEGORY = 5
+MAX_PAGES_PER_CATEGORY = 6  # أقصى عدد صفحات مرقمة (1, 2, 3...) داخل كل قسم
 
 # ================= المستوى الأول: أقسام العروض والخصومات =================
 DEALS_PRIORITY_CATEGORIES = [
@@ -434,27 +434,36 @@ EXTRACT_DOM_JS = r"""
 }
 """
 
-# دالة شاملة للضغط على رقم الصفحة التالية أياً كان نوع العنصر (div, span, button, a, li)
-CLICK_PAGINATION_JS = r"""
+# تحديد مكان زرار الترقيم الدقيق وإعطاء إحداثياته لضغطه بالماوس الحقيقي في Playwright
+FIND_PAGINATION_COORDS_JS = r"""
 (targetPageNum) => {
     const targetStr = String(targetPageNum);
-    // البحث في كل العناصر الورقية (Leaf elements) في أسفل الصفحة
+    const docHeight = document.body.scrollHeight;
     const allEls = Array.from(document.querySelectorAll("a, button, li, div, span"));
+
     for (const el of allEls) {
         if (el.children.length > 0) continue;
         const txt = (el.innerText || "").trim();
         if (txt !== targetStr) continue;
 
         const rect = el.getBoundingClientRect();
-        // التأكد أن العنصر مربع/دائري صغير في أسفل الصفحة (وليس رقماً داخل وصف أو قائمة جانبية)
-        if (rect.width >= 16 && rect.width <= 70 && rect.height >= 16 && rect.height <= 70 && rect.left > 250) {
-            const clickable = el.closest("a, button, [role='button'], li") || el;
-            clickable.scrollIntoView({ block: "center" });
-            clickable.click();
-            return true;
+        const absTop = rect.top + window.scrollY;
+        // الزرار يجب أن يكون في النصف السفلي من الصفحة وداخل منطقة المنتجات (يمين القائمة الجانبية)
+        if (
+            rect.width >= 14 && rect.width <= 65 &&
+            rect.height >= 14 && rect.height <= 65 &&
+            rect.left > 240 &&
+            absTop > docHeight * 0.55
+        ) {
+            el.scrollIntoView({ block: "center" });
+            const updatedRect = el.getBoundingClientRect();
+            return {
+                x: updatedRect.left + updatedRect.width / 2,
+                y: updatedRect.top + updatedRect.height / 2
+            };
         }
     }
-    return false;
+    return null;
 }
 """
 
@@ -542,7 +551,7 @@ async def scan_single_category(context, cat_name, url, shared_state):
 
     try:
         await page.goto(url, wait_until="domcontentloaded", timeout=22000)
-        await asyncio.sleep(1.0)
+        await asyncio.sleep(0.9)
 
         if shared_state["scanned_count"] <= 2:
             body_txt = await page.inner_text("body")
@@ -574,17 +583,16 @@ async def scan_single_category(context, cat_name, url, shared_state):
 
         for page_num in range(1, MAX_PAGES_PER_CATEGORY + 1):
             if page_num > 1:
-                clicked = await page.evaluate(CLICK_PAGINATION_JS, page_num)
-                if clicked:
-                    await asyncio.sleep(1.2)
-                else:
-                    # محاولة احتياطية عبر معامل الرابط ?page=2 في حال عدم وجود زر مرئي
-                    sep = "&" if "?" in url else "?"
-                    await page.goto(f"{url}{sep}page={page_num}", wait_until="domcontentloaded", timeout=18000)
-                    await asyncio.sleep(1.0)
+                coords = await page.evaluate(FIND_PAGINATION_COORDS_JS, page_num)
+                if not coords:
+                    # لا يوجد زرار صفحة تالية -> القسم انتهى، اخرج فوراً بدون أي تأخير!
+                    break
+                # ضغطة ماوس حقيقية في منتصف زرار الترقيم
+                await page.mouse.click(coords["x"], coords["y"])
+                await asyncio.sleep(1.1)
 
             await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-            await asyncio.sleep(0.35)
+            await asyncio.sleep(0.3)
 
             if page_num == 1:
                 sidebar_cats = await page.evaluate(DISCOVER_SIDEBAR_JS)
@@ -601,7 +609,6 @@ async def scan_single_category(context, cat_name, url, shared_state):
             current_titles = res.get("allCardTitles", [])
             current_sig = tuple(sorted(current_titles[:5]))
 
-            # إذا كانت نفس منتجات الصفحة السابقة أو لا توجد منتجات، توقف فوراً
             if page_num > 1 and (not current_titles or current_sig == prev_page_signature):
                 break
 
@@ -705,7 +712,7 @@ async def main_async():
     sent_deals = load_and_clean_sent()
     cookies = parse_playwright_cookies(TALABAT_COOKIES)
 
-    print(f"⚡ بدء الرادار المتوازي V6.6 (نقر ذكي + رابط ?page=N | العروض أولاً)...")
+    print(f"⚡ بدء الرادار المتوازي V7 (ضغطة ماوس حقيقية على أزرار الترقيم 1..{MAX_PAGES_PER_CATEGORY})...")
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(
