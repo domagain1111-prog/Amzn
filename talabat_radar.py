@@ -23,14 +23,14 @@ SEED_URLS = [
     ("عروض الموسم", f"{STORE_BASE_URL}/fruit-veg/best-in-season"),
 ]
 
-MIN_DISCOUNT_PERCENT = 25      # الحد الأدنى للخصم الفعلي المشطوب
+MIN_DISCOUNT_PERCENT = 25      # الحد الأدنى للخصم الفعلي
 FLASH_DISCOUNT_PERCENT = 50    # الحد الأدنى للتنبيه الناري
-MAX_REALISTIC_DISCOUNT = 85    # استبعاد أي خصم غير منطقي فوق 85%
+MAX_REALISTIC_DISCOUNT = 85    # استبعاد أي نسبة غير منطقية
 CACHE_TTL_DAYS = 7
 PRICE_HISTORY_TTL_DAYS = 21
 COOKIE_ALERT_COOLDOWN = 12 * 3600
 STATE_FILE = "sent_talabat.json"
-MAX_URLS_LIMIT = 240
+MAX_URLS_LIMIT = 260
 CONCURRENT_TABS = 5
 MAX_PAGES_PER_CATEGORY = 6
 
@@ -128,11 +128,13 @@ def build_best_product_url(item, category_url):
     encoded_q = urllib.parse.quote(short_query)
     search_url = f"https://www.talabat.com/egypt/talabat-mart/search?q={encoded_q}"
 
-    raw_link = (item.get("productUrl") or "").strip()
-    if raw_link.startswith("http") and "talabat.com" in raw_link:
-        web_url = raw_link.split("?")[0]
-    elif raw_link.startswith("/"):
-        web_url = f"https://www.talabat.com{raw_link.split('?')[0]}"
+    slug = (item.get("slug") or "").strip()
+    prod_id = str(item.get("prodId") or "").strip()
+    if slug and not slug.startswith("http") and not slug.startswith("/"):
+        if prod_id and prod_id not in slug:
+            web_url = f"{STORE_BASE_URL}/product/{slug}/{prod_id}"
+        else:
+            web_url = f"{STORE_BASE_URL}/product/{slug}"
     else:
         web_url = category_url
 
@@ -292,158 +294,84 @@ def normalize_title(title):
     return re.sub(r"\s+", " ", str(title)).strip()
 
 
-# ================= استخراج كل بطاقات المنتجات عبر نصوص الأسعار EGP مباشرة (بدون الاعتماد على الصور أو الروابط) =================
-EXTRACT_DOM_JS = r"""
-() => {
-    function arToEn(str) {
-        if (!str) return "";
-        const ar = "٠١٢٣٤٥٦٧٨٩", en = "0123456789";
-        return str.replace(/[٠-٩]/g, d => en[ar.indexOf(d)]);
-    }
-    function cleanNum(str) {
-        const s = arToEn(str || "").replace(/,/g, "").replace(/٬/g, "");
-        const m = s.match(/\d+(?:\.\d+)?/g);
-        return m ? m.map(Number).filter(v => v >= 2 && v <= 50000) : [];
-    }
-    function isStrike(el) {
-        if (!el || el.nodeType !== 1) return false;
-        if (["S", "DEL", "STRIKE"].includes(el.tagName)) return true;
-        const cls = (typeof el.className === "string" ? el.className : "").toLowerCase();
-        if (cls.includes("line-through") || cls.includes("strike")) return true;
-        const st = window.getComputedStyle(el);
-        return (st.textDecorationLine || st.textDecoration || "").includes("line-through");
-    }
+# ================= استخراج المنتجات من __NEXT_DATA__ للصفحة الحالية بدقة 100% =================
+def extract_products_from_next_data(obj, results, meta):
+    """
+    يمر على شجرة __NEXT_DATA__ الخاصة بالصفحة الحالية فقط لاستخراج:
+    1) المنتجات المعروضة في الصفحة بالاسم الكامل والسعر الحقيقي والسعر المشطوب (originalPrice / oldPrice)
+    2) عدد الصفحات الكلي للقسم (totalPages) إن وُجد في بيانات الـ pagination
+    """
+    if isinstance(obj, dict):
+        # التقاط عدد الصفحات الفعلي للقسم من بيانات الترقيم
+        for pg_key in ("totalPages", "pageCount", "lastPage", "total_pages"):
+            if pg_key in obj and isinstance(obj[pg_key], int) and 1 <= obj[pg_key] <= 15:
+                if obj[pg_key] > meta["total_pages"]:
+                    meta["total_pages"] = obj[pg_key]
 
-    const products = new Map();
-    const allCardTitles = [];
-    const seenCards = new Set();
+        # التحقق إن الكائن ده يمثل منتج حقيقي (يحتوي على اسم وسعر ومعرّف أو صورة منتج)
+        name = obj.get("name") or obj.get("title") or obj.get("productName")
+        price = obj.get("price")
+        if price is None:
+            price = obj.get("discountedPrice")
 
-    // إيجاد كل العقد النصية التي تحتوي على عملة EGP أو ج.م داخل شبكة المنتجات
-    const leafNodes = Array.from(document.querySelectorAll("div, span, p, strong, b, s, del")).filter(el => {
-        if (el.children.length > 0) return false;
-        const txt = arToEn((el.innerText || "").trim());
-        return /(?:EGP|ج\.م|جنيه)\s*\d|\d\s*(?:EGP|ج\.م|جنيه)/i.test(txt);
-    });
+        # السعر القديم المشطوب في طلبات مارت يكون في originalPrice أو oldPrice
+        old_price = obj.get("originalPrice")
+        if old_price is None:
+            old_price = obj.get("oldPrice")
+        if old_price is None:
+            old_price = obj.get("strikeThroughPrice")
 
-    leafNodes.forEach(priceNode => {
-        const rect = priceNode.getBoundingClientRect();
-        // تجاهل الشريط العلوي (مثل الحد الأدنى للطلب EGP 40.00 في الهيدر)
-        if (rect.top > 0 && rect.top < 140) return;
+        prod_id = obj.get("id") or obj.get("sku") or obj.get("productId") or obj.get("itemId")
+        has_product_shape = bool(prod_id or obj.get("slug") or obj.get("image") or obj.get("imageUrl"))
 
-        // الصعود لأعلى للعثور على بطاقة المنتج الواحدة (التي تحتوي على اسم المنتج + السعر، بدون احتواء بطاقة أخرى)
-        let card = priceNode.parentElement;
-        let bestCard = null;
-        for (let i = 0; i < 7 && card && card !== document.body; i++) {
-            const rawTxt = card.innerText || "";
-            const txtEn = arToEn(rawTxt);
-            const egpMatches = txtEn.match(/(?:EGP|ج\.م|جنيه)/gi) || [];
-            // بطاقة المنتج الواحدة تحتوي على 1 أو 2 سعر بحد أقصى (سعر حالي + سعر قديم مشطوب)
-            if (egpMatches.length > 2) break;
+        if name and isinstance(name, str) and price is not None and has_product_shape:
+            try:
+                p_val = float(price)
+                old_val = float(old_price) if old_price is not None else 0.0
+                clean_name = normalize_title(name)
 
-            const lines = rawTxt.split(/\r?\n/).map(l => l.trim()).filter(l => {
-                return l.length >= 4 && !/^(?:EGP|ج\.م|جنيه|Save\s*\d+%|\d+(\.\d+)?$|-?\d+%|خصم|أضف|إضافة|Add|\+|x\d+|Min\.|Delivery)/i.test(arToEn(l));
-            });
+                if len(clean_name) >= 4 and 2 <= p_val <= 50000:
+                    # تحقق صارم: السعر القديم لازم يكون أكبر من الحالي ولا يتجاوز 7 أضعافه
+                    if old_val <= p_val or old_val > p_val * 7:
+                        old_val = 0.0
 
-            if (lines.length >= 1 && rawTxt.length >= 12 && rawTxt.length <= 450) {
-                bestCard = card;
-                break;
-            }
-            card = card.parentElement;
-        }
+                    img = obj.get("image") or obj.get("imageUrl") or obj.get("thumbnail") or ""
+                    if isinstance(img, dict):
+                        img = img.get("url") or img.get("src") or ""
 
-        if (!bestCard || seenCards.has(bestCard)) return;
-        seenCards.add(bestCard);
+                    slug = str(obj.get("slug") or obj.get("seoSlug") or "")
+                    full_key = clean_name.lower()
 
-        const cardText = bestCard.innerText || "";
-        const lines = cardText.split(/\r?\n/).map(l => l.trim()).filter(l => {
-            return l.length >= 4 && !/^(?:EGP|ج\.م|جنيه|Save\s*\d+%|\d+(\.\d+)?$|-?\d+%|خصم|أضف|إضافة|Add|\+|x\d+|Min\.|Delivery)/i.test(arToEn(l));
-        });
+                    existing = results.get(full_key)
+                    if not existing or old_val > existing.get("oldPrice", 0):
+                        results[full_key] = {
+                            "prodId": str(prod_id) if prod_id else full_key,
+                            "title": clean_name,
+                            "currPrice": p_val,
+                            "oldPrice": old_val,
+                            "imgUrl": str(img),
+                            "slug": slug,
+                        }
+            except (ValueError, TypeError):
+                pass
 
-        const img = bestCard.querySelector("img");
-        let title = lines[0] || (img ? (img.alt || "").trim() : "");
-        if (!title || title.length < 4) return;
-        allCardTitles.push(title);
+        for v in obj.values():
+            if isinstance(v, (dict, list)):
+                extract_products_from_next_data(v, results, meta)
 
-        const cardTextEn = arToEn(cardText);
-        const badgeMatch = cardTextEn.match(/(?:Save|خصم)\s*(\d+)\s*%/i);
-        const badgePct = badgeMatch ? parseInt(badgeMatch[1], 10) : 0;
+    elif isinstance(obj, list):
+        for item in obj:
+            if isinstance(item, (dict, list)):
+                extract_products_from_next_data(item, results, meta)
 
-        const oldPrices = [];
-        const currPrices = [];
-        const allNodes = Array.from(bestCard.querySelectorAll("*"));
 
-        allNodes.forEach(node => {
-            if (node.children.length > 0) return;
-            const raw = (node.innerText || "").trim();
-            if (!raw || raw.includes("%")) return;
-            if (!/(?:EGP|ج\.م|جنيه|\d)/i.test(arToEn(raw))) return;
-
-            let struck = false;
-            let p = node;
-            while (p && p !== bestCard) {
-                if (isStrike(p)) { struck = true; break; }
-                p = p.parentElement;
-            }
-
-            const nums = cleanNum(raw);
-            if (struck) {
-                nums.forEach(n => { if (!oldPrices.includes(n)) oldPrices.push(n); });
-            } else if (/(?:EGP|ج\.م|جنيه)/i.test(arToEn(raw))) {
-                nums.forEach(n => { if (!currPrices.includes(n)) currPrices.push(n); });
-            }
-        });
-
-        if (currPrices.length === 0) return;
-
-        const currPrice = Math.min(...currPrices);
-        let oldPrice = oldPrices.length > 0 ? Math.max(...oldPrices) : 0;
-
-        if (oldPrice <= currPrice || oldPrice > currPrice * 7) {
-            oldPrice = 0;
-        }
-        if (oldPrice > 0 && badgePct > 0) {
-            const calcPct = Math.round(((oldPrice - currPrice) / oldPrice) * 100);
-            if (Math.abs(calcPct - badgePct) > 6) {
-                oldPrice = 0;
-            }
-        }
-
-        const linkEl = bestCard.querySelector("a[href]") || bestCard.closest("a[href]");
-        const href = linkEl ? linkEl.href : "";
-
-        const fullKey = title.replace(/\s+/g, " ").trim().toLowerCase();
-        if (!products.has(fullKey)) {
-            products.set(fullKey, {
-                prodId: fullKey,
-                title: title.replace(/\s+/g, " ").trim(),
-                currPrice: currPrice,
-                oldPrice: oldPrice,
-                imgUrl: img ? (img.src || "") : "",
-                productUrl: href,
-                slug: ""
-            });
-        }
-    });
-
-    return { allCardTitles, items: Array.from(products.values()) };
-}
-"""
-
-DISCOVER_LINKS_AND_PAGES_JS = r"""
+DISCOVER_CATEGORIES_JS = r"""
 () => {
     const links = Array.from(document.querySelectorAll("a[href*='/talabat-mart/'], a[href*='/grocery/']"));
     const found = new Map();
-    let maxPageDetected = 1;
 
     for (const a of links) {
-        const fullHref = a.href || "";
-        const pageMatch = fullHref.match(/[?&]page=(\d+)/);
-        if (pageMatch) {
-            const pNum = parseInt(pageMatch[1], 10);
-            if (pNum > maxPageDetected && pNum <= 15) maxPageDetected = pNum;
-        }
-
-        const cleanUrl = fullHref.split("?")[0].split("#")[0].replace(/\/$/, "");
+        const cleanUrl = (a.href || "").split("?")[0].split("#")[0].replace(/\/$/, "");
         if (!cleanUrl || cleanUrl.includes("/product/")) continue;
         if (cleanUrl.endsWith("/talabat-mart") || /\/grocery\/\d+\/[^\/]+$/.test(cleanUrl)) continue;
 
@@ -452,29 +380,7 @@ DISCOVER_LINKS_AND_PAGES_JS = r"""
             found.set(cleanUrl, txt);
         }
     }
-
-    const boxes = [];
-    document.querySelectorAll("button, a, li, div, span").forEach(el => {
-        if (el.children.length > 0) return;
-        const txt = (el.innerText || "").trim();
-        if (!/^[1-9]\d?$/.test(txt)) return;
-        const r = el.getBoundingClientRect();
-        if (r.width >= 14 && r.width <= 70 && r.height >= 14 && r.height <= 70 && r.left > 220) {
-            boxes.push({ num: parseInt(txt, 10), top: r.top, left: r.left });
-        }
-    });
-
-    for (const b of boxes) {
-        const hasSibling = boxes.some(o => o !== b && o.num !== b.num && Math.abs(o.top - b.top) < 15 && Math.abs(o.left - b.left) < 400);
-        if (hasSibling && b.num > maxPageDetected && b.num <= 15) {
-            maxPageDetected = b.num;
-        }
-    }
-
-    return {
-        categories: Array.from(found.entries()).map(([url, name]) => ({ name, url })),
-        maxPageDetected
-    };
+    return Array.from(found.entries()).map(([url, name]) => ({ name, url }));
 }
 """
 
@@ -540,7 +446,7 @@ async def scan_single_url(context, cat_name, url, page_num, shared_state):
 
     try:
         await page.goto(url, wait_until="domcontentloaded", timeout=22000)
-        await asyncio.sleep(1.1)
+        await asyncio.sleep(0.8)
 
         actual_url = page.url.split("?")[0].split("#")[0].rstrip("/")
         if "/grocery/" in actual_url:
@@ -559,34 +465,38 @@ async def scan_single_url(context, cat_name, url, page_num, shared_state):
         }""")
         display_cat = heading if (heading and len(heading) > 2) else cat_name
 
-        await page.evaluate("""() => {
-            window.scrollTo(0, document.body.scrollHeight);
-            document.querySelectorAll("div, main, section").forEach(el => {
-                if (el.scrollHeight > el.clientHeight + 100 && el.clientWidth > 400) {
-                    el.scrollTop = el.scrollHeight;
-                }
-            });
+        # 1. استخراج بيانات __NEXT_DATA__ الخاصة بهذه الصفحة فقط (بدون أي تخمين DOM)
+        next_data_raw = await page.evaluate("""() => {
+            const el = document.querySelector("script#__NEXT_DATA__");
+            return el ? el.textContent : "";
         }""")
-        await asyncio.sleep(0.35)
 
-        discovery = await page.evaluate(DISCOVER_LINKS_AND_PAGES_JS)
-        for sc in discovery.get("categories", []):
+        merged_items = {}
+        page_meta = {"total_pages": 1}
+        if next_data_raw:
+            try:
+                parsed_json = json.loads(next_data_raw)
+                extract_products_from_next_data(parsed_json, merged_items, page_meta)
+            except Exception:
+                pass
+
+        # 2. اكتشاف روابط الأقسام الجانبية
+        sidebar_cats = await page.evaluate(DISCOVER_CATEGORIES_JS)
+        for sc in sidebar_cats:
             sc_url = sc["url"]
             if "/talabat-mart/" in sc_url:
                 cat_tail = sc_url.split("/talabat-mart/")[1]
                 sc_url = f"{shared_state['store_base_url']}/{cat_tail}"
             enqueue_url(shared_state, sc["name"], sc_url, page_num=1)
 
-        res = await page.evaluate(EXTRACT_DOM_JS)
-        merged_items = {it["prodId"]: it for it in res.get("items", [])}
         total_in_cat = len(merged_items)
         shared_state["total_products"] += total_in_cat
 
+        # 3. توليد روابط ?page=2, 3, 4... تلقائياً لأي قسم به 20 منتج فأكثر
         if page_num == 1 and total_in_cat >= 20:
             base_cat_url = actual_url if "/grocery/" in actual_url else url.split("?")[0]
             if "/grocery/" in base_cat_url:
-                detected_pages = max(discovery.get("maxPageDetected", 1), 3)
-                target_max_p = min(detected_pages, MAX_PAGES_PER_CATEGORY)
+                target_max_p = min(max(page_meta["total_pages"], 4), MAX_PAGES_PER_CATEGORY)
                 for next_p in range(2, target_max_p + 1):
                     sep = "&" if "?" in base_cat_url else "?"
                     enqueue_url(shared_state, cat_name, f"{base_cat_url}{sep}page={next_p}", page_num=next_p)
@@ -601,25 +511,23 @@ async def scan_single_url(context, cat_name, url, page_num, shared_state):
         sent_cnt = 0
 
         for full_key, it in merged_items.items():
-            is_truncated = full_key.endswith("...")
             curr_p = it["currPrice"]
             old_p = it.get("oldPrice", 0)
             is_price_drop = False
 
-            if not is_truncated:
-                hist_entry = price_history.get(full_key)
-                if hist_entry and isinstance(hist_entry, dict):
-                    hist_p = hist_entry.get("p", 0)
-                    if old_p <= curr_p and hist_p > curr_p and hist_p <= curr_p * 4:
-                        old_p = hist_p
-                        is_price_drop = True
-                    elif curr_p > hist_p:
-                        price_history[full_key] = {"p": curr_p, "ts": now_ts}
-                    else:
-                        hist_entry["ts"] = now_ts
+            hist_entry = price_history.get(full_key)
+            if hist_entry and isinstance(hist_entry, dict):
+                hist_p = hist_entry.get("p", 0)
+                if old_p <= curr_p and hist_p > curr_p and hist_p <= curr_p * 4:
+                    old_p = hist_p
+                    is_price_drop = True
+                elif curr_p > hist_p:
+                    price_history[full_key] = {"p": curr_p, "ts": now_ts}
                 else:
-                    base_p = old_p if old_p > curr_p else curr_p
-                    price_history[full_key] = {"p": base_p, "ts": now_ts}
+                    hist_entry["ts"] = now_ts
+            else:
+                base_p = old_p if old_p > curr_p else curr_p
+                price_history[full_key] = {"p": base_p, "ts": now_ts}
 
             if old_p <= curr_p or old_p > curr_p * 7:
                 continue
@@ -636,8 +544,7 @@ async def scan_single_url(context, cat_name, url, page_num, shared_state):
                 shared_state["sent_in_run"].add(sent_dedup_key)
 
                 title_str = it["title"]
-                unique_key = f"FULL_{full_key}"
-
+                unique_key = f"V9_{full_key}"
                 prev_p = get_saved_price(shared_state["sent_deals"], unique_key)
 
                 if not prev_p or prev_p > curr_p:
@@ -677,8 +584,7 @@ async def scan_single_url(context, cat_name, url, page_num, shared_state):
 
                     if send_telegram_deal(caption, img_url=it.get("imgUrl", ""), buttons=buttons):
                         record_deal(shared_state["sent_deals"], unique_key, curr_p)
-                        if not is_truncated:
-                            price_history[full_key] = {"p": curr_p, "ts": now_ts}
+                        price_history[full_key] = {"p": curr_p, "ts": now_ts}
                         sent_cnt += 1
                         shared_state["total_sent"] += 1
                         tag = "📉 هبوط" if is_price_drop else ("🚨 تصفية" if disc >= FLASH_DISCOUNT_PERCENT else "✅ لقطة")
@@ -700,7 +606,7 @@ async def main_async():
     sent_deals = load_and_clean_sent()
     cookies = parse_playwright_cookies(TALABAT_COOKIES)
 
-    print(f"⚡ بدء الرادار المتوازي V8.4 (سحب كل الكروت عبر الأسعار + دقة 100% + تقليب الصفحات | خصم {MIN_DISCOUNT_PERCENT}%+)...")
+    print(f"⚡ بدء الرادار المتوازي V9.0 (استخراج مباشر من __NEXT_DATA__ بدقة 100% + تقليب الصفحات | خصم {MIN_DISCOUNT_PERCENT}%+)...")
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(
