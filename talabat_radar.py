@@ -296,25 +296,17 @@ def normalize_title(title):
 
 # ================= استخراج المنتجات من __NEXT_DATA__ للصفحة الحالية بدقة 100% =================
 def extract_products_from_next_data(obj, results, meta):
-    """
-    يمر على شجرة __NEXT_DATA__ الخاصة بالصفحة الحالية فقط لاستخراج:
-    1) المنتجات المعروضة في الصفحة بالاسم الكامل والسعر الحقيقي والسعر المشطوب (originalPrice / oldPrice)
-    2) عدد الصفحات الكلي للقسم (totalPages) إن وُجد في بيانات الـ pagination
-    """
     if isinstance(obj, dict):
-        # التقاط عدد الصفحات الفعلي للقسم من بيانات الترقيم
         for pg_key in ("totalPages", "pageCount", "lastPage", "total_pages"):
             if pg_key in obj and isinstance(obj[pg_key], int) and 1 <= obj[pg_key] <= 15:
                 if obj[pg_key] > meta["total_pages"]:
                     meta["total_pages"] = obj[pg_key]
 
-        # التحقق إن الكائن ده يمثل منتج حقيقي (يحتوي على اسم وسعر ومعرّف أو صورة منتج)
         name = obj.get("name") or obj.get("title") or obj.get("productName")
         price = obj.get("price")
         if price is None:
             price = obj.get("discountedPrice")
 
-        # السعر القديم المشطوب في طلبات مارت يكون في originalPrice أو oldPrice
         old_price = obj.get("originalPrice")
         if old_price is None:
             old_price = obj.get("oldPrice")
@@ -331,7 +323,6 @@ def extract_products_from_next_data(obj, results, meta):
                 clean_name = normalize_title(name)
 
                 if len(clean_name) >= 4 and 2 <= p_val <= 50000:
-                    # تحقق صارم: السعر القديم لازم يكون أكبر من الحالي ولا يتجاوز 7 أضعافه
                     if old_val <= p_val or old_val > p_val * 7:
                         old_val = 0.0
 
@@ -465,7 +456,7 @@ async def scan_single_url(context, cat_name, url, page_num, shared_state):
         }""")
         display_cat = heading if (heading and len(heading) > 2) else cat_name
 
-        # 1. استخراج بيانات __NEXT_DATA__ الخاصة بهذه الصفحة فقط (بدون أي تخمين DOM)
+        # 1. استخراج بيانات __NEXT_DATA__ الخاصة بهذه الصفحة فقط
         next_data_raw = await page.evaluate("""() => {
             const el = document.querySelector("script#__NEXT_DATA__");
             return el ? el.textContent : "";
@@ -492,14 +483,13 @@ async def scan_single_url(context, cat_name, url, page_num, shared_state):
         total_in_cat = len(merged_items)
         shared_state["total_products"] += total_in_cat
 
-        # 3. توليد روابط ?page=2, 3, 4... تلقائياً لأي قسم به 20 منتج فأكثر
-        if page_num == 1 and total_in_cat >= 20:
+        # 3. تقليب ذكي بالتسلسل: يفتح الصفحة التالية فقط إذا امتلأت الصفحة الحالية بـ 20 منتج
+        if total_in_cat >= 20 and page_num < MAX_PAGES_PER_CATEGORY:
             base_cat_url = actual_url if "/grocery/" in actual_url else url.split("?")[0]
             if "/grocery/" in base_cat_url:
-                target_max_p = min(max(page_meta["total_pages"], 4), MAX_PAGES_PER_CATEGORY)
-                for next_p in range(2, target_max_p + 1):
-                    sep = "&" if "?" in base_cat_url else "?"
-                    enqueue_url(shared_state, cat_name, f"{base_cat_url}{sep}page={next_p}", page_num=next_p)
+                next_p = page_num + 1
+                sep = "&" if "?" in base_cat_url else "?"
+                enqueue_url(shared_state, cat_name, f"{base_cat_url}{sep}page={next_p}", page_num=next_p)
 
         if total_in_cat > 0:
             shared_state["sent_deals"].pop("__ALERT_TS__", None)
@@ -606,7 +596,7 @@ async def main_async():
     sent_deals = load_and_clean_sent()
     cookies = parse_playwright_cookies(TALABAT_COOKIES)
 
-    print(f"⚡ بدء الرادار المتوازي V9.0 (استخراج مباشر من __NEXT_DATA__ بدقة 100% + تقليب الصفحات | خصم {MIN_DISCOUNT_PERCENT}%+)...")
+    print(f"⚡ بدء الرادار المتوازي V9.1 (تقليب ذكي بالتسلسل + __NEXT_DATA__ بدقة 100% | خصم {MIN_DISCOUNT_PERCENT}%+)...")
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(
