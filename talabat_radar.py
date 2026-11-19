@@ -12,11 +12,9 @@ TELEGRAM_TOKEN = (os.environ.get("TALABAT_TELEGRAM_TOKEN") or os.environ.get("TE
 CHAT_ID = (os.environ.get("TALABAT_CHAT_ID") or os.environ.get("CHAT_ID") or "").strip()
 TALABAT_COOKIES = os.environ.get("TALABAT_COOKIES", "").strip()
 
-# إحداثيات الموقع (الإسكندرية كافتراضي)
 LATITUDE = float(os.environ.get("TALABAT_LAT") or "31.2156")
 LONGITUDE = float(os.environ.get("TALABAT_LNG") or "29.9553")
 
-# نقطة البداية لاكتشاف كل القوائم الرئيسية والفرعية في طلبات مارت
 env_url = os.environ.get("TALABAT_MART_URL", "").strip()
 START_URL = (
     env_url
@@ -28,7 +26,7 @@ MIN_DISCOUNT_PERCENT = 40
 CACHE_TTL_DAYS = 7
 COOKIE_ALERT_COOLDOWN = 12 * 3600
 STATE_FILE = "sent_talabat.json"
-MAX_CATEGORIES_LIMIT = 150
+MAX_CATEGORIES_LIMIT = 120
 
 
 # ================= إدارة الكاش ومنع التكرار =================
@@ -227,7 +225,7 @@ def walk_talabat_json(obj, api_products):
                 walk_talabat_json(item, api_products)
 
 
-# ================= استخراج المنتجات من الواجهة (DOM) =================
+# ================= استخراج المنتجات من الواجهة =================
 EXTRACT_DOM_JS = r"""
 () => {
     function arToEn(str) {
@@ -249,10 +247,12 @@ EXTRACT_DOM_JS = r"""
         return (st.textDecorationLine || st.textDecoration || "").includes("line-through");
     }
 
-    const results = new Map();
+    const discounted = new Map();
+    let totalCards = 0;
+
     const imgs = Array.from(document.querySelectorAll("img")).filter(img => {
         const src = img.src || "";
-        return (src.includes("talabat") || src.includes("deliveryhero") || src.includes("dhmedia")) && img.width >= 40;
+        return (src.includes("talabat") || src.includes("deliveryhero") || src.includes("dhmedia"));
     });
 
     imgs.forEach(img => {
@@ -270,6 +270,7 @@ EXTRACT_DOM_JS = r"""
         }
 
         if (!bestCard) return;
+        totalCards++;
 
         const oldPrices = [];
         const currPrices = [];
@@ -307,27 +308,22 @@ EXTRACT_DOM_JS = r"""
         }
         if (!title) return;
 
-        const linkEl = bestCard.querySelector("a[href]") || bestCard.closest("a[href]");
-        const href = linkEl ? linkEl.href : "";
         const key = ("DOM_" + title.slice(0, 35));
-
-        if (!results.has(key)) {
-            results.set(key, {
+        if (!discounted.has(key)) {
+            discounted.set(key, {
                 prodId: key,
                 title,
                 currPrices,
                 oldPrices,
-                imgUrl: img.src || "",
-                href
+                imgUrl: img.src || ""
             });
         }
     });
 
-    return Array.from(results.values());
+    return { totalCards, items: Array.from(discounted.values()) };
 }
 """
 
-# استخراج جميع روابط القوائم الرئيسية والفرعية من القائمة الجانبية
 DISCOVER_SIDEBAR_JS = r"""
 () => {
     const links = Array.from(document.querySelectorAll("a[href*='/talabat-mart/']"));
@@ -335,6 +331,11 @@ DISCOVER_SIDEBAR_JS = r"""
     for (const a of links) {
         const cleanUrl = (a.href || "").split("?")[0].split("#")[0].replace(/\/$/, "");
         if (!cleanUrl || cleanUrl.includes("/product/") || cleanUrl.endsWith("/talabat-mart")) continue;
+
+        // استخراج القوائم الفرعية فقط (التي تحتوي على /talabat-mart/<main>/<sub>) لتجنب تكرار الأقسام الرئيسية
+        const afterMart = cleanUrl.split("/talabat-mart/")[1] || "";
+        const segments = afterMart.split("/").filter(Boolean);
+        if (segments.length < 2) continue;
 
         const txt = (a.innerText || "").trim().replace(/\s+/g, " ");
         if (txt.length >= 2 && txt.length <= 50 && !found.has(cleanUrl)) {
@@ -345,15 +346,14 @@ DISCOVER_SIDEBAR_JS = r"""
 }
 """
 
-# تمرير القائمة الجانبية وصفحة المنتجات معاً
 SCROLL_ALL_JS = """
 () => {
-    window.scrollBy(0, 900);
+    window.scrollBy(0, 1400);
     document.querySelectorAll("div, aside, nav, main, section, ul").forEach(el => {
         if (el.scrollHeight > el.clientHeight + 150) {
             const ov = window.getComputedStyle(el).overflowY;
             if (ov === "auto" || ov === "scroll") {
-                el.scrollBy(0, 900);
+                el.scrollBy(0, 1400);
             }
         }
     });
@@ -374,11 +374,16 @@ def get_breadcrumb_or_title(page, fallback_name):
     return fallback_name
 
 
+def is_priority_category(name, url):
+    s = f"{name} {url}".lower()
+    return any(k in s for k in ["offer", "deal", "promo", "save", "discount", "عروض", "تخفيض", "خصم", "best-in-season"])
+
+
 def main():
     sent_deals = load_and_clean_sent()
     cookies = parse_playwright_cookies(TALABAT_COOKIES)
 
-    print(f"⚡ بدء المسح الشجري الشامل لكل قوائم Talabat Mart (خصم فعلي {MIN_DISCOUNT_PERCENT}%+)...")
+    print(f"⚡ بدء المسح الصاروخي لكل قوائم Talabat Mart (خصم فعلي {MIN_DISCOUNT_PERCENT}%+)...")
 
     with sync_playwright() as p:
         browser = p.chromium.launch(
@@ -392,6 +397,14 @@ def main():
             geolocation={"latitude": LATITUDE, "longitude": LONGITUDE},
             permissions=["geolocation"],
             extra_http_headers={"Accept-Language": "ar-EG,ar;q=0.9,en-US;q=0.8"}
+        )
+
+        # حظر تحميل الصور والخطوط وملفات الميديا لتسريع فتح الصفحات 5 أضعاف
+        context.route(
+            "**/*",
+            lambda route: route.abort()
+            if route.request.resource_type in ("image", "media", "font")
+            else route.continue_(),
         )
 
         if cookies:
@@ -425,10 +438,10 @@ def main():
             scanned_count += 1
             api_products.clear()
 
-            print(f"\n[{scanned_count} | المتبقي في الطابور: {len(queue)}] فحص قائمة: {cat_name}...")
+            print(f"[{scanned_count} | متبقي: {len(queue)}] {cat_name}...")
             try:
-                page.goto(url, wait_until="domcontentloaded", timeout=35000)
-                time.sleep(3.5)
+                page.goto(url, wait_until="domcontentloaded", timeout=25000)
+                time.sleep(1.5)
 
                 if scanned_count == 1:
                     body_txt = page.inner_text("body")
@@ -451,34 +464,41 @@ def main():
                 except Exception:
                     pass
 
-                last_total = 0
+                last_cards = -1
                 stagnant = 0
                 dom_items = {}
+                max_cards_seen = 0
 
-                for _ in range(22):
+                for _ in range(8):
                     sidebar_cats = page.evaluate(DISCOVER_SIDEBAR_JS)
                     for sc in sidebar_cats:
                         sc_url = sc["url"]
                         if sc_url not in visited and (len(visited) < MAX_CATEGORIES_LIMIT):
                             visited.add(sc_url)
-                            queue.append((sc["name"], sc_url))
+                            if is_priority_category(sc["name"], sc_url):
+                                queue.appendleft((sc["name"], sc_url))
+                            else:
+                                queue.append((sc["name"], sc_url))
 
-                    extracted = page.evaluate(EXTRACT_DOM_JS)
-                    for it in extracted:
+                    res = page.evaluate(EXTRACT_DOM_JS)
+                    cards_now = res.get("totalCards", 0)
+                    if cards_now > max_cards_seen:
+                        max_cards_seen = cards_now
+
+                    for it in res.get("items", []):
                         dom_items[it["prodId"]] = it
 
-                    total_now = len(api_products) + len(dom_items)
-                    if total_now == last_total:
+                    if cards_now == last_cards:
                         stagnant += 1
                     else:
                         stagnant = 0
-                    last_total = total_now
+                    last_cards = cards_now
 
-                    if stagnant >= 4 and total_now > 0:
+                    if stagnant >= 2:
                         break
 
                     page.evaluate(SCROLL_ALL_JS)
-                    time.sleep(1.1)
+                    time.sleep(0.5)
 
                 merged_items = {}
                 for k, v in dom_items.items():
@@ -486,7 +506,7 @@ def main():
                 for k, v in api_products.items():
                     merged_items[v["title"][:35]] = v
 
-                if len(merged_items) > 0:
+                if max_cards_seen > 0 or len(merged_items) > 0:
                     sent_deals.pop("__ALERT_TS__", None)
 
                 max_disc = 0
@@ -540,17 +560,17 @@ def main():
                                 sent_cnt += 1
                                 total_sent_all += 1
                                 print(f"   ✅ تم إرسال عرض: {title_str[:40]} (خصم {disc}%)")
-                                time.sleep(0.4)
+                                time.sleep(0.3)
 
-                print(f"   📊 فُحص {len(merged_items)} منتج مخفض | أعلى خصم: {max_disc}% | أُرسل: {sent_cnt}")
+                print(f"   📊 إجمالي: {max_cards_seen} | مخفض: {len(merged_items)} | أعلى خصم: {max_disc}% | أُرسل: {sent_cnt}")
 
             except Exception as e:
-                print(f"   ❌ خطأ أثناء فحص {cat_name}: {e}")
+                print(f"   ❌ خطأ في {cat_name}: {e}")
 
         browser.close()
 
     save_sent(sent_deals)
-    print(f"\n🏁 اكتمل المسح الشامل لـ {scanned_count} قائمة | إجمالي العروض المرسلة: {total_sent_all}")
+    print(f"\n🏁 اكتمل المسح لـ {scanned_count} قائمة | إجمالي العروض المرسلة: {total_sent_all}")
 
 
 if __name__ == "__main__":
