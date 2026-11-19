@@ -42,5 +42,6067 @@
   "TITLE_de cecco spaghetti pasta no.12, ": {
     "price": 137.68,
     "ts": 1795100652
+  },
+  "__PRICE_HISTORY__": {
+    "delivery icon": {
+      "p": 40,
+      "ts": 1795107336
+    },
+    "grocery cart icon": {
+      "p": 40,
+      "ts": 1795107336
+    },
+    "khodar.com orange navel 1 kg": {
+      "p": 40.95,
+      "ts": 1795107336
+    },
+    "khodar.com sweet potato 1 kg": {
+      "p": 23.95,
+      "ts": 1795107336
+    },
+    "khodar.com peeled pomegranate 350 gm": {
+      "p": 62.95,
+      "ts": 1795107336
+    },
+    "khodar.com italian red apple 1kg": {
+      "p": 109.95,
+      "ts": 1795107336
+    },
+    "khodar.com imported banana 1kg": {
+      "p": 147.95,
+      "ts": 1795107336
+    },
+    "pico local banana, 1kg": {
+      "p": 68.95,
+      "ts": 1795107336
+    },
+    "khodar.com sweet potato rings, 350g": {
+      "p": 32.95,
+      "ts": 1795107336
+    },
+    "fresh source sweet potatoes 1 kg": {
+      "p": 24.95,
+      "ts": 1795107336
+    },
+    "green house sweet corn, 2 pieces": {
+      "p": 130.0,
+      "ts": 1795107336
+    },
+    "pico apple royal gala - italy, 1kg": {
+      "p": 137.95,
+      "ts": 1795107336
+    },
+    "pico yellow apple - lebanon, 1kg": {
+      "p": 132.95,
+      "ts": 1795107336
+    },
+    "fresh source mixed apples 0.5 kg": {
+      "p": 72.95,
+      "ts": 1795107336
+    },
+    "pico red apple, 1kg": {
+      "p": 139.95,
+      "ts": 1795107336
+    },
+    "pico sweet corn vaccumed, 2 pieces": {
+      "p": 124.75,
+      "ts": 1795107336
+    },
+    "khodar.com white grape fruit, 1kg": {
+      "p": 37.95,
+      "ts": 1795107336
+    },
+    "temry chicken fillet, 500g": {
+      "p": 202.95,
+      "ts": 1795107341
+    },
+    "walima frozen chicken fillet, 500g": {
+      "p": 175.95,
+      "ts": 1795107341
+    },
+    "mafaza chicken shish, 700g": {
+      "p": 215.95,
+      "ts": 1795107341
+    },
+    "temry liver & gizzard, 500g": {
+      "p": 106.95,
+      "ts": 1795107341
+    },
+    "temry marinated bbq wings, 1kg": {
+      "p": 149.95,
+      "ts": 1795107341
+    },
+    "mafaza chicken liver, 1kg": {
+      "p": 189.95,
+      "ts": 1795107341
+    },
+    "temry fresh marinated indian spicy tando": {
+      "p": 335.95,
+      "ts": 1795107341
+    },
+    "temry oriental marinated whole chicken, ": {
+      "p": 302.95,
+      "ts": 1795107341
+    },
+    "temry fresh marinated original bbq chick": {
+      "p": 335.95,
+      "ts": 1795107341
+    },
+    "temry marinated whole chicken with masal": {
+      "p": 302.95,
+      "ts": 1795107341
+    },
+    "temry mediterranean marinated fillet, 1k": {
+      "p": 446.95,
+      "ts": 1795107341
+    },
+    "temry marinated arizona drumsticks, 1kg": {
+      "p": 216.95,
+      "ts": 1795107341
+    },
+    "mafaza marinated shish tawook louisiana,": {
+      "p": 313.95,
+      "ts": 1795107341
+    },
+    "temry shish tawook, 1kg": {
+      "p": 399.95,
+      "ts": 1795107341
+    },
+    "mafaza marinated chicket fillet portugue": {
+      "p": 339.95,
+      "ts": 1795107341
+    },
+    "mafaza marinated shish tawook portuguese": {
+      "p": 313.95,
+      "ts": 1795107341
+    },
+    "mafaza argentinian marinated chicken fil": {
+      "p": 339.95,
+      "ts": 1795107341
+    },
+    "mafaza indian marinated chicken shish, 7": {
+      "p": 313.95,
+      "ts": 1795107341
+    },
+    "mafaza mexican marinated chicken shish, ": {
+      "p": 313.95,
+      "ts": 1795107341
+    },
+    "mafaza mexican marinated chicken fillet,": {
+      "p": 339.95,
+      "ts": 1795107341
+    },
+    "fruit republic orange 1l": {
+      "p": 109.95,
+      "ts": 1795107341
+    },
+    "fruit republic guava 1l": {
+      "p": 84.95,
+      "ts": 1795107341
+    },
+    "fruit republic mango 1l": {
+      "p": 124.95,
+      "ts": 1795107341
+    },
+    "fruit republic strawberry 1l": {
+      "p": 94.95,
+      "ts": 1795107341
+    },
+    "fruit republic mango 275ml": {
+      "p": 44.95,
+      "ts": 1795107341
+    },
+    "fruit republic orange 275ml": {
+      "p": 44.95,
+      "ts": 1795107341
+    },
+    "fruit republic strawberry 275ml": {
+      "p": 43.95,
+      "ts": 1795107341
+    },
+    "fruit republic lemon with mint 1l": {
+      "p": 84.95,
+      "ts": 1795107341
+    },
+    "fruit republic lemon with mint 275ml": {
+      "p": 35.95,
+      "ts": 1795107341
+    },
+    "lipton herbal infusion mint tea bags, 12": {
+      "p": 40.0,
+      "ts": 1795107342
+    },
+    "royal herbs anise tea bags, 12 tea bags ": {
+      "p": 43.35,
+      "ts": 1795107342
+    },
+    "lipton herbal infusion anise tea bags, 1": {
+      "p": 36.0,
+      "ts": 1795107342
+    },
+    "royal herbs anise tea bags, 20 tea bags ": {
+      "p": 80.85,
+      "ts": 1795107342
+    },
+    "royal parsley & celery enveloped tea bag": {
+      "p": 69.9,
+      "ts": 1795107342
+    },
+    "royal regime herbal tea bags with weight": {
+      "p": 57.9,
+      "ts": 1795107342
+    },
+    "royal herbs hibiscus tea bags, 12 tea ba": {
+      "p": 43.35,
+      "ts": 1795107342
+    },
+    "lipton yellow label 2 in 1 dust black te": {
+      "p": 83.9,
+      "ts": 1795107342
+    },
+    "kitkat miniatures mango mania & strawber": {
+      "p": 205.0,
+      "ts": 1795107342
+    },
+    "lipton mint 20 20 bag x 3": {
+      "p": 84.0,
+      "ts": 1795107342
+    },
+    "royal herbs green tea tea bags, 25 tea b": {
+      "p": 87.0,
+      "ts": 1795107342
+    },
+    "royal herbs mint tea bags, 12 tea bags x": {
+      "p": 43.35,
+      "ts": 1795107342
+    },
+    "royal black tea cloves tea bags, 20 tea ": {
+      "p": 99.0,
+      "ts": 1795107342
+    },
+    "alitea signature 3in1 ginger tea sachet,": {
+      "p": 42.0,
+      "ts": 1795107342
+    },
+    "royal black tea mint envelope tea bags, ": {
+      "p": 80.85,
+      "ts": 1795107342
+    },
+    "royal black tea cardamon tea bags, 20 te": {
+      "p": 79.0,
+      "ts": 1795107342
+    },
+    "royal herbs hibiscus tea bags, 20 tea ba": {
+      "p": 80.85,
+      "ts": 1795107342
+    },
+    "royal herbs mint tea bags, 20 tea bags x": {
+      "p": 80.85,
+      "ts": 1795107342
+    },
+    "royal black tea tea bags, 20 tea bags x ": {
+      "p": 72.0,
+      "ts": 1795107342
+    },
+    "nestle kitkat 2 finger mini dark chocola": {
+      "p": 275.0,
+      "ts": 1795107342
+    },
+    "everyday roastery pumpkin spice hot choc": {
+      "p": 95.0,
+      "ts": 1795107342
+    },
+    "everyday roastery ginger hot chocolate -": {
+      "p": 95.0,
+      "ts": 1795107342
+    },
+    "everyday roastery spicy hot chocolate - ": {
+      "p": 95.0,
+      "ts": 1795107342
+    },
+    "everyday roastery cinnamon hot chocolate": {
+      "p": 95.0,
+      "ts": 1795107342
+    },
+    "everyday roastery toffee crunch hot choc": {
+      "p": 95.0,
+      "ts": 1795107342
+    },
+    "everyday roastery iced white chocolate m": {
+      "p": 210.0,
+      "ts": 1795107342
+    },
+    "everyday roastery iced spanish latte can": {
+      "p": 240.0,
+      "ts": 1795107342
+    },
+    "everyday roastery iced dulce de leche la": {
+      "p": 210.0,
+      "ts": 1795107342
+    },
+    "everyday roastery iced caramel latte can": {
+      "p": 210.0,
+      "ts": 1795107342
+    },
+    "everyday roastery cappuccino (12 oz full": {
+      "p": 165.0,
+      "ts": 1795107342
+    },
+    "everyday roastery cappuccino (12 oz skim": {
+      "p": 165.0,
+      "ts": 1795107342
+    },
+    "mooomoo's australian lamb racks, 450g": {
+      "p": 769.95,
+      "ts": 1795107347
+    },
+    "el-masrya sea food mix 400g": {
+      "p": 71.0,
+      "ts": 1795107347
+    },
+    "hormuz peeled emarati shrimp 60/80, 400g": {
+      "p": 410.0,
+      "ts": 1795107347
+    },
+    "hormuz peeled emarati shrimp 40/60, 400g": {
+      "p": 461.0,
+      "ts": 1795107347
+    },
+    "hormuz peeled emarati shrimp 10/20, 400g": {
+      "p": 546.0,
+      "ts": 1795107347
+    },
+    "seastar salmon fillet frozen, 200g": {
+      "p": 309.95,
+      "ts": 1795107347
+    },
+    "el-masrya large clean shrimps, 800g": {
+      "p": 933.0,
+      "ts": 1795107347
+    },
+    "sea star smoked salmon frozen, 200g": {
+      "p": 534.95,
+      "ts": 1795107347
+    },
+    "sea star smoked salmon frozen, 100g": {
+      "p": 289.95,
+      "ts": 1795107347
+    },
+    "sea star smoked salmon chilled, 100g": {
+      "p": 299.95,
+      "ts": 1795107347
+    },
+    "hormuz peeled emarati shrimp 60/80, 900g": {
+      "p": 926.0,
+      "ts": 1795107347
+    },
+    "sea star smoked salmon chilled, 200g": {
+      "p": 564.95,
+      "ts": 1795107347
+    },
+    "al asdekaa imported white cheddar cheese": {
+      "p": 147.5,
+      "ts": 1795107347
+    },
+    "imported cheddar cheese - new zealand, 2": {
+      "p": 124.95,
+      "ts": 1795107347
+    },
+    "fresh farm light gouda cheese - holland,": {
+      "p": 160.75,
+      "ts": 1795107347
+    },
+    "al asdekaa imported gouda cheese, 250g": {
+      "p": 185.0,
+      "ts": 1795107347
+    },
+    "al asdekaa red cheese, 250g": {
+      "p": 200.0,
+      "ts": 1795107347
+    },
+    "dutch goat's cheese 125 gm dutch": {
+      "p": 139.25,
+      "ts": 1795107347
+    },
+    "monterey jack cheese 125 gm american": {
+      "p": 116.45,
+      "ts": 1795107347
+    },
+    "walima frozen beef cubes, 400g": {
+      "p": 234.95,
+      "ts": 1795107348
+    },
+    "fresh farm baladi beef steak, 400g": {
+      "p": 242.95,
+      "ts": 1795107348
+    },
+    "mooomoo's frozen balady burger, 400g": {
+      "p": 214.95,
+      "ts": 1795107348
+    },
+    "mooomoo’s veal liver slices 450 gm": {
+      "p": 199.95,
+      "ts": 1795107348
+    },
+    "walima frozen baladi beef sausage, 500g": {
+      "p": 269.95,
+      "ts": 1795107348
+    },
+    "fresh farm baladi beef cubes, 500g": {
+      "p": 284.95,
+      "ts": 1795107348
+    },
+    "walima frozen beef burger, 500g": {
+      "p": 254.95,
+      "ts": 1795107348
+    },
+    "walima frozen baladi beef moza rings, 40": {
+      "p": 239.95,
+      "ts": 1795107348
+    },
+    "mooomoo's burger with cheese, 2x150g": {
+      "p": 169.95,
+      "ts": 1795107348
+    },
+    "fresh farm baladi beef moza rings, 400g": {
+      "p": 242.95,
+      "ts": 1795107348
+    },
+    "mooomoo's veal oven kofta, 425g": {
+      "p": 234.95,
+      "ts": 1795107348
+    },
+    "mooomoo's oriental kofta, 500g": {
+      "p": 269.95,
+      "ts": 1795107348
+    },
+    "mooomoo's frozen balady oriental kofta, ": {
+      "p": 269.95,
+      "ts": 1795107348
+    },
+    "walima frozen beef hawashi, 2 pieces": {
+      "p": 154.95,
+      "ts": 1795107348
+    },
+    "mooomoo's veal meat cubes, 450g": {
+      "p": 279.95,
+      "ts": 1795107348
+    },
+    "mooomoo's veal fillet strips, 450g": {
+      "p": 439.95,
+      "ts": 1795107348
+    },
+    "mooomoo's breaded kofta, 425g": {
+      "p": 204.95,
+      "ts": 1795107348
+    },
+    "mooomoo's veal ribeye steak, 450g": {
+      "p": 729.95,
+      "ts": 1795107348
+    },
+    "al asdekaa mild roumi cheese, 250g": {
+      "p": 106.25,
+      "ts": 1795107348
+    },
+    "mild roumy, 250g": {
+      "p": 94.95,
+      "ts": 1795107348
+    },
+    "al asdekaa old roumi cheese, 250g": {
+      "p": 107.5,
+      "ts": 1795107348
+    },
+    "old roumy, 250g": {
+      "p": 97.95,
+      "ts": 1795107348
+    },
+    "roumy batarekh cheese, 250g": {
+      "p": 99.95,
+      "ts": 1795107348
+    },
+    "flamingo edam chesse 125 gm": {
+      "p": 73.75,
+      "ts": 1795107348
+    },
+    "al asdekaa low salt cheese, 250g": {
+      "p": 74.95,
+      "ts": 1795107348
+    },
+    "fresh farm baramily plain cheese, 400g": {
+      "p": 99.25,
+      "ts": 1795107348
+    },
+    "fresh farm natural cottage cheese, 450g": {
+      "p": 68.75,
+      "ts": 1795107348
+    },
+    "fresh farm baramily with peper cheese, 4": {
+      "p": 99.25,
+      "ts": 1795107348
+    },
+    "fresh farm spread cheese pastrami, 400g": {
+      "p": 80.75,
+      "ts": 1795107348
+    },
+    "fresh farm spread cheese roumy cheese, 4": {
+      "p": 78.45,
+      "ts": 1795107348
+    },
+    "fresh farm low salt cheese, 400g": {
+      "p": 102.25,
+      "ts": 1795107348
+    },
+    "fresh farm natural cottage cheese with t": {
+      "p": 68.75,
+      "ts": 1795107348
+    },
+    "fresh farm natural cottage cheese with b": {
+      "p": 68.75,
+      "ts": 1795107348
+    },
+    "domty mozzarella premium light natural 1": {
+      "p": 134.0,
+      "ts": 1795107348
+    },
+    "everyday roastery americano iced, 18oz": {
+      "p": 76.0,
+      "ts": 1795107353
+    },
+    "everyday roastery iced latte iced - skim": {
+      "p": 90.0,
+      "ts": 1795107353
+    },
+    "everyday roastery iced latte - full crea": {
+      "p": 90.0,
+      "ts": 1795107353
+    },
+    "everyday roastery americano iced, 14oz": {
+      "p": 70.0,
+      "ts": 1795107353
+    },
+    "everyday roastery iced cappuccino - full": {
+      "p": 90.0,
+      "ts": 1795107353
+    },
+    "everyday roastery iced cappuccino - skim": {
+      "p": 90.0,
+      "ts": 1795107353
+    },
+    "everyday roastery cappuccino - full crea": {
+      "p": 90.0,
+      "ts": 1795107353
+    },
+    "everyday roastery flat white - full crea": {
+      "p": 90.0,
+      "ts": 1795107353
+    },
+    "everyday roastery cappuccino - skimmed m": {
+      "p": 90.0,
+      "ts": 1795107353
+    },
+    "everyday roastery flat white - skimmed m": {
+      "p": 90.0,
+      "ts": 1795107353
+    },
+    "everyday roastery latte hot - full cream": {
+      "p": 90.0,
+      "ts": 1795107353
+    },
+    "everyday roastery americano hot, 12oz": {
+      "p": 70.0,
+      "ts": 1795107353
+    },
+    "everyday roastery latte hot - skimmed mi": {
+      "p": 90.0,
+      "ts": 1795107353
+    },
+    "taste pure smoked turkey breast slices, ": {
+      "p": 106.95,
+      "ts": 1795107353
+    },
+    "fresh farm chicken luncheon with olives,": {
+      "p": 69.95,
+      "ts": 1795107353
+    },
+    "fresh farm beef hot dog with cheese, 400": {
+      "p": 109.95,
+      "ts": 1795107353
+    },
+    "fresh farm beef luncheon with pastrami, ": {
+      "p": 79.95,
+      "ts": 1795107353
+    },
+    "fresh farm beef hot dog, 400g": {
+      "p": 109.95,
+      "ts": 1795107353
+    },
+    "al asdekaa plain luncheon halawni, 250g": {
+      "p": 106.25,
+      "ts": 1795107353
+    },
+    "al asdekaa olive luncheon halawni, 250g": {
+      "p": 106.25,
+      "ts": 1795107353
+    },
+    "fresh farm luncheon meat, 200g": {
+      "p": 79.95,
+      "ts": 1795107353
+    },
+    "fresh farm luncheon turkey with olives, ": {
+      "p": 74.95,
+      "ts": 1795107353
+    },
+    "al asdekaa pastrami halawni, 250g": {
+      "p": 349.95,
+      "ts": 1795107353
+    },
+    "al asdekaa dry salami halawni, 250g": {
+      "p": 132.45,
+      "ts": 1795107353
+    },
+    "fresh farm smoked turkey lobes, 200g": {
+      "p": 224.95,
+      "ts": 1795107353
+    },
+    "al asdekaa luncheon pepper halawni, 250g": {
+      "p": 106.25,
+      "ts": 1795107353
+    },
+    "fresh farm luncheon with olives, 250g": {
+      "p": 74.95,
+      "ts": 1795107353
+    },
+    "fresh farm processed salami, 200g": {
+      "p": 99.95,
+      "ts": 1795107353
+    },
+    "fresh farm smoked beef bacon, 200g": {
+      "p": 184.95,
+      "ts": 1795107353
+    },
+    "fresh farm luncheon with pepper, 250g": {
+      "p": 74.95,
+      "ts": 1795107353
+    },
+    "fresh farm processed beef meat, 200g": {
+      "p": 99.95,
+      "ts": 1795107353
+    },
+    "fresh farm luncheon with basterma, 250g": {
+      "p": 79.95,
+      "ts": 1795107353
+    },
+    "fresh farm luncheon with meat, 250g": {
+      "p": 79.95,
+      "ts": 1795107353
+    },
+    "al asdekaa spanish olives, 250g": {
+      "p": 55.0,
+      "ts": 1795107353
+    },
+    "wadi food black olives paste with chili,": {
+      "p": 34.95,
+      "ts": 1795107353
+    },
+    "wadi food mixed pickles jar, 650g": {
+      "p": 37.75,
+      "ts": 1795107353
+    },
+    "wadi food jalapeno sliced jar, 1kg": {
+      "p": 56.0,
+      "ts": 1795107353
+    },
+    "wadi food mixed pickles jar, 1kg": {
+      "p": 52.0,
+      "ts": 1795107353
+    },
+    "dobella pickled cucumber, 370g": {
+      "p": 103.0,
+      "ts": 1795107353
+    },
+    "dobella pickled sliced olive, 370g": {
+      "p": 72.0,
+      "ts": 1795107353
+    },
+    "dobella pickled mix, 720g": {
+      "p": 57.0,
+      "ts": 1795107353
+    },
+    "al asdekaa kalamata greek olives, 250g": {
+      "p": 148.75,
+      "ts": 1795107353
+    },
+    "dobella pickled black olive, 370g": {
+      "p": 72.0,
+      "ts": 1795107353
+    },
+    "dobella pickled onion, 370g": {
+      "p": 48.0,
+      "ts": 1795107353
+    },
+    "dobella pickled green olive, 370g": {
+      "p": 59.0,
+      "ts": 1795107353
+    },
+    "dobella pickled halipino pepper, 370g": {
+      "p": 39.0,
+      "ts": 1795107353
+    },
+    "dobella pickled kalamata olive, 370g": {
+      "p": 82.0,
+      "ts": 1795107353
+    },
+    "dobella pickled mix, 370g": {
+      "p": 32.0,
+      "ts": 1795107353
+    },
+    "dobella pickled mexican pepper, 720g": {
+      "p": 69.0,
+      "ts": 1795107353
+    },
+    "dobella pickled black slices olives, 720": {
+      "p": 136.0,
+      "ts": 1795107353
+    },
+    "dobella pickled mexican pepper, 370g": {
+      "p": 37.0,
+      "ts": 1795107353
+    },
+    "dobella pickled green olive, 720g": {
+      "p": 112.0,
+      "ts": 1795107353
+    },
+    "dobella pickled onion, 720g": {
+      "p": 92.0,
+      "ts": 1795107353
+    },
+    "katchino feteer, 1 piece": {
+      "p": 95.95,
+      "ts": 1795107353
+    },
+    "digs double fudge brownie, 140g": {
+      "p": 110.0,
+      "ts": 1795107353
+    },
+    "digs rasberry cheesecake sandwich, 170g": {
+      "p": 135.0,
+      "ts": 1795107353
+    },
+    "digs apple crumble, 250g": {
+      "p": 140.0,
+      "ts": 1795107353
+    },
+    "everyday roastery passion peach twist ca": {
+      "p": 99.0,
+      "ts": 1795107359
+    },
+    "everyday roastery berries lemonade can, ": {
+      "p": 99.0,
+      "ts": 1795107359
+    },
+    "everyday roastery schweppes orginal moji": {
+      "p": 99.0,
+      "ts": 1795107359
+    },
+    "everyday roastery tropical peach twist c": {
+      "p": 99.0,
+      "ts": 1795107359
+    },
+    "everyday roastery kiwi lemonade can, 550": {
+      "p": 99.0,
+      "ts": 1795107359
+    },
+    "everyday roastery fizzy schweppes iced t": {
+      "p": 99.0,
+      "ts": 1795107359
+    },
+    "everyday roastery fizzy squizz up mango ": {
+      "p": 150.0,
+      "ts": 1795107359
+    },
+    "everyday roastery fizzy squizz lemon min": {
+      "p": 150.0,
+      "ts": 1795107359
+    },
+    "everyday roastery fizzy squizz berry lem": {
+      "p": 150.0,
+      "ts": 1795107359
+    },
+    "everyday roastery spanish latte - full c": {
+      "p": 110.0,
+      "ts": 1795107359
+    },
+    "everyday roastery spanish latte - skimme": {
+      "p": 110.0,
+      "ts": 1795107359
+    },
+    "everyday roastery ducle de leche latte -": {
+      "p": 102.0,
+      "ts": 1795107359
+    },
+    "everyday roastery caramel latte - skimme": {
+      "p": 102.0,
+      "ts": 1795107359
+    },
+    "everyday roastery caramel latte - full c": {
+      "p": 96.0,
+      "ts": 1795107359
+    },
+    "everyday roastery dark chocolate mocha -": {
+      "p": 102.0,
+      "ts": 1795107359
+    },
+    "everyday roastery white chocolate mocha ": {
+      "p": 102.0,
+      "ts": 1795107359
+    },
+    "everyday roastery vanilla latte - skimme": {
+      "p": 102.0,
+      "ts": 1795107359
+    },
+    "everyday roastery vanilla latte - full c": {
+      "p": 102.0,
+      "ts": 1795107359
+    },
+    "everyday roastery salted caramel latte -": {
+      "p": 100.0,
+      "ts": 1795107359
+    },
+    "everyday roastery caramel spanish latte ": {
+      "p": 116.0,
+      "ts": 1795107359
+    },
+    "everyday roastery matcha latte - skimmed": {
+      "p": 102.0,
+      "ts": 1795107359
+    },
+    "everyday roastery full cream cinnamon va": {
+      "p": 96.0,
+      "ts": 1795107359
+    },
+    "everyday roastery redbull coco lada twis": {
+      "p": 150.0,
+      "ts": 1795107359
+    },
+    "everyday roastery redbull peachy blue, 5": {
+      "p": 150.0,
+      "ts": 1795107359
+    },
+    "everyday roastery redbull berry mango le": {
+      "p": 150.0,
+      "ts": 1795107359
+    },
+    "everyday roastery redbull green bull pas": {
+      "p": 150.0,
+      "ts": 1795107359
+    },
+    "everyday roastery redbull tropical mango": {
+      "p": 150.0,
+      "ts": 1795107359
+    },
+    "everyday roastery iced spanish latte - f": {
+      "p": 110.0,
+      "ts": 1795107359
+    },
+    "everyday roastery iced salted caramel la": {
+      "p": 100.0,
+      "ts": 1795107359
+    },
+    "everyday roastery iced spanish latte - s": {
+      "p": 110.0,
+      "ts": 1795107359
+    },
+    "everyday roastery iced matcha latte - sk": {
+      "p": 96.0,
+      "ts": 1795107359
+    },
+    "everyday roastery iced ducle de leche la": {
+      "p": 102.0,
+      "ts": 1795107359
+    },
+    "everyday roastery iced vanilla latte - s": {
+      "p": 102.0,
+      "ts": 1795107359
+    },
+    "everyday roastery iced matcha latte - fu": {
+      "p": 102.0,
+      "ts": 1795107359
+    },
+    "everyday roastery iced caramel spanish l": {
+      "p": 116.0,
+      "ts": 1795107359
+    },
+    "everyday roastery iced vanilla latte - f": {
+      "p": 102.0,
+      "ts": 1795107359
+    },
+    "everyday roastery berry mojito can, 500m": {
+      "p": 90.0,
+      "ts": 1795107364
+    },
+    "everyday roastery passion fruit mojito c": {
+      "p": 90.0,
+      "ts": 1795107364
+    },
+    "lipton tropical karkade can, 500ml": {
+      "p": 90.0,
+      "ts": 1795107364
+    },
+    "everyday roastery pomegranate mojito can": {
+      "p": 90.0,
+      "ts": 1795107364
+    },
+    "lipton green tea & peachy mango mojito c": {
+      "p": 90.0,
+      "ts": 1795107364
+    },
+    "everyday roastery vanilla oreo frappe ca": {
+      "p": 120.0,
+      "ts": 1795107364
+    },
+    "everyday roastery caramel frappe can - f": {
+      "p": 130.0,
+      "ts": 1795107364
+    },
+    "everyday roastery dolce de leche coffee ": {
+      "p": 130.0,
+      "ts": 1795107364
+    },
+    "everyday roastery caramel frappe can - s": {
+      "p": 130.0,
+      "ts": 1795107364
+    },
+    "everyday roastery dark chocolate mocha f": {
+      "p": 130.0,
+      "ts": 1795107364
+    },
+    "everyday roastery vanilla frappe can - f": {
+      "p": 130.0,
+      "ts": 1795107364
+    },
+    "everyday roastery iced matcha latte can ": {
+      "p": 130.0,
+      "ts": 1795107364
+    },
+    "everyday roastery spanish coffee frappe ": {
+      "p": 160.0,
+      "ts": 1795107364
+    },
+    "everyday roastery iced dark chocolate mo": {
+      "p": 130.0,
+      "ts": 1795107364
+    },
+    "everyday roastery iced vanilla latte can": {
+      "p": 130.0,
+      "ts": 1795107364
+    },
+    "everyday roastery smoked turkey & cheese": {
+      "p": 140.0,
+      "ts": 1795107365
+    },
+    "everyday roastery chicken cassadia wrap": {
+      "p": 145.0,
+      "ts": 1795107365
+    },
+    "everyday roastery spicy chicken sandwich": {
+      "p": 130.0,
+      "ts": 1795107365
+    },
+    "everyday roastery fresh roast turkey pre": {
+      "p": 140.0,
+      "ts": 1795107365
+    },
+    "everyday roastery caramel frappe - full ": {
+      "p": 100.0,
+      "ts": 1795107365
+    },
+    "everyday roastery spanish latte frappe -": {
+      "p": 116.0,
+      "ts": 1795107365
+    },
+    "everyday roastery caramel frappe - skimm": {
+      "p": 100.0,
+      "ts": 1795107365
+    },
+    "everyday roastery ducle de leche frappe ": {
+      "p": 100.0,
+      "ts": 1795107365
+    },
+    "everyday roastery vanilla frappe - skimm": {
+      "p": 100.0,
+      "ts": 1795107365
+    },
+    "everyday roastery vanilla frappe - full ": {
+      "p": 100.0,
+      "ts": 1795107365
+    },
+    "everyday roastery mango pineapple frappe": {
+      "p": 120.0,
+      "ts": 1795107365
+    },
+    "everyday roastery blueberry frappe can, ": {
+      "p": 120.0,
+      "ts": 1795107365
+    },
+    "everyday roastery mango frappe can, 500m": {
+      "p": 120.0,
+      "ts": 1795107365
+    },
+    "everyday roastery strawberry frappe can,": {
+      "p": 120.0,
+      "ts": 1795107365
+    },
+    "everyday roastery pina colada frappe can": {
+      "p": 120.0,
+      "ts": 1795107365
+    },
+    "everyday roastery pineapple kiwi can fra": {
+      "p": 120.0,
+      "ts": 1795107365
+    },
+    "everyday roastery peach frappe can, 500m": {
+      "p": 120.0,
+      "ts": 1795107365
+    },
+    "everyday roastery creme caramel iced cof": {
+      "p": 130.0,
+      "ts": 1795107371
+    },
+    "everyday roastery activia mixed berries ": {
+      "p": 100.0,
+      "ts": 1795107371
+    },
+    "atyab frozen crispy chicken pane, 8 piec": {
+      "p": 141.0,
+      "ts": 1795107371
+    },
+    "atyab crispy chicken pane spicy 400 gm": {
+      "p": 141.0,
+      "ts": 1795107371
+    },
+    "shahd original pane beyti, 500g": {
+      "p": 200.0,
+      "ts": 1795107371
+    },
+    "koki crunchy nuggets 20 pcs": {
+      "p": 152.07,
+      "ts": 1795107371
+    },
+    "koki chicken strips 400 gm": {
+      "p": 185.08,
+      "ts": 1795107371
+    },
+    "koki hot chicken strips 400 gm": {
+      "p": 185.08,
+      "ts": 1795107371
+    },
+    "koki strips 1 kg": {
+      "p": 350.63,
+      "ts": 1795107371
+    },
+    "koki spicy crunchy chicken pane - 8 piec": {
+      "p": 157.85,
+      "ts": 1795107371
+    },
+    "koki hot strips 1 kg": {
+      "p": 350.63,
+      "ts": 1795107371
+    },
+    "koki hot crunchy chicken pane breasts 1 ": {
+      "p": 265.78,
+      "ts": 1795107371
+    },
+    "koki crunchy chicken pane breasts 1 kg": {
+      "p": 265.78,
+      "ts": 1795107371
+    },
+    "koki spicy crunchy chicken wings, 700g": {
+      "p": 172.63,
+      "ts": 1795107371
+    },
+    "koki chicken crunchy pane 400 gm": {
+      "p": 157.85,
+      "ts": 1795107371
+    },
+    "koki drumsticks crunchy, 700g": {
+      "p": 241.31,
+      "ts": 1795107371
+    },
+    "koki chicken burger 8 pieces": {
+      "p": 154.69,
+      "ts": 1795107371
+    },
+    "koki fried chicken 12 pcs + fries": {
+      "p": 308.0,
+      "ts": 1795107371
+    },
+    "koki crunchy spicy chicken drumsticks, 7": {
+      "p": 241.31,
+      "ts": 1795107371
+    },
+    "koki crunchy chicken wings, 700g": {
+      "p": 172.63,
+      "ts": 1795107371
+    },
+    "atyab chicken strips spicy 1 kg": {
+      "p": 396.0,
+      "ts": 1795107371
+    },
+    "atyab crispy chicken pane spicy 1 kg": {
+      "p": 337.0,
+      "ts": 1795107371
+    },
+    "everyday roastery chocolate cake cup": {
+      "p": 100.0,
+      "ts": 1795107371
+    },
+    "everyday roastery carrot cake cup": {
+      "p": 100.0,
+      "ts": 1795107371
+    },
+    "everyday roastery original chocolate chi": {
+      "p": 85.0,
+      "ts": 1795107371
+    },
+    "everyday roastery plain croissant": {
+      "p": 65.0,
+      "ts": 1795107371
+    },
+    "everyday roastery muffin vanillia": {
+      "p": 65.0,
+      "ts": 1795107371
+    },
+    "everyday roastery cheese croissant": {
+      "p": 75.0,
+      "ts": 1795107371
+    },
+    "everyday roastery veggie & chicken salad": {
+      "p": 185.0,
+      "ts": 1795107371
+    },
+    "almarai triangle cheese, 8 portions, 120": {
+      "p": 40.0,
+      "ts": 1795107376
+    },
+    "almarai plain feta cheese, 250g": {
+      "p": 29.3,
+      "ts": 1795107376
+    },
+    "dina farms feta cheese 450 gm": {
+      "p": 118.0,
+      "ts": 1795107376
+    },
+    "almarai sandwich cheese slices, 200g": {
+      "p": 155.0,
+      "ts": 1795107376
+    },
+    "dina farms cottage cheese, 450g": {
+      "p": 78.0,
+      "ts": 1795107376
+    },
+    "almarai cream cheese, 6 portion, 108g": {
+      "p": 65.0,
+      "ts": 1795107376
+    },
+    "dina farms istanbuli cheese 450 gm": {
+      "p": 118.0,
+      "ts": 1795107376
+    },
+    "dina farms cheese light salt 450 gm": {
+      "p": 118.0,
+      "ts": 1795107376
+    },
+    "almarai spreadable cream cheese, 200g": {
+      "p": 100.0,
+      "ts": 1795107376
+    },
+    "almarai triangle cheese, 16 portions, 24": {
+      "p": 75.0,
+      "ts": 1795107376
+    },
+    "almarai plain feta cheese, 500g": {
+      "p": 57.5,
+      "ts": 1795107376
+    },
+    "almarai plain feta cheese, 125g": {
+      "p": 16.0,
+      "ts": 1795107376
+    },
+    "almarai feta cheese with olives, 250g": {
+      "p": 29.5,
+      "ts": 1795107376
+    },
+    "almarai cheddar feta cheese, 250g": {
+      "p": 29.5,
+      "ts": 1795107376
+    },
+    "almarai cream cheese 12 pieces, 216g": {
+      "p": 125.0,
+      "ts": 1795107376
+    },
+    "almarai natural plain feta cheese, 450g": {
+      "p": 125.0,
+      "ts": 1795107376
+    },
+    "almarai triangle cheese, 24 portions, 36": {
+      "p": 110.0,
+      "ts": 1795107376
+    },
+    "almarai natural istanbuli feta cheese, 4": {
+      "p": 125.0,
+      "ts": 1795107376
+    },
+    "almarai natural barameli feta cheese, 45": {
+      "p": 125.0,
+      "ts": 1795107376
+    },
+    "domty natural feta cheese lactose-free, ": {
+      "p": 170.0,
+      "ts": 1795107376
+    },
+    "la mer 45% surimi crab sticks, 250g": {
+      "p": 150.0,
+      "ts": 1795107377
+    },
+    "el-masrya smoked salmon 100 gm": {
+      "p": 225.0,
+      "ts": 1795107377
+    },
+    "la mer hickory & oak smoked salmon slice": {
+      "p": 460.0,
+      "ts": 1795107377
+    },
+    "seashelf crab sticks 45%, 250g": {
+      "p": 159.0,
+      "ts": 1795107377
+    },
+    "hormuz peeled emarati shrimp 80/120, 400": {
+      "p": 381.0,
+      "ts": 1795107377
+    },
+    "el-masrya breaded fillet 300 gm": {
+      "p": 85.0,
+      "ts": 1795107377
+    },
+    "el-masrya breaded shrimp 300 gm": {
+      "p": 240.0,
+      "ts": 1795107377
+    },
+    "hormuz peeled emarati shrimp 20/30, 400g": {
+      "p": 472.0,
+      "ts": 1795107377
+    },
+    "la mer salmon fillet portion, 200g": {
+      "p": 330.0,
+      "ts": 1795107377
+    },
+    "el-masrya cleaned fesikh 300 gm": {
+      "p": 225.0,
+      "ts": 1795107377
+    },
+    "hormuz white fillet fish, 1kg": {
+      "p": 421.0,
+      "ts": 1795107377
+    },
+    "seafood factory seashelf salmon fillet p": {
+      "p": 635.55,
+      "ts": 1795107377
+    },
+    "seafood factory seashelf norwegian smoke": {
+      "p": 546.25,
+      "ts": 1795107377
+    },
+    "seafood factory syed el youm calamari ri": {
+      "p": 249.0,
+      "ts": 1795107377
+    },
+    "seafood factory syed el youm white fish ": {
+      "p": 377.15,
+      "ts": 1795107377
+    },
+    "el-masrya small shrimps 800 gm": {
+      "p": 406.0,
+      "ts": 1795107377
+    },
+    "seafood factory syed el youm wild tilapi": {
+      "p": 249.0,
+      "ts": 1795107377
+    },
+    "hormuz calamari funnel, 1kg": {
+      "p": 534.0,
+      "ts": 1795107377
+    },
+    "hormuz peeled emarati shrimp with tail 2": {
+      "p": 1432.0,
+      "ts": 1795107377
+    },
+    "koki hot dog 30 pcs": {
+      "p": 230.75,
+      "ts": 1795107377
+    },
+    "koki kofta 900 gm": {
+      "p": 247.25,
+      "ts": 1795107377
+    },
+    "el tawabel al sharkeya frozen beef burge": {
+      "p": 172.46,
+      "ts": 1795107377
+    },
+    "koki hot dog beef, 12 pieces": {
+      "p": 235.17,
+      "ts": 1795107377
+    },
+    "atyab beef hot dog 25 pcs": {
+      "p": 336.0,
+      "ts": 1795107377
+    },
+    "koki burger 1 kg": {
+      "p": 299.12,
+      "ts": 1795107377
+    },
+    "atyab sausages, 900g": {
+      "p": 356.0,
+      "ts": 1795107377
+    },
+    "atyab beef hot dog 12 pcs": {
+      "p": 331.0,
+      "ts": 1795107377
+    },
+    "talabat fresh white table eggs, large, 3": {
+      "p": 177.95,
+      "ts": 1795107377
+    },
+    "talabat fresh brown table eggs, large, 3": {
+      "p": 185.95,
+      "ts": 1795107377
+    },
+    "happy egg white eggs, 30 pieces": {
+      "p": 164.95,
+      "ts": 1795107377
+    },
+    "organic white eggs, 30 pieces": {
+      "p": 154.95,
+      "ts": 1795107377
+    },
+    "organic white eggs, 10 pieces": {
+      "p": 59.95,
+      "ts": 1795107377
+    },
+    "organic red eggs *10": {
+      "p": 61.95,
+      "ts": 1795107377
+    },
+    "happy egg white eggs, 10 pieces": {
+      "p": 68.45,
+      "ts": 1795107377
+    },
+    "organic baladi eggs *10": {
+      "p": 64.95,
+      "ts": 1795107377
+    },
+    "happy egg white eggs, 15 pieces": {
+      "p": 91.75,
+      "ts": 1795107377
+    },
+    "organic white eggs, 15 pieces": {
+      "p": 88.95,
+      "ts": 1795107377
+    },
+    "organic red eggs, 15 pieces": {
+      "p": 89.95,
+      "ts": 1795107377
+    },
+    "organic baladi eggs, 15 pieces": {
+      "p": 96.45,
+      "ts": 1795107377
+    },
+    "egyptian growers balady eggs, 30 pieces": {
+      "p": 174.95,
+      "ts": 1795107377
+    },
+    "egyptian growers balady eggs, 10 pieces": {
+      "p": 70.45,
+      "ts": 1795107377
+    },
+    "happy egg baladi eggs, 15 pieces": {
+      "p": 96.95,
+      "ts": 1795107377
+    },
+    "egyptian growers white eggs, 15 pieces": {
+      "p": 96.75,
+      "ts": 1795107377
+    },
+    "egyptian growers balady eggs, 6 pieces": {
+      "p": 45.25,
+      "ts": 1795107377
+    },
+    "egyptian growers brown eggs, 10 pieces": {
+      "p": 71.95,
+      "ts": 1795107377
+    },
+    "happy egg baladi eggs, 10 pieces": {
+      "p": 71.95,
+      "ts": 1795107377
+    },
+    "happy egg red eggs, 10 pieces": {
+      "p": 70.95,
+      "ts": 1795107377
+    },
+    "almarai greek yogurt - 2% fat - 170 gm x": {
+      "p": 213.75,
+      "ts": 1795107377
+    },
+    "almarai greek yogurt - berries - 170 gm ": {
+      "p": 180.0,
+      "ts": 1795107377
+    },
+    "danone plain yoghurt, 150g x2": {
+      "p": 30.0,
+      "ts": 1795107377
+    },
+    "almarai greek yogurt - strawberry - 170 ": {
+      "p": 90.0,
+      "ts": 1795107377
+    },
+    "juhayna thick cooking cream, 200ml x2": {
+      "p": 142.0,
+      "ts": 1795107377
+    },
+    "juhayna greek mixed berries yoghurt, 180": {
+      "p": 92.0,
+      "ts": 1795107377
+    },
+    "danone plain yoghurt, 12x85g x2": {
+      "p": 180.0,
+      "ts": 1795107377
+    },
+    "almarai light fat yogurt 170 gm x3": {
+      "p": 54.0,
+      "ts": 1795107377
+    },
+    "almarai yogo mixed berries drinking yogu": {
+      "p": 57.0,
+      "ts": 1795107377
+    },
+    "almarai strawberry tart delight greek yo": {
+      "p": 135.0,
+      "ts": 1795107377
+    },
+    "danone mixed berries greek yoghurt, 170g": {
+      "p": 120.0,
+      "ts": 1795107377
+    },
+    "almarai greek yogurt - 2% fat - 170 gm*2": {
+      "p": 85.5,
+      "ts": 1795107377
+    },
+    "almarai treats yogurt 105 gm strawberry ": {
+      "p": 82.0,
+      "ts": 1795107377
+    },
+    "almarai yogo mango drinking yoghurt, 220": {
+      "p": 57.0,
+      "ts": 1795107377
+    },
+    "abu el walad triangle cheese 16 pieces x": {
+      "p": 132.0,
+      "ts": 1795107377
+    },
+    "almarai apple pie yoghurt, 105g x4": {
+      "p": 56.0,
+      "ts": 1795107377
+    },
+    "juhayna greek yoghurt 7% extra fat, 180g": {
+      "p": 90.0,
+      "ts": 1795107377
+    },
+    "danette cream caramel, 70g": {
+      "p": 12.0,
+      "ts": 1795107382
+    },
+    "danette chocolate pudding dessert, 85g": {
+      "p": 10.0,
+      "ts": 1795107382
+    },
+    "danette chocolate hazelnut pudding, 85g": {
+      "p": 10.0,
+      "ts": 1795107382
+    },
+    "danette caramel pudding dessert, 85g": {
+      "p": 10.0,
+      "ts": 1795107382
+    },
+    "danette chocolate pudding dessert, 6x85g": {
+      "p": 55.0,
+      "ts": 1795107382
+    },
+    "al asdekaa rice pudding, 200g": {
+      "p": 25.88,
+      "ts": 1795107382
+    },
+    "danette vanilla pudding dessert, 85g": {
+      "p": 10.0,
+      "ts": 1795107382
+    },
+    "juhayna caramel pudding, 100g": {
+      "p": 11.0,
+      "ts": 1795107382
+    },
+    "almarai chocolate pudding, 4 cups, 400g": {
+      "p": 43.0,
+      "ts": 1795107382
+    },
+    "juhayna premium double chocolate pudding": {
+      "p": 34.0,
+      "ts": 1795107382
+    },
+    "almarai caramel pudding, 4 cups, 400g": {
+      "p": 43.0,
+      "ts": 1795107382
+    },
+    "juhayna premium caramel toffee pudding, ": {
+      "p": 34.0,
+      "ts": 1795107382
+    },
+    "juhayna premium pudding coffee frappe, 1": {
+      "p": 34.0,
+      "ts": 1795107382
+    },
+    "al asdekaa chocolate pudding, 220g": {
+      "p": 39.1,
+      "ts": 1795107382
+    },
+    "al asdekaa mehalabia, 220g": {
+      "p": 37.95,
+      "ts": 1795107382
+    },
+    "al asdekaa ashourah, 220g": {
+      "p": 31.91,
+      "ts": 1795107382
+    },
+    "almarai plain milk full fat bottle 1l x6": {
+      "p": 342.0,
+      "ts": 1795107382
+    },
+    "almarai plain milk bottle full fat 1.5l ": {
+      "p": 498.0,
+      "ts": 1795107382
+    },
+    "almarai plain milk full fat bottle 1l*4": {
+      "p": 228.0,
+      "ts": 1795107382
+    },
+    "juhayna rayeb plain light milk, 220g x3": {
+      "p": 54.0,
+      "ts": 1795107382
+    },
+    "juhayna mix chocolate 200 ml x4": {
+      "p": 55.0,
+      "ts": 1795107382
+    },
+    "dango chocolate milk 190 ml x4": {
+      "p": 48.0,
+      "ts": 1795107382
+    },
+    "juhayna milk mix vanilla 200ml x2": {
+      "p": 27.5,
+      "ts": 1795107382
+    },
+    "juhayna mix chocolate 30% less sugar 200": {
+      "p": 82.5,
+      "ts": 1795107382
+    },
+    "almarai plain milk bottle skimmed 1.5l x": {
+      "p": 352.0,
+      "ts": 1795107382
+    },
+    "juhayna mix chocolate 200 ml *6": {
+      "p": 82.5,
+      "ts": 1795107382
+    },
+    "al-marai treats flavored strawberry milk": {
+      "p": 80.7,
+      "ts": 1795107382
+    },
+    "almarai treats strawberry yogurt, 150g x": {
+      "p": 80.0,
+      "ts": 1795107382
+    },
+    "almarai treats flavored milk chocolate 2": {
+      "p": 56.0,
+      "ts": 1795107382
+    },
+    "juhayna 0% fat uht milk, 1l x2": {
+      "p": 118.0,
+      "ts": 1795107382
+    },
+    "almarai treats peach yogurt, 150g x4": {
+      "p": 80.0,
+      "ts": 1795107382
+    },
+    "alpro plant-based barista oat drink, 1l ": {
+      "p": 705.0,
+      "ts": 1795107382
+    },
+    "lamar chocolate flavored milk 200 ml x6": {
+      "p": 87.0,
+      "ts": 1795107382
+    },
+    "juhayna 0% fat uht milk, 1l x6": {
+      "p": 354.0,
+      "ts": 1795107382
+    },
+    "lamar banana flavored milk 200 ml x6": {
+      "p": 87.0,
+      "ts": 1795107382
+    },
+    "almarai unsalted butter, 10g": {
+      "p": 12.0,
+      "ts": 1795107383
+    },
+    "almarai natural unsalted butter, 100g": {
+      "p": 135.0,
+      "ts": 1795107383
+    },
+    "imported new zealand butter, 250g": {
+      "p": 149.95,
+      "ts": 1795107383
+    },
+    "almarai unsalted natural butter, 200g": {
+      "p": 261.0,
+      "ts": 1795107383
+    },
+    "almarai unsalted natural butter, 400g": {
+      "p": 510.0,
+      "ts": 1795107383
+    },
+    "dina farms natural cow butter 900 gm": {
+      "p": 462.0,
+      "ts": 1795107383
+    },
+    "almarai cooking cream, 200ml": {
+      "p": 71.0,
+      "ts": 1795107383
+    },
+    "juhayna thick cooking cream, 200ml": {
+      "p": 71.0,
+      "ts": 1795107383
+    },
+    "almarai analogue cream, 170g": {
+      "p": 60.0,
+      "ts": 1795107383
+    },
+    "juhayna whipping cream 200 ml": {
+      "p": 71.0,
+      "ts": 1795107383
+    },
+    "juhayna cooking cream - 500 ml": {
+      "p": 159.0,
+      "ts": 1795107383
+    },
+    "prima fresh cream 240 gm": {
+      "p": 64.95,
+      "ts": 1795107383
+    },
+    "al asdekaa natural cream, 150g": {
+      "p": 59.23,
+      "ts": 1795107383
+    },
+    "almarai cooking cream, 1l": {
+      "p": 294.0,
+      "ts": 1795107383
+    },
+    "juhayna sour cream - 250 ml": {
+      "p": 62.0,
+      "ts": 1795107383
+    },
+    "the milkman clotted cream, 150g": {
+      "p": 84.0,
+      "ts": 1795107383
+    },
+    "juhayna whipping cream 500 ml": {
+      "p": 159.0,
+      "ts": 1795107383
+    },
+    "juhayna sour cream 500 gm": {
+      "p": 118.0,
+      "ts": 1795107383
+    },
+    "reefy cooking & whipping cream, 200ml": {
+      "p": 67.0,
+      "ts": 1795107383
+    },
+    "the milkman double cream, 200ml": {
+      "p": 79.0,
+      "ts": 1795107383
+    },
+    "daria coconut cream 400 ml": {
+      "p": 125.0,
+      "ts": 1795107383
+    },
+    "almarai whipping cream, 1l": {
+      "p": 294.0,
+      "ts": 1795107383
+    },
+    "juhayna cooking cream 1 l": {
+      "p": 299.0,
+      "ts": 1795107383
+    },
+    "juhayna whipping cream, 1l": {
+      "p": 299.0,
+      "ts": 1795107383
+    },
+    "almarai full fat yogurt bundle 5+1": {
+      "p": 64.5,
+      "ts": 1795107383
+    },
+    "almarai full fat yogurt 165 gm": {
+      "p": 18.0,
+      "ts": 1795107383
+    },
+    "almarai full fat yogurt bundle 9+3": {
+      "p": 111.0,
+      "ts": 1795107383
+    },
+    "juhayna plain yoghurt, 105g": {
+      "p": 12.0,
+      "ts": 1795107383
+    },
+    "juhayna greek yoghurt 0.2% fat free, 180": {
+      "p": 45.0,
+      "ts": 1795107383
+    },
+    "juhayna zabado peach drinking yoghurt, 2": {
+      "p": 19.0,
+      "ts": 1795107383
+    },
+    "juhayna plain yoghurt 105g (5+1 free)": {
+      "p": 46.0,
+      "ts": 1795107383
+    },
+    "juhayna zabado strawberry drinking yoghu": {
+      "p": 19.0,
+      "ts": 1795107383
+    },
+    "almarai greek yogurt - 5% fat - 170 gm": {
+      "p": 42.75,
+      "ts": 1795107383
+    },
+    "almarai greek strawberry matcha, 170g": {
+      "p": 52.0,
+      "ts": 1795107383
+    },
+    "juhayna greek yoghurt 5% full fat, 180g": {
+      "p": 45.0,
+      "ts": 1795107383
+    },
+    "almarai yogo strawberry drinking yoghurt": {
+      "p": 18.95,
+      "ts": 1795107383
+    },
+    "almarai 0.2% skimmed 10g protein plain g": {
+      "p": 42.75,
+      "ts": 1795107383
+    },
+    "almarai treats berry yoghurt, 150g": {
+      "p": 20.0,
+      "ts": 1795107383
+    },
+    "juhayna greek yoghurt 2% half fat, 180g": {
+      "p": 45.0,
+      "ts": 1795107383
+    },
+    "almarai treats strawberry yoghurt, 150g": {
+      "p": 20.0,
+      "ts": 1795107383
+    },
+    "almarai berries greek yogurt, 170g": {
+      "p": 45.0,
+      "ts": 1795107383
+    },
+    "almarai 2% low fat 10g protein plain gre": {
+      "p": 42.75,
+      "ts": 1795107383
+    },
+    "danone light greek yogurt, 120g": {
+      "p": 25.0,
+      "ts": 1795107383
+    },
+    "miro full cream milk powder, 100g": {
+      "p": 55.0,
+      "ts": 1795107390
+    },
+    "miro skimmed cream milk powder, 250g": {
+      "p": 94.0,
+      "ts": 1795107390
+    },
+    "tambo instant fat filled milk powder, 25": {
+      "p": 79.0,
+      "ts": 1795107390
+    },
+    "miro skimmed milk powder, 700g": {
+      "p": 229.0,
+      "ts": 1795107390
+    },
+    "tambo fat filled milk powder bag, 700g": {
+      "p": 206.0,
+      "ts": 1795107390
+    },
+    "miro skimmed milk powder 20 sachet - 20 ": {
+      "p": 196.0,
+      "ts": 1795107390
+    },
+    "mazaq classic tea latte 2-in-1 instant t": {
+      "p": 132.0,
+      "ts": 1795107390
+    },
+    "miro instant strawberry milk powder, 12x": {
+      "p": 143.0,
+      "ts": 1795107390
+    },
+    "tambo fat filled milk powder sachets, 20": {
+      "p": 165.0,
+      "ts": 1795107390
+    },
+    "miro mix banana flavor instant milk drin": {
+      "p": 137.0,
+      "ts": 1795107390
+    },
+    "tambo fat filled milk powder, 1500g": {
+      "p": 440.0,
+      "ts": 1795107390
+    },
+    "miro mix chocolate flavor instant milk d": {
+      "p": 155.0,
+      "ts": 1795107390
+    },
+    "reefy full cream fresh milk, 850ml": {
+      "p": 58.3,
+      "ts": 1795107390
+    },
+    "dina farms pasteurized milk 0.85 l": {
+      "p": 56.5,
+      "ts": 1795107390
+    },
+    "juhayna rayeb plain milk, 220g": {
+      "p": 18.0,
+      "ts": 1795107390
+    },
+    "juhayna rayeb green tea & lemon, 220g": {
+      "p": 18.0,
+      "ts": 1795107390
+    },
+    "almarai rayeb, 220g": {
+      "p": 18.95,
+      "ts": 1795107390
+    },
+    "juhayna rayeb plain light milk, 220g": {
+      "p": 18.0,
+      "ts": 1795107390
+    },
+    "juhayna rayeb plain uht milk, 1l": {
+      "p": 55.0,
+      "ts": 1795107390
+    },
+    "dina farms rayeb milk 0.85 l": {
+      "p": 56.5,
+      "ts": 1795107390
+    },
+    "juhayna mango sobia rayeb drink, 220g": {
+      "p": 19.0,
+      "ts": 1795107390
+    },
+    "the milkman fresh milk with iced coffee,": {
+      "p": 46.2,
+      "ts": 1795107390
+    },
+    "dina farms rayeb milk 250 ml": {
+      "p": 21.0,
+      "ts": 1795107390
+    },
+    "juhayna mango sobia rayeb drink, 440g": {
+      "p": 32.0,
+      "ts": 1795107390
+    },
+    "almarai rayeb milk, 425ml": {
+      "p": 32.95,
+      "ts": 1795107390
+    },
+    "the milkman fresh milk with dates, 250ml": {
+      "p": 28.0,
+      "ts": 1795107390
+    },
+    "mafaza cow fresh milk, 850g": {
+      "p": 70.0,
+      "ts": 1795107390
+    },
+    "almarai rayeb lemon mint flavored milk, ": {
+      "p": 32.0,
+      "ts": 1795107390
+    },
+    "al asdekaa milk with dates, 225ml": {
+      "p": 25.88,
+      "ts": 1795107390
+    },
+    "al asdekaa milk with chocolate, 850ml": {
+      "p": 93.44,
+      "ts": 1795107390
+    },
+    "al asdekaa milk with chocolate, 225ml": {
+      "p": 28.18,
+      "ts": 1795107390
+    },
+    "bekhero milk full cream 1 l": {
+      "p": 46.0,
+      "ts": 1795107390
+    },
+    "almarai plain milk full fat bottle 1l": {
+      "p": 57.0,
+      "ts": 1795107390
+    },
+    "bekhero milk full cream 500 ml": {
+      "p": 26.0,
+      "ts": 1795107390
+    },
+    "almarai plain milk bottle full fat 1.5l": {
+      "p": 83.0,
+      "ts": 1795107390
+    },
+    "juhayna mix banana uht milk, 200ml": {
+      "p": 13.75,
+      "ts": 1795107390
+    },
+    "juhayna full cream uht milk, 200ml": {
+      "p": 13.0,
+      "ts": 1795107390
+    },
+    "juhayna mix chocolate uht milk, 200ml": {
+      "p": 13.75,
+      "ts": 1795107390
+    },
+    "juhayna uht skimmed milk - lactose free,": {
+      "p": 110.0,
+      "ts": 1795107390
+    },
+    "juhayna 3% fat uht milk - lactose free, ": {
+      "p": 110.0,
+      "ts": 1795107390
+    },
+    "dina farms coffee milk 250 ml": {
+      "p": 30.0,
+      "ts": 1795107390
+    },
+    "the milkman full cream milk, 1l": {
+      "p": 58.0,
+      "ts": 1795107390
+    },
+    "almarai protein max chocolate flavored m": {
+      "p": 100.0,
+      "ts": 1795107390
+    },
+    "juhayna mix strawberry uht milk, 200ml": {
+      "p": 13.75,
+      "ts": 1795107390
+    },
+    "juhayna mix vanilla uht milk, 200ml": {
+      "p": 13.75,
+      "ts": 1795107390
+    },
+    "almarai treats chocolate flavored milk, ": {
+      "p": 14.0,
+      "ts": 1795107390
+    },
+    "juhayna mix caramel uht milk, 200ml": {
+      "p": 13.75,
+      "ts": 1795107390
+    },
+    "juhayna mix chocolate milk 30% less suga": {
+      "p": 13.75,
+      "ts": 1795107390
+    },
+    "almarai treats double chocolate milk, 20": {
+      "p": 15.0,
+      "ts": 1795107390
+    },
+    "almarai strawberry milk 200 ml": {
+      "p": 13.45,
+      "ts": 1795107390
+    },
+    "almarai banana milk 200 ml": {
+      "p": 14.0,
+      "ts": 1795107390
+    },
+    "alpro plant-based barista oat drink, 1l": {
+      "p": 235.0,
+      "ts": 1795107390
+    },
+    "gro coconut milk, 200ml": {
+      "p": 33.0,
+      "ts": 1795107390
+    },
+    "alpro plant-based barista coconut drink,": {
+      "p": 235.0,
+      "ts": 1795107390
+    },
+    "gro barista coconut milk, 200ml": {
+      "p": 33.0,
+      "ts": 1795107390
+    },
+    "gro almond vanilla milk, 200ml": {
+      "p": 33.0,
+      "ts": 1795107390
+    },
+    "gro zero sugar almond milk, 200ml": {
+      "p": 33.0,
+      "ts": 1795107390
+    },
+    "gro barista coconut milk, 1l": {
+      "p": 160.0,
+      "ts": 1795107390
+    },
+    "gro coconut milk, 1l": {
+      "p": 160.0,
+      "ts": 1795107390
+    },
+    "juhayna unsweetened almond plant based d": {
+      "p": 150.0,
+      "ts": 1795107390
+    },
+    "gro almond milk, 1l": {
+      "p": 160.0,
+      "ts": 1795107390
+    },
+    "gro 100% vegan chocolate almond milk, 20": {
+      "p": 33.0,
+      "ts": 1795107390
+    },
+    "juhayna unsweetened coconut plant based ": {
+      "p": 150.0,
+      "ts": 1795107390
+    },
+    "alpro plant-based barista almond drink, ": {
+      "p": 235.0,
+      "ts": 1795107390
+    },
+    "gro barista oat milk 1 l": {
+      "p": 160.0,
+      "ts": 1795107390
+    },
+    "juhayna barista coconut plant based drin": {
+      "p": 150.0,
+      "ts": 1795107390
+    },
+    "gro barista almond milk, 1l": {
+      "p": 160.0,
+      "ts": 1795107390
+    },
+    "gro oat milk 1 l": {
+      "p": 160.0,
+      "ts": 1795107390
+    },
+    "gro almond chocolate milk, 1l": {
+      "p": 160.0,
+      "ts": 1795107390
+    },
+    "juhayna barista almond plant based drink": {
+      "p": 150.0,
+      "ts": 1795107390
+    },
+    "gro 3% protein vanilla soy milk, 1l": {
+      "p": 160.0,
+      "ts": 1795107390
+    },
+    "bonny unsweetened evaporated milk 8.1% f": {
+      "p": 137.0,
+      "ts": 1795107390
+    },
+    "waterkind electrolytes sparkling drink, ": {
+      "p": 42.0,
+      "ts": 1795107396
+    },
+    "elano drinking water, 6x1.5l": {
+      "p": 72.0,
+      "ts": 1795107396
+    },
+    "elano drinking water, 12x600ml": {
+      "p": 84.0,
+      "ts": 1795107396
+    },
+    "aquafina lime sparkling water can, 250ml": {
+      "p": 16.0,
+      "ts": 1795107396
+    },
+    "aquafina sparkling water 240 ml": {
+      "p": 16.0,
+      "ts": 1795107396
+    },
+    "schweppes club soda water, 950ml": {
+      "p": 42.0,
+      "ts": 1795107396
+    },
+    "so plus blueberry water enhancer, 48ml": {
+      "p": 90.0,
+      "ts": 1795107396
+    },
+    "so plus sour mango water enhancer, 48ml": {
+      "p": 90.0,
+      "ts": 1795107396
+    },
+    "so plus sour watermelon water enhancer, ": {
+      "p": 90.0,
+      "ts": 1795107396
+    },
+    "f2o peach & jasmine sparkling water, 275": {
+      "p": 25.0,
+      "ts": 1795107396
+    },
+    "so plus sour pina colada water enhancer,": {
+      "p": 90.0,
+      "ts": 1795107396
+    },
+    "waterkind sparkling water, 250ml": {
+      "p": 22.0,
+      "ts": 1795107396
+    },
+    "so plus strawberry water enhancer, 48ml": {
+      "p": 90.0,
+      "ts": 1795107396
+    },
+    "schweppes club soda twist off, 250ml": {
+      "p": 25.0,
+      "ts": 1795107396
+    },
+    "so plus lemon & mint water enhancer, 48m": {
+      "p": 90.0,
+      "ts": 1795107396
+    },
+    "so plus sour green apple water enhancer,": {
+      "p": 90.0,
+      "ts": 1795107396
+    },
+    "schweppes tonic water twist off, 250ml": {
+      "p": 25.0,
+      "ts": 1795107396
+    },
+    "schweppes tonic water pet bottle, 0.95l": {
+      "p": 42.0,
+      "ts": 1795107396
+    },
+    "waterkind sparkling water, 4x250ml": {
+      "p": 85.0,
+      "ts": 1795107396
+    },
+    "pepsi diet 1.5 l": {
+      "p": 42.0,
+      "ts": 1795107397
+    },
+    "v super soda cola beverage can 300ml": {
+      "p": 15.0,
+      "ts": 1795107397
+    },
+    "v7 orange soda can, 300ml": {
+      "p": 15.0,
+      "ts": 1795107397
+    },
+    "coca-cola zero calories carbonated soft ": {
+      "p": 15.0,
+      "ts": 1795107397
+    },
+    "pepsi soft drink can, 355ml": {
+      "p": 15.0,
+      "ts": 1795107397
+    },
+    "v super soda diet cola can 300ml": {
+      "p": 15.0,
+      "ts": 1795107397
+    },
+    "coca cola zero sugar 240ml": {
+      "p": 15.0,
+      "ts": 1795107397
+    },
+    "pepsi soft drink, 1.5l": {
+      "p": 42.0,
+      "ts": 1795107397
+    },
+    "pepsi diet soft drink can, 355ml": {
+      "p": 15.0,
+      "ts": 1795107397
+    },
+    "v7 pink lemonade flavor vitamin sparklin": {
+      "p": 15.0,
+      "ts": 1795107397
+    },
+    "7up diet soft drink can, 355ml": {
+      "p": 15.0,
+      "ts": 1795107397
+    },
+    "pepsi soft drink, 2.5l": {
+      "p": 47.0,
+      "ts": 1795107397
+    },
+    "coca cola zero soft drink pet bottle, 30": {
+      "p": 13.0,
+      "ts": 1795107397
+    },
+    "pepsi soft drink, 240ml": {
+      "p": 11.0,
+      "ts": 1795107397
+    },
+    "pepsi soft drink, 390ml": {
+      "p": 13.0,
+      "ts": 1795107397
+    },
+    "pepsi soft drink plastic bottle, 1l": {
+      "p": 31.0,
+      "ts": 1795107397
+    },
+    "coca cola zero soft drink pet bottle, 0.": {
+      "p": 25.5,
+      "ts": 1795107397
+    },
+    "v7 vitamin blueberry sparkling drink 300": {
+      "p": 15.0,
+      "ts": 1795107397
+    },
+    "v7 vitamin pina colada sparkling drink 3": {
+      "p": 15.0,
+      "ts": 1795107397
+    },
+    "green cola caffiene free soft drink plas": {
+      "p": 22.0,
+      "ts": 1795107397
+    },
+    "v7 vitamin pineapple sparkling drink, 30": {
+      "p": 15.0,
+      "ts": 1795107397
+    },
+    "schweppes strawberry malt beverage can, ": {
+      "p": 15.0,
+      "ts": 1795107397
+    },
+    "v7 100% natural flavors apple vitamin sp": {
+      "p": 15.0,
+      "ts": 1795107397
+    },
+    "schweppes pineapple malt drink pet bottl": {
+      "p": 47.0,
+      "ts": 1795107397
+    },
+    "schweppes gold pineapple flavoured malt ": {
+      "p": 15.0,
+      "ts": 1795107397
+    },
+    "schweppes malt pineapple pet 0.95 liter": {
+      "p": 37.0,
+      "ts": 1795107397
+    },
+    "schweppes tangerine flavor soft drink ca": {
+      "p": 15.0,
+      "ts": 1795107397
+    },
+    "schweppes gold pineapple malt beverage, ": {
+      "p": 17.0,
+      "ts": 1795107397
+    },
+    "schweppes strawberry malt beverage plast": {
+      "p": 37.0,
+      "ts": 1795107397
+    },
+    "schweppes gold peach flavor sparkling dr": {
+      "p": 15.0,
+      "ts": 1795107397
+    },
+    "schweppes pomegranate beverage, 240ml": {
+      "p": 15.0,
+      "ts": 1795107397
+    },
+    "schweppes tangerine sparkling drink, 320": {
+      "p": 17.0,
+      "ts": 1795107397
+    },
+    "schweppes lemon mint flavour soft drink ": {
+      "p": 15.0,
+      "ts": 1795107397
+    },
+    "schweppes pomegranate pet 0.95 liter": {
+      "p": 37.0,
+      "ts": 1795107397
+    },
+    "schweppes pomegranate soft drink can, 30": {
+      "p": 17.5,
+      "ts": 1795107397
+    },
+    "schweppes tangerine sparkling drink, 1.7": {
+      "p": 47.0,
+      "ts": 1795107397
+    },
+    "schweppes tangerine pet 0.95 liter": {
+      "p": 37.0,
+      "ts": 1795107397
+    },
+    "schweppes soft drink apple plastic bottl": {
+      "p": 37.0,
+      "ts": 1795107397
+    },
+    "schweppes pomegranate sparkling drink pe": {
+      "p": 47.0,
+      "ts": 1795107397
+    },
+    "schweppes lemon mint sparkling drink, 32": {
+      "p": 17.0,
+      "ts": 1795107397
+    },
+    "nescafe iced spanish latte, 220ml": {
+      "p": 45.0,
+      "ts": 1795107397
+    },
+    "nescafe latte iced coffee, 220ml": {
+      "p": 45.0,
+      "ts": 1795107397
+    },
+    "nescafe cappuccino iced coffee, 220ml": {
+      "p": 45.0,
+      "ts": 1795107397
+    },
+    "nescafe mocha iced coffee, 220ml": {
+      "p": 45.0,
+      "ts": 1795107397
+    },
+    "nescafe americano iced coffee, 220ml": {
+      "p": 45.0,
+      "ts": 1795107397
+    },
+    "nescafe white americano iced coffee with": {
+      "p": 45.0,
+      "ts": 1795107397
+    },
+    "v super soda diet cola can 300ml x8": {
+      "p": 120.0,
+      "ts": 1795107397
+    },
+    "suntop mango fruit drink 250 ml x3": {
+      "p": 46.5,
+      "ts": 1795107397
+    },
+    "suntop pineapple fruit drink, 250ml x 3": {
+      "p": 46.5,
+      "ts": 1795107397
+    },
+    "v7 vitamin sparkling drink flavor pink l": {
+      "p": 90.0,
+      "ts": 1795107397
+    },
+    "pepsi diet soft drink can, 355ml x12": {
+      "p": 180.0,
+      "ts": 1795107397
+    },
+    "v7 vitamin sparkling drink 100% natural ": {
+      "p": 120.0,
+      "ts": 1795107397
+    },
+    "waterkind silversands electrolytes 250ml": {
+      "p": 336.0,
+      "ts": 1795107397
+    },
+    "alproccino caramel sugar free (monin sug": {
+      "p": 1115.0,
+      "ts": 1795107397
+    },
+    "beyti apple juice 1l x 2": {
+      "p": 78.0,
+      "ts": 1795107397
+    },
+    "aslan mango peach fruit drink, 235ml x 4": {
+      "p": 40.0,
+      "ts": 1795107397
+    },
+    "almarai guava juice, 235ml x 4": {
+      "p": 64.0,
+      "ts": 1795107397
+    },
+    "red bull classic pack (original ×2, suga": {
+      "p": 360.0,
+      "ts": 1795107397
+    },
+    "beyti orange juice 1l x 2": {
+      "p": 78.0,
+      "ts": 1795107397
+    },
+    "sprite regular lemon lime flavored carbo": {
+      "p": 150.0,
+      "ts": 1795107397
+    },
+    "aslan guava fruit drink, 235ml x 4": {
+      "p": 40.0,
+      "ts": 1795107397
+    },
+    "sun sip mango & passionfruit popping bob": {
+      "p": 130.0,
+      "ts": 1795107397
+    },
+    "cr7 blueberry sport drink, 710ml x 2": {
+      "p": 150.0,
+      "ts": 1795107397
+    },
+    "red bull light pack (acai, berry, zero ×": {
+      "p": 360.0,
+      "ts": 1795107397
+    },
+    "magic moments caramel syrup, 700g": {
+      "p": 134.0,
+      "ts": 1795107402
+    },
+    "monin sugar free caramel syrup, 250ml": {
+      "p": 280.0,
+      "ts": 1795107402
+    },
+    "monin sugar free vanilla syrup, 250ml": {
+      "p": 280.0,
+      "ts": 1795107402
+    },
+    "monin vanilla syrup, 250ml": {
+      "p": 280.0,
+      "ts": 1795107402
+    },
+    "monin caramel syrup, 250ml": {
+      "p": 280.0,
+      "ts": 1795107402
+    },
+    "monin cherry syrup, 250ml": {
+      "p": 280.0,
+      "ts": 1795107402
+    },
+    "monin blue curacao syrup, 250ml": {
+      "p": 280.0,
+      "ts": 1795107402
+    },
+    "monin sugar free caramel syrup, 700ml": {
+      "p": 645.0,
+      "ts": 1795107402
+    },
+    "monin salted caramel syrups, 700ml": {
+      "p": 575.0,
+      "ts": 1795107402
+    },
+    "monin mojito mint syrup, 250ml": {
+      "p": 280.0,
+      "ts": 1795107402
+    },
+    "monin hazelnut syrup, 250ml": {
+      "p": 280.0,
+      "ts": 1795107402
+    },
+    "monin sugar free vanilla syrup, 700ml": {
+      "p": 645.0,
+      "ts": 1795107402
+    },
+    "monin sugar free hazelnut syrup, 700ml": {
+      "p": 645.0,
+      "ts": 1795107402
+    },
+    "monin toffee nut syrup, 700ml": {
+      "p": 570.0,
+      "ts": 1795107402
+    },
+    "red bull summer edition white peach flav": {
+      "p": 60.0,
+      "ts": 1795107403
+    },
+    "red bull energy drink, 250ml": {
+      "p": 60.0,
+      "ts": 1795107403
+    },
+    "monster pipeline punch can pink 500ml": {
+      "p": 60.0,
+      "ts": 1795107403
+    },
+    "red bull coconut & berry energy drink, 2": {
+      "p": 60.0,
+      "ts": 1795107403
+    },
+    "fury energy drink pet bottle, 400ml": {
+      "p": 20.0,
+      "ts": 1795107403
+    },
+    "monster energy ultra paradise can green ": {
+      "p": 60.0,
+      "ts": 1795107403
+    },
+    "twist coconut berry flavor energy drink,": {
+      "p": 17.0,
+      "ts": 1795107403
+    },
+    "red bull winter edition pomelo energy dr": {
+      "p": 60.0,
+      "ts": 1795107403
+    },
+    "red bull energy drink, 4x250ml": {
+      "p": 220.0,
+      "ts": 1795107403
+    },
+    "monster mango loco energy drink, 500ml": {
+      "p": 60.0,
+      "ts": 1795107403
+    },
+    "red bull sugar free energy drink, 250ml": {
+      "p": 60.0,
+      "ts": 1795107403
+    },
+    "red bull acai berry energy drink, 250ml": {
+      "p": 60.0,
+      "ts": 1795107403
+    },
+    "red bull cherry & wild berries energy dr": {
+      "p": 60.0,
+      "ts": 1795107403
+    },
+    "red bull zero energy drink can, 250ml": {
+      "p": 60.0,
+      "ts": 1795107403
+    },
+    "monster energy drink can, 500ml": {
+      "p": 60.0,
+      "ts": 1795107403
+    },
+    "red bull coconut & berry energy drink, 4": {
+      "p": 220.0,
+      "ts": 1795107403
+    },
+    "red bull energy drink sugar free, 4x250m": {
+      "p": 220.0,
+      "ts": 1795107403
+    },
+    "red bull energy drink, 12x250ml": {
+      "p": 640.0,
+      "ts": 1795107403
+    },
+    "cadbury 3 in 1 hot chocolate powder beve": {
+      "p": 15.0,
+      "ts": 1795107403
+    },
+    "cook's powder chocolate drink 40 gm": {
+      "p": 10.45,
+      "ts": 1795107403
+    },
+    "corona raw pure cocoa powder, 75g": {
+      "p": 90.0,
+      "ts": 1795107403
+    },
+    "corona drinking chocolate powder, 60g": {
+      "p": 33.0,
+      "ts": 1795107403
+    },
+    "cadbury 3-in-1 hot chocolate powder beve": {
+      "p": 120.0,
+      "ts": 1795107403
+    },
+    "cook's powder chocolate drink 400 gm": {
+      "p": 94.0,
+      "ts": 1795107403
+    },
+    "corona premium pure cocoa, 80g": {
+      "p": 110.0,
+      "ts": 1795107403
+    },
+    "abu auf sahlab, 200g": {
+      "p": 86.95,
+      "ts": 1795107403
+    },
+    "abu auf hot chocolate 150g": {
+      "p": 105.0,
+      "ts": 1795107403
+    },
+    "corona fortified cocoa immunity booster ": {
+      "p": 65.0,
+      "ts": 1795107403
+    },
+    "galaxy mocha frappe, 280g": {
+      "p": 520.0,
+      "ts": 1795107403
+    },
+    "dobella chocolate syrup, 650ml": {
+      "p": 167.0,
+      "ts": 1795107403
+    },
+    "oreo vanilla filled biscuits sharing pac": {
+      "p": 25.0,
+      "ts": 1795107403
+    },
+    "bounty coconut milk chocolate bar value ": {
+      "p": 140.0,
+      "ts": 1795107403
+    },
+    "cadbury bubbly chocolate bar value pack,": {
+      "p": 150.0,
+      "ts": 1795107403
+    },
+    "cadbury double chocolate delight biscuit": {
+      "p": 120.0,
+      "ts": 1795107403
+    },
+    "snickers chocolate bar value pack, 5x23g": {
+      "p": 125.0,
+      "ts": 1795107403
+    },
+    "snickers chocolate bar value pack, 3x40g": {
+      "p": 130.0,
+      "ts": 1795107403
+    },
+    "pretzo mixy pretzels with salt, 40-50g +": {
+      "p": 28.0,
+      "ts": 1795107403
+    },
+    "shaarawy mastic gum box, 200 pieces, 210": {
+      "p": 99.0,
+      "ts": 1795107403
+    },
+    "cadbury flake minis milk chocolate shari": {
+      "p": 225.0,
+      "ts": 1795107403
+    },
+    "cadbury dairy milk hazelnut chocolate sh": {
+      "p": 225.0,
+      "ts": 1795107403
+    },
+    "cadbury selections chocolate gifting box": {
+      "p": 350.0,
+      "ts": 1795107403
+    },
+    "cadbury dairy milk bubbly milk chocolate": {
+      "p": 225.0,
+      "ts": 1795107403
+    },
+    "sweet & savory coated peanuts, 80g flavo": {
+      "p": 48.0,
+      "ts": 1795107403
+    },
+    "el abd chocolate cookies with chocolate ": {
+      "p": 227.0,
+      "ts": 1795107403
+    },
+    "shaarawy strawberry gum box, 200 pieces,": {
+      "p": 99.0,
+      "ts": 1795107403
+    },
+    "raw crinkle yogurt & cucumber kettle coo": {
+      "p": 42.0,
+      "ts": 1795107403
+    },
+    "shaarawy mint gum box, 200 pieces, 210-2": {
+      "p": 99.0,
+      "ts": 1795107403
+    },
+    "prtezo sticks pretzels with chili & lemo": {
+      "p": 28.0,
+      "ts": 1795107403
+    },
+    "snickers miniatures chocolates pouch, 2x": {
+      "p": 527.0,
+      "ts": 1795107403
+    },
+    "dina farms fresh orange juice 850 ml": {
+      "p": 81.0,
+      "ts": 1795107403
+    },
+    "juhayna pure juice apple, 225ml": {
+      "p": 21.0,
+      "ts": 1795107403
+    },
+    "juhayna pure mango & peach juice, 225ml": {
+      "p": 21.0,
+      "ts": 1795107403
+    },
+    "juhayna pure pineapple juice, 1l": {
+      "p": 70.0,
+      "ts": 1795107403
+    },
+    "dina farms fresh orange juice 250 ml": {
+      "p": 31.0,
+      "ts": 1795107403
+    },
+    "juhayna pure pineapple juice, 225ml": {
+      "p": 21.0,
+      "ts": 1795107403
+    },
+    "sun top mixed berry juice, 250ml": {
+      "p": 15.5,
+      "ts": 1795107403
+    },
+    "juhayna pure juice apple, 1l": {
+      "p": 70.0,
+      "ts": 1795107403
+    },
+    "sun top orange juice, 250ml": {
+      "p": 15.5,
+      "ts": 1795107403
+    },
+    "sun top mango fruit drink, 250ml": {
+      "p": 15.5,
+      "ts": 1795107403
+    },
+    "juhayna classic apple juice, 1l": {
+      "p": 40.0,
+      "ts": 1795107403
+    },
+    "almarai juice apple, 1l": {
+      "p": 48.0,
+      "ts": 1795107403
+    },
+    "almarai juice mango, 1l": {
+      "p": 50.0,
+      "ts": 1795107403
+    },
+    "almarai juice pineapple cocktail, 1l": {
+      "p": 50.0,
+      "ts": 1795107403
+    },
+    "juhayna classic mango juice, 235ml": {
+      "p": 11.0,
+      "ts": 1795107403
+    },
+    "juhayna classic guava juice, 235ml": {
+      "p": 10.0,
+      "ts": 1795107403
+    },
+    "almarai apple juice, 235ml": {
+      "p": 16.0,
+      "ts": 1795107403
+    },
+    "almarai juice orange, 1l": {
+      "p": 48.0,
+      "ts": 1795107403
+    },
+    "almarai mango juice, 235ml": {
+      "p": 17.0,
+      "ts": 1795107403
+    },
+    "almarai guava juice, 235ml": {
+      "p": 16.0,
+      "ts": 1795107403
+    },
+    "chipsy salt flavor chips, 55g": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "chipsy salt & vinegar flavor chips, 55g": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "flaminco corn puff snack peanut puffs 65": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "cheetos crunchy fried flamin hot lemon p": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "chipsy cheese & onion flavor chips, 55g": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "chipsy chili & lemon flavor chips, 55g": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "tiger mix cheese flavour potato chips, 5": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "windows cheese flavor snack, 68-78g": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "break fresh vegetables flavored snack, 6": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "big chips salt & vinegar potato chips, 5": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "doritos chicken ranch tortilla chips, 59": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "tiger chilli & lemon flavour fried potat": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "chipsy kebab flavor chips, 55g": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "cheetos cheese puff pops, 63g": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "cheetos flamin' hot lemon puff pops, 63g": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "big chips premium sour cream chips, 70-8": {
+      "p": 15.0,
+      "ts": 1795107409
+    },
+    "big chips sweet lemon potato chips 52-62": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "tiger kebab flavour fried potato chips, ": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "big chips kettle cooked steak & carmeliz": {
+      "p": 20.0,
+      "ts": 1795107409
+    },
+    "chipsy chili & lemon, 89g": {
+      "p": 15.0,
+      "ts": 1795107409
+    },
+    "cadbury 2 fingers wafer choco rolls, 22g": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "snickers peanut wafer rolls, 24g": {
+      "p": 12.0,
+      "ts": 1795107409
+    },
+    "cadbury delight chocolate-coffee biscuit": {
+      "p": 20.0,
+      "ts": 1795107409
+    },
+    "bisco wafer vanilla big (6 pieces)": {
+      "p": 6.0,
+      "ts": 1795107409
+    },
+    "tiffany break wafer fingers creamy milk ": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "mcvitie's halley cocoa sandwich biscuits": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "oreo vanilla creme filled biscuits, 3 bi": {
+      "p": 5.0,
+      "ts": 1795107409
+    },
+    "rich bake coconut biscuits, 72g": {
+      "p": 9.95,
+      "ts": 1795107409
+    },
+    "rich bake butter biscuits, 65g": {
+      "p": 9.95,
+      "ts": 1795107409
+    },
+    "cadbury choco delight biscuits, 34g": {
+      "p": 20.0,
+      "ts": 1795107409
+    },
+    "mcvitie's milk chocolate digestive biscu": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "rich bake milk biscuits, 70g": {
+      "p": 9.95,
+      "ts": 1795107409
+    },
+    "mcvitie's joy raspberry cheesecake cream": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "freska fingers cocoa wafer filled with h": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "ulker finger plain biscuits, 36g": {
+      "p": 5.0,
+      "ts": 1795107409
+    },
+    "galaxy flutes cream chocolate 2 fingers,": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "corona bimbo large choco max coated bisc": {
+      "p": 6.5,
+      "ts": 1795107409
+    },
+    "rich bake orange biscuits, 65g": {
+      "p": 9.95,
+      "ts": 1795107409
+    },
+    "corona bimbo large original coated biscu": {
+      "p": 6.5,
+      "ts": 1795107409
+    },
+    "cadbury chocolate delight biscuits, 1 co": {
+      "p": 15.0,
+      "ts": 1795107409
+    },
+    "clorets original gum bottle, 25 pieces": {
+      "p": 50.0,
+      "ts": 1795107409
+    },
+    "clorets cinnamint gum bottle, 60 pieces": {
+      "p": 120.0,
+      "ts": 1795107409
+    },
+    "chiclets splash strawberry chewing gum s": {
+      "p": 40.0,
+      "ts": 1795107409
+    },
+    "trident spearmint sugar free chewing gum": {
+      "p": 15.0,
+      "ts": 1795107409
+    },
+    "trident watermelon sugar free chewing gu": {
+      "p": 15.0,
+      "ts": 1795107409
+    },
+    "wrigley's extra gum peppermint sugar fre": {
+      "p": 120.0,
+      "ts": 1795107409
+    },
+    "wrigley's extra sugar free bubblemint ch": {
+      "p": 15.0,
+      "ts": 1795107409
+    },
+    "wrigley's extra gum spearmint sugar free": {
+      "p": 15.0,
+      "ts": 1795107409
+    },
+    "bebeto watermelon jelly, 35g": {
+      "p": 16.0,
+      "ts": 1795107409
+    },
+    "chiclets strawberry chewing gum, 10 piec": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "chiclets spearmint chewing gum, 10 piece": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "bebeto bears gummy candy, 35g": {
+      "p": 16.0,
+      "ts": 1795107409
+    },
+    "talabat worms sour gummies, 65g": {
+      "p": 20.0,
+      "ts": 1795107409
+    },
+    "trident mixed berries sugar free chewing": {
+      "p": 15.0,
+      "ts": 1795107409
+    },
+    "wrigley's extra strawberry pellets gum, ": {
+      "p": 15.0,
+      "ts": 1795107409
+    },
+    "trident lemon raspberry sugar free chewi": {
+      "p": 20.0,
+      "ts": 1795107409
+    },
+    "trident strawberry sugar free chewing gu": {
+      "p": 15.0,
+      "ts": 1795107409
+    },
+    "bebeto strawberry sour sticks, 30g": {
+      "p": 13.0,
+      "ts": 1795107409
+    },
+    "bebeto mixed fruit sour sticks, 30g": {
+      "p": 13.0,
+      "ts": 1795107409
+    },
+    "galaxy flutes 4 fingers chocolate wafer ": {
+      "p": 20.0,
+      "ts": 1795107409
+    },
+    "galaxy flutes chocolate wafer roll 2 fin": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "cadbury flake dipped chocolate bar, 28g": {
+      "p": 45.0,
+      "ts": 1795107409
+    },
+    "maltesers chocolate, 37g": {
+      "p": 50.0,
+      "ts": 1795107409
+    },
+    "snickers chocolate bar filled with caram": {
+      "p": 45.0,
+      "ts": 1795107409
+    },
+    "corona dark chocolate, 26g": {
+      "p": 27.0,
+      "ts": 1795107409
+    },
+    "cadbury dairy milk marvelous creations j": {
+      "p": 40.0,
+      "ts": 1795107409
+    },
+    "galaxy smooth milk chocolate bar, 30g": {
+      "p": 40.0,
+      "ts": 1795107409
+    },
+    "corona stevia milk hazelnut chocolate, 4": {
+      "p": 59.0,
+      "ts": 1795107409
+    },
+    "corona stevia dark almond chocolate, 45g": {
+      "p": 59.0,
+      "ts": 1795107409
+    },
+    "galaxy hazelnut chocolate bar, 30g": {
+      "p": 40.0,
+      "ts": 1795107409
+    },
+    "cadbury dairy milk bubbly chocolate bar,": {
+      "p": 45.0,
+      "ts": 1795107409
+    },
+    "cadbury dairy milk plain chocolate bar, ": {
+      "p": 40.0,
+      "ts": 1795107409
+    },
+    "cadbury dairy milk bubbly original choco": {
+      "p": 30.0,
+      "ts": 1795107409
+    },
+    "cadbury fingers milk chocolate coated bi": {
+      "p": 100.0,
+      "ts": 1795107409
+    },
+    "corona dark stevia 62% cocoa chocolate, ": {
+      "p": 60.0,
+      "ts": 1795107409
+    },
+    "mcvitie's nibbles milk biscuits, 37g": {
+      "p": 35.0,
+      "ts": 1795107409
+    },
+    "corona stevia alpine milk chocolate, 45g": {
+      "p": 60.0,
+      "ts": 1795107409
+    },
+    "cadbury dairy milk oreo chocolate bar, 3": {
+      "p": 40.0,
+      "ts": 1795107409
+    },
+    "cadbury dairy milk hazelnut chocolate ba": {
+      "p": 40.0,
+      "ts": 1795107409
+    },
+    "twinkies super original cream cake, 50g": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "twinkies super double cream cake, 50g": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "todo chocolate brownie cake, 50g": {
+      "p": 15.0,
+      "ts": 1795107409
+    },
+    "hohos king rolled chocolate cake with cr": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "hohos king rolled golden cake with straw": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "twinkies vanilla icing cake, 41.5g": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "fun day twin cakes muffin w/vanilla&choc": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "twinkies duo cream x strawberry cake, 45": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "larch melt cocoa cake with chocolate sau": {
+      "p": 11.0,
+      "ts": 1795107409
+    },
+    "novy torta delights latte cake bar, 50g": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "todo red velvet cupcake filled with crea": {
+      "p": 15.0,
+      "ts": 1795107409
+    },
+    "hohos king rolled golden cake with cocoa": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "larch melt molten cake cocoa with chocol": {
+      "p": 20.0,
+      "ts": 1795107409
+    },
+    "todo bomb chocolate cake with cream fill": {
+      "p": 15.0,
+      "ts": 1795107409
+    },
+    "hohos mix rolled cake, 60g": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "twinkies super chocolate, 50g": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "todo chocolate cupcake filled with choco": {
+      "p": 15.0,
+      "ts": 1795107409
+    },
+    "hohos king chocolate rolled cake, 1 piec": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "funday twin muffin cake with chocolate, ": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "twinkies duo cream x chocolate cake, 45g": {
+      "p": 10.0,
+      "ts": 1795107409
+    },
+    "funday cheese popcorn, 50g": {
+      "p": 12.0,
+      "ts": 1795107415
+    },
+    "jaguar light salt popcorn, 53-63g": {
+      "p": 10.0,
+      "ts": 1795107415
+    },
+    "jaguar creamy cheese puffcorn, 57-67g": {
+      "p": 10.0,
+      "ts": 1795107415
+    },
+    "funday salt popcorn, 50g": {
+      "p": 12.0,
+      "ts": 1795107415
+    },
+    "talabat cheese & jalapeno popcorn, 40-50": {
+      "p": 10.0,
+      "ts": 1795107415
+    },
+    "jaguar sweet corn puffcorn, 57-67g": {
+      "p": 10.0,
+      "ts": 1795107415
+    },
+    "top of the pop salted caramel popcorn, 1": {
+      "p": 45.0,
+      "ts": 1795107415
+    },
+    "haj arafa cinnamon caramel popcorn, 100g": {
+      "p": 35.0,
+      "ts": 1795107415
+    },
+    "jaguar chili lemon puffcorn, 57-67g": {
+      "p": 10.0,
+      "ts": 1795107415
+    },
+    "haj arafa popcorn chocolate caramel, 100": {
+      "p": 35.85,
+      "ts": 1795107415
+    },
+    "abu auf garlic & butter popcorn, 35g": {
+      "p": 51.5,
+      "ts": 1795107415
+    },
+    "abu auf coco nuts popcorn, 80g": {
+      "p": 47.45,
+      "ts": 1795107415
+    },
+    "chicka sweet corn puffcorn, 60-70g": {
+      "p": 10.0,
+      "ts": 1795107415
+    },
+    "popcorn republic caramel classic popcorn": {
+      "p": 65.0,
+      "ts": 1795107415
+    },
+    "abu auf peanut butter pop popcorn, 80g": {
+      "p": 43.0,
+      "ts": 1795107415
+    },
+    "abu auf parmesan cheese & rosemary popco": {
+      "p": 51.5,
+      "ts": 1795107415
+    },
+    "top of the pop choco & caramel popcorn, ": {
+      "p": 45.0,
+      "ts": 1795107415
+    },
+    "abu auf cola loca popcorn, 80g": {
+      "p": 47.45,
+      "ts": 1795107415
+    },
+    "popcorn republic cookies & cream air-pop": {
+      "p": 65.0,
+      "ts": 1795107415
+    },
+    "chicka creamy cheese puffcorn, 60-70g": {
+      "p": 10.0,
+      "ts": 1795107415
+    },
+    "lipton karak 3 in 1 instant tea with mil": {
+      "p": 145.0,
+      "ts": 1795107415
+    },
+    "nescafe classic coffee pouch, 18g": {
+      "p": 39.0,
+      "ts": 1795107415
+    },
+    "nescafe roasted gold instant coffee, 47.": {
+      "p": 152.0,
+      "ts": 1795107415
+    },
+    "abu auf coffee plain light, 100g": {
+      "p": 131.95,
+      "ts": 1795107415
+    },
+    "abu auf light roast turkish coffee, 50g": {
+      "p": 84.45,
+      "ts": 1795107415
+    },
+    "abu auf medium roast with cardamom turki": {
+      "p": 89.95,
+      "ts": 1795107415
+    },
+    "everyday roastery turkish coffee, light ": {
+      "p": 225.0,
+      "ts": 1795107415
+    },
+    "abu auf plain medium roast coffee, 100g": {
+      "p": 131.95,
+      "ts": 1795107415
+    },
+    "everyday roastery turkish coffee, medium": {
+      "p": 225.0,
+      "ts": 1795107415
+    },
+    "everyday roastery 50% arabica - 50% robu": {
+      "p": 230.0,
+      "ts": 1795107415
+    },
+    "everyday roastery turkish coffee, dark r": {
+      "p": 225.0,
+      "ts": 1795107415
+    },
+    "everyday roastery 100% arabica intensity": {
+      "p": 230.0,
+      "ts": 1795107415
+    },
+    "everyday roastery 70% arabica - 30% robu": {
+      "p": 230.0,
+      "ts": 1795107415
+    },
+    "talabat drip coffee ethiopia, 5 packs": {
+      "p": 160.0,
+      "ts": 1795107415
+    },
+    "talabat drip decaf coffee, 5 packs": {
+      "p": 170.0,
+      "ts": 1795107415
+    },
+    "talabat drip coffee peru, 5 packs": {
+      "p": 160.0,
+      "ts": 1795107415
+    },
+    "everyday roastery caramel flavor coffee ": {
+      "p": 264.0,
+      "ts": 1795107415
+    },
+    "talabat salted roasted cashews, 175g": {
+      "p": 225.0,
+      "ts": 1795107415
+    },
+    "abu auf mixed nuts, 50g": {
+      "p": 100.0,
+      "ts": 1795107415
+    },
+    "talabat golden raisins, 175g": {
+      "p": 95.0,
+      "ts": 1795107415
+    },
+    "abu auf roasted salted cashew, 50g": {
+      "p": 95.0,
+      "ts": 1795107415
+    },
+    "talabat raw almonds, 175g": {
+      "p": 180.0,
+      "ts": 1795107415
+    },
+    "talabat cheese flavor coated peanuts, 17": {
+      "p": 76.0,
+      "ts": 1795107415
+    },
+    "talabat raw peeled walnuts, 175g": {
+      "p": 214.0,
+      "ts": 1795107415
+    },
+    "talabat salted roasted almonds, 175g": {
+      "p": 200.0,
+      "ts": 1795107415
+    },
+    "talabat ketchup flavor coated peanuts, 1": {
+      "p": 66.0,
+      "ts": 1795107415
+    },
+    "talabat salted roasted corn, 175g": {
+      "p": 100.0,
+      "ts": 1795107415
+    },
+    "talabat salted roasted peanuts, 175g": {
+      "p": 79.0,
+      "ts": 1795107415
+    },
+    "talabat chili and lemon flavor coated pe": {
+      "p": 76.0,
+      "ts": 1795107415
+    },
+    "talabat salt & vinegar flavor coated pea": {
+      "p": 76.0,
+      "ts": 1795107415
+    },
+    "talabat bbq flavor coated peanuts, 175g": {
+      "p": 76.0,
+      "ts": 1795107415
+    },
+    "talabat smoked flavor roasted cashews, 1": {
+      "p": 270.0,
+      "ts": 1795107415
+    },
+    "talabat salted roasted pistachios, 175g": {
+      "p": 250.0,
+      "ts": 1795107415
+    },
+    "talabat smoked flavor roasted mixed nuts": {
+      "p": 310.0,
+      "ts": 1795107415
+    },
+    "talabat smoked flavor roasted almonds, 1": {
+      "p": 240.0,
+      "ts": 1795107415
+    },
+    "talabat peeled almond slices, 150g": {
+      "p": 209.0,
+      "ts": 1795107415
+    },
+    "talabat raw hazelnuts, 175g": {
+      "p": 206.5,
+      "ts": 1795107415
+    },
+    "seche freeze dried strawberry slices, 15": {
+      "p": 65.0,
+      "ts": 1795107416
+    },
+    "seche freeze dried mango slices, 15g": {
+      "p": 65.0,
+      "ts": 1795107416
+    },
+    "talabat coconut flakes, 120g": {
+      "p": 70.0,
+      "ts": 1795107416
+    },
+    "seche freeze dried banana slices, 15g": {
+      "p": 65.0,
+      "ts": 1795107416
+    },
+    "abu auf apricot, 300g": {
+      "p": 312.0,
+      "ts": 1795107416
+    },
+    "prtezo sticks pretzels with salt, 45-55g": {
+      "p": 14.0,
+      "ts": 1795107416
+    },
+    "abu auf choco pillows stuffed with choco": {
+      "p": 34.95,
+      "ts": 1795107416
+    },
+    "prtezo sticks pretzels with cheese, 45-5": {
+      "p": 14.0,
+      "ts": 1795107416
+    },
+    "talabat chinese crackers, 150g": {
+      "p": 97.0,
+      "ts": 1795107416
+    },
+    "talabat cheese flavor roasted corn, 175g": {
+      "p": 65.0,
+      "ts": 1795107416
+    },
+    "talabat cheese flavor pretzels, 120g": {
+      "p": 32.0,
+      "ts": 1795107416
+    },
+    "pretzo mixy cheese pretzels, 40-50g": {
+      "p": 14.0,
+      "ts": 1795107416
+    },
+    "pretzo mixy salt pretzels, 40-50g": {
+      "p": 14.0,
+      "ts": 1795107416
+    },
+    "talabat ketchup flavor pretzels, 120g": {
+      "p": 32.0,
+      "ts": 1795107416
+    },
+    "talabat ketchup flavor roasted corn, 175": {
+      "p": 65.0,
+      "ts": 1795107416
+    },
+    "prtezo sticks pretzels with tomato, 45-5": {
+      "p": 14.0,
+      "ts": 1795107416
+    },
+    "pretzo mixy tomato pretzels, 40-50g": {
+      "p": 14.0,
+      "ts": 1795107416
+    },
+    "talabat bbq flavor pretzels, 120g": {
+      "p": 32.0,
+      "ts": 1795107416
+    },
+    "pretzo original baked salted pretzels, 5": {
+      "p": 28.0,
+      "ts": 1795107416
+    },
+    "pretzo salt mini sticks, 50-60g": {
+      "p": 28.0,
+      "ts": 1795107416
+    },
+    "live green sea salt flavor pretzels, 100": {
+      "p": 31.5,
+      "ts": 1795107416
+    },
+    "abu auf bbq pretzels, 200g": {
+      "p": 57.95,
+      "ts": 1795107416
+    },
+    "abu auf x bravo back to school snacks bo": {
+      "p": 100.0,
+      "ts": 1795107416
+    },
+    "live green bbq flavor pretzels, 100g": {
+      "p": 31.5,
+      "ts": 1795107416
+    },
+    "tea break karak tea sachets, 8x25g": {
+      "p": 114.95,
+      "ts": 1795107422
+    },
+    "mazaq karak tea 12 sachets 23 gm": {
+      "p": 137.5,
+      "ts": 1795107422
+    },
+    "talabat cardamom karak tea, 10 sachets": {
+      "p": 160.0,
+      "ts": 1795107422
+    },
+    "talabat saffron karak tea, 10 sachets": {
+      "p": 160.0,
+      "ts": 1795107422
+    },
+    "talabat plain karak tea, 10 sachets": {
+      "p": 150.0,
+      "ts": 1795107422
+    },
+    "isis chai karak envelopes, 15 envelopes": {
+      "p": 155.0,
+      "ts": 1795107422
+    },
+    "cofinia milk tea sachets, 10x19g": {
+      "p": 109.95,
+      "ts": 1795107422
+    },
+    "cofinia karak tea sachets, 10x19g": {
+      "p": 155.95,
+      "ts": 1795107422
+    },
+    "talabat ginger karak tea, 10 sachets": {
+      "p": 160.0,
+      "ts": 1795107422
+    },
+    "lipton black tea peach ice tea infuse en": {
+      "p": 149.95,
+      "ts": 1795107422
+    },
+    "lipton yellow label black premium kharaz": {
+      "p": 82.95,
+      "ts": 1795107422
+    },
+    "lipton hibiscus raspberry ice tea infuse": {
+      "p": 167.0,
+      "ts": 1795107422
+    },
+    "el arosa fine black tea powder, 100g": {
+      "p": 22.0,
+      "ts": 1795107422
+    },
+    "el arosa kenyan tea, 250g": {
+      "p": 57.95,
+      "ts": 1795107422
+    },
+    "lipton yellow label black tea with sun d": {
+      "p": 37.95,
+      "ts": 1795107422
+    },
+    "lipton dust black tea, 250g": {
+      "p": 69.95,
+      "ts": 1795107422
+    },
+    "lipton dust black tea, 40g": {
+      "p": 11.95,
+      "ts": 1795107422
+    },
+    "lipton dust black tea, 500g": {
+      "p": 125.0,
+      "ts": 1795107422
+    },
+    "lipton yellow label black dust tea, 100g": {
+      "p": 31.95,
+      "ts": 1795107422
+    },
+    "lipton yellow label black tea bags with ": {
+      "p": 64.5,
+      "ts": 1795107422
+    },
+    "lipton yellow label black tea bags, 100 ": {
+      "p": 135.95,
+      "ts": 1795107422
+    },
+    "lipton yellow label black tea, 25 bags": {
+      "p": 33.95,
+      "ts": 1795107422
+    },
+    "rabea extra strong loose black tea 225g": {
+      "p": 65.0,
+      "ts": 1795107422
+    },
+    "lipton english breakfast black teabags, ": {
+      "p": 36.95,
+      "ts": 1795107422
+    },
+    "lipton yellow label dust black tea, 2g, ": {
+      "p": 67.95,
+      "ts": 1795107422
+    },
+    "royal black tea raspberry tea bags, 20 t": {
+      "p": 60.0,
+      "ts": 1795107422
+    },
+    "lipton dust tea, 40g": {
+      "p": 12.0,
+      "ts": 1795107422
+    },
+    "bestow evaporated milk, 170g": {
+      "p": 45.0,
+      "ts": 1795107422
+    },
+    "nestle coffee mate, 400g": {
+      "p": 179.0,
+      "ts": 1795107422
+    },
+    "dreem coffee creamer jar 300 g": {
+      "p": 122.0,
+      "ts": 1795107422
+    },
+    "lipton green tea citrus ice tea infuse e": {
+      "p": 151.95,
+      "ts": 1795107422
+    },
+    "imtenan parsley & celery tea, 18 tea bag": {
+      "p": 49.0,
+      "ts": 1795107422
+    },
+    "royal herbs anise tea bags, 20 tea bags": {
+      "p": 26.95,
+      "ts": 1795107422
+    },
+    "lipton green tea with mint, 25 bags": {
+      "p": 43.0,
+      "ts": 1795107422
+    },
+    "royal herbs anise tea bags, 12 tea bags": {
+      "p": 14.45,
+      "ts": 1795107422
+    },
+    "royal herbs parsley & celery tea bags, 1": {
+      "p": 18.5,
+      "ts": 1795107422
+    },
+    "lipton green tea bags with mint, 50 piec": {
+      "p": 70.0,
+      "ts": 1795107422
+    },
+    "royal herbs lemon & ginger tea bags, 12 ": {
+      "p": 15.95,
+      "ts": 1795107422
+    },
+    "royal herbs cumin lemon tea bags, 20 tea": {
+      "p": 67.45,
+      "ts": 1795107422
+    },
+    "royal herbs lemon & ginger tea bags, 20 ": {
+      "p": 29.95,
+      "ts": 1795107422
+    },
+    "royal herbs mint tea bags, 12 tea bags": {
+      "p": 14.45,
+      "ts": 1795107422
+    },
+    "lipton green tea pure bags, 12 pieces": {
+      "p": 17.95,
+      "ts": 1795107422
+    },
+    "royal herbs ginger & cinnamon tea bags, ": {
+      "p": 15.95,
+      "ts": 1795107422
+    },
+    "lipton pure green tea bags, 25 bags": {
+      "p": 39.95,
+      "ts": 1795107422
+    },
+    "royal herbs chamomile & anise tea bags, ": {
+      "p": 29.95,
+      "ts": 1795107422
+    },
+    "abu auf keejo maple syrup 250 ml": {
+      "p": 666.95,
+      "ts": 1795107422
+    },
+    "dreem vanilla jumbo, 4g": {
+      "p": 2.0,
+      "ts": 1795107427
+    },
+    "dreem caramel cream, 184g": {
+      "p": 43.0,
+      "ts": 1795107427
+    },
+    "aldoha flour, 1kg": {
+      "p": 42.45,
+      "ts": 1795107427
+    },
+    "cook`s baking powder 16 gm": {
+      "p": 3.75,
+      "ts": 1795107427
+    },
+    "dreem whipping topping cream, 45g": {
+      "p": 21.95,
+      "ts": 1795107427
+    },
+    "dreem pure cocoa powder, 80g": {
+      "p": 90.45,
+      "ts": 1795107427
+    },
+    "dreem baking powder, 16g": {
+      "p": 3.95,
+      "ts": 1795107427
+    },
+    "dreem cake chef baking powder, 23g": {
+      "p": 6.5,
+      "ts": 1795107427
+    },
+    "dreem dry instant yeast, 11g": {
+      "p": 4.6,
+      "ts": 1795107427
+    },
+    "cook's corn starch, 240g": {
+      "p": 22.45,
+      "ts": 1795107427
+    },
+    "talabat white flour, 1kg": {
+      "p": 38.0,
+      "ts": 1795107427
+    },
+    "dreem raw chocolate for cooking, 200g": {
+      "p": 60.95,
+      "ts": 1795107427
+    },
+    "dreem milk cooking chocolate 200 gm": {
+      "p": 60.95,
+      "ts": 1795107427
+    },
+    "dreem vanilla orange baking powder, 5g": {
+      "p": 5.62,
+      "ts": 1795107427
+    },
+    "abu auf cocoa powder, 120g": {
+      "p": 165.0,
+      "ts": 1795107427
+    },
+    "al doha whole grain flour, 1kg": {
+      "p": 38.0,
+      "ts": 1795107427
+    },
+    "corona coverture milk cooking chocolate,": {
+      "p": 55.0,
+      "ts": 1795107427
+    },
+    "daria white flour whole wheat (diet), 1k": {
+      "p": 48.45,
+      "ts": 1795107427
+    },
+    "al asil sunflower oil, 700ml": {
+      "p": 85.75,
+      "ts": 1795107428
+    },
+    "crystal sunflower oil - 2.2 l": {
+      "p": 266.5,
+      "ts": 1795107428
+    },
+    "qalia mixed oil - 700 ml": {
+      "p": 74.0,
+      "ts": 1795107428
+    },
+    "crystal sunflower oil , 700ml": {
+      "p": 90.95,
+      "ts": 1795107428
+    },
+    "qalia mixed oil 1 l": {
+      "p": 98.95,
+      "ts": 1795107428
+    },
+    "talabat sunflower oil, 2.1l": {
+      "p": 180.0,
+      "ts": 1795107428
+    },
+    "al momtaz mixed oil, 1l": {
+      "p": 98.95,
+      "ts": 1795107428
+    },
+    "crystal sunflower oil, 1.6l": {
+      "p": 195.95,
+      "ts": 1795107428
+    },
+    "crystal sunflower oil spray, 200ml": {
+      "p": 29.95,
+      "ts": 1795107428
+    },
+    "hala sunflower oil 500 ml": {
+      "p": 65.0,
+      "ts": 1795107428
+    },
+    "rehana sunflower oil, 700ml": {
+      "p": 82.0,
+      "ts": 1795107428
+    },
+    "crystal corn oil, 700ml": {
+      "p": 110.5,
+      "ts": 1795107428
+    },
+    "rehana corn oil, 700ml": {
+      "p": 88.0,
+      "ts": 1795107428
+    },
+    "sunny sunflower oil for cooking, 700ml": {
+      "p": 78.95,
+      "ts": 1795107428
+    },
+    "crystal corn oil, 1l": {
+      "p": 152.95,
+      "ts": 1795107428
+    },
+    "crystal sunflower oil, 5l": {
+      "p": 597.25,
+      "ts": 1795107428
+    },
+    "crystal corn oil, 1.6l": {
+      "p": 243.95,
+      "ts": 1795107428
+    },
+    "al momtaz mixed oil, 700ml": {
+      "p": 74.0,
+      "ts": 1795107428
+    },
+    "crystal corn oil, 2.2l": {
+      "p": 330.95,
+      "ts": 1795107428
+    },
+    "talabat corn oil, 700ml": {
+      "p": 89.0,
+      "ts": 1795107428
+    },
+    "khalty bahya sugar 1 kilo x 3": {
+      "p": 108.0,
+      "ts": 1795107429
+    },
+    "aldoha egyptian rice, 1kg x 2 + al doha ": {
+      "p": 139.9,
+      "ts": 1795107429
+    },
+    "harvest tomato paste 375 gm + harvest fo": {
+      "p": 65.95,
+      "ts": 1795107429
+    },
+    "de cecco penne rigate pasta no.41, 500g ": {
+      "p": 458.95,
+      "ts": 1795107429
+    },
+    "kellogg's oriental sausage flavour noodl": {
+      "p": 37.0,
+      "ts": 1795107429
+    },
+    "aldoha spaghetti pasta, 400g x 3": {
+      "p": 91.35,
+      "ts": 1795107429
+    },
+    "al doha penne rigate pasta, 400g x 3": {
+      "p": 91.35,
+      "ts": 1795107429
+    },
+    "al doha penne rigate pasta, 400g + aldoh": {
+      "p": 91.35,
+      "ts": 1795107429
+    },
+    "aldoha egyptian rice, 1kg x 2 + easy ric": {
+      "p": 150.9,
+      "ts": 1795107429
+    },
+    "heinz concentrated tomato paste, 370g x ": {
+      "p": 116.35,
+      "ts": 1795107429
+    },
+    "de cecco rigatoni pasta no.24, 500g + de": {
+      "p": 458.95,
+      "ts": 1795107429
+    },
+    "regina penne pasta - 1 kg x 3": {
+      "p": 198.0,
+      "ts": 1795107429
+    },
+    "de cecco spaghetti pasta no.12, 500g + d": {
+      "p": 458.95,
+      "ts": 1795107429
+    },
+    "crystal corn oil, 1l + regina penne past": {
+      "p": 214.85,
+      "ts": 1795107429
+    },
+    "la molisana spaghetti no.15 x 3": {
+      "p": 390.0,
+      "ts": 1795107429
+    },
+    "la molisana integrali penne ziti rigate ": {
+      "p": 390.0,
+      "ts": 1795107429
+    },
+    "la molisana fusilli pasta no.28, 500g x ": {
+      "p": 390.0,
+      "ts": 1795107429
+    },
+    "everyday roastery iced roasted hazelnut ": {
+      "p": 160.0,
+      "ts": 1795107429
+    },
+    "heinz mayonnaise, 125g": {
+      "p": 32.45,
+      "ts": 1795107429
+    },
+    "heinz premium hot sauce, 165g": {
+      "p": 49.95,
+      "ts": 1795107429
+    },
+    "el bawadi tahina - 125 gm": {
+      "p": 38.95,
+      "ts": 1795107429
+    },
+    "el bawadi tahina 240 gm": {
+      "p": 72.95,
+      "ts": 1795107429
+    },
+    "add-me light mayonnaise squeeze, 360g": {
+      "p": 74.95,
+      "ts": 1795107429
+    },
+    "heinz mayonnaise squeezy duepack - 285 g": {
+      "p": 67.95,
+      "ts": 1795107429
+    },
+    "heinz yellow mustard sauce squeeze bottl": {
+      "p": 52.0,
+      "ts": 1795107429
+    },
+    "el bawadi tahina, 450g": {
+      "p": 132.95,
+      "ts": 1795107429
+    },
+    "heinz mayonnaise 310 gm": {
+      "p": 75.45,
+      "ts": 1795107429
+    },
+    "heinz burger sauce, 285g": {
+      "p": 57.0,
+      "ts": 1795107429
+    },
+    "add-me ketchup squeeze, 420g": {
+      "p": 58.95,
+      "ts": 1795107429
+    },
+    "heinz mustard, 125g": {
+      "p": 32.45,
+      "ts": 1795107429
+    },
+    "el bawadi tahina envelope, 23g": {
+      "p": 5.95,
+      "ts": 1795107429
+    },
+    "heinz tomato ketchup pickled doypack, 12": {
+      "p": 23.5,
+      "ts": 1795107429
+    },
+    "daria chili paste, 320g": {
+      "p": 44.45,
+      "ts": 1795107429
+    },
+    "el bawadi tahini, 470g + molasses, 350g": {
+      "p": 157.95,
+      "ts": 1795107429
+    },
+    "heinz bbq sauce, 200g": {
+      "p": 59.95,
+      "ts": 1795107429
+    },
+    "heinz thousand island dressing squeeze b": {
+      "p": 125.0,
+      "ts": 1795107429
+    },
+    "tiger dark soya sauce, 320ml": {
+      "p": 174.74,
+      "ts": 1795107429
+    },
+    "tiger brand sweet sauce, 230ml": {
+      "p": 189.07,
+      "ts": 1795107429
+    },
+    "khodar.com lemon balady 250gm": {
+      "p": 13.45,
+      "ts": 1795107435
+    },
+    "fresh source lemon, 500g": {
+      "p": 24.95,
+      "ts": 1795107435
+    },
+    "khodar.com royal gala apple - itally, 1k": {
+      "p": 109.95,
+      "ts": 1795107435
+    },
+    "khodar.com mango keitt, 1.5kg": {
+      "p": 99.95,
+      "ts": 1795107435
+    },
+    "khodar.com lime, 500g": {
+      "p": 28.95,
+      "ts": 1795107435
+    },
+    "fresh source imported banana, 500g": {
+      "p": 84.95,
+      "ts": 1795107435
+    },
+    "fresh source cantaloupe, 2kg": {
+      "p": 59.95,
+      "ts": 1795107435
+    },
+    "khodar.com pears african 500 gm": {
+      "p": 119.95,
+      "ts": 1795107435
+    },
+    "khodar.com cantalope 2kg": {
+      "p": 65.95,
+      "ts": 1795107435
+    },
+    "fresh source imported avocado, 500g": {
+      "p": 110.95,
+      "ts": 1795107435
+    },
+    "fresh source imported kiwi, 500g": {
+      "p": 110.95,
+      "ts": 1795107435
+    },
+    "khodar.com apple mix, 1kg": {
+      "p": 142.95,
+      "ts": 1795107435
+    },
+    "khodar.com watercress 100gm": {
+      "p": 11.95,
+      "ts": 1795107435
+    },
+    "khodar.com coriander 100gm": {
+      "p": 11.95,
+      "ts": 1795107435
+    },
+    "fresh source coriander, 100g": {
+      "p": 10.45,
+      "ts": 1795107435
+    },
+    "fresh source white cabbage, 1 piece": {
+      "p": 26.75,
+      "ts": 1795107435
+    },
+    "alghanim hydroponic iceberg, 1 piece": {
+      "p": 42.0,
+      "ts": 1795107435
+    },
+    "fresh source arugula, 100g": {
+      "p": 10.45,
+      "ts": 1795107435
+    },
+    "green house garden iceberg, 150g": {
+      "p": 71.5,
+      "ts": 1795107435
+    },
+    "fresh source red cabbage, 1 piece": {
+      "p": 25.45,
+      "ts": 1795107435
+    },
+    "alghanim hydroponic green batavia, 1 pie": {
+      "p": 42.0,
+      "ts": 1795107435
+    },
+    "pico rosemary, 100g": {
+      "p": 16.25,
+      "ts": 1795107435
+    },
+    "green house garden iceberg, 300g": {
+      "p": 117.0,
+      "ts": 1795107435
+    },
+    "alghanim hydroponic lollo rossa, 1 piece": {
+      "p": 42.0,
+      "ts": 1795107435
+    },
+    "alghanim hydroponic lollo bionda, 1 piec": {
+      "p": 42.0,
+      "ts": 1795107435
+    },
+    "khodar.com red cabbage pc": {
+      "p": 26.95,
+      "ts": 1795107435
+    },
+    "pico lemongrass, 100g": {
+      "p": 22.75,
+      "ts": 1795107435
+    },
+    "alghanim hydroponic red oak leaf, 1 piec": {
+      "p": 42.0,
+      "ts": 1795107435
+    },
+    "best sherraton brand pure butter oil, 40": {
+      "p": 258.0,
+      "ts": 1795107435
+    },
+    "haloub al missalia natural cow butter gh": {
+      "p": 163.0,
+      "ts": 1795107435
+    },
+    "al asdekaa natural cow ghee, 175g": {
+      "p": 133.71,
+      "ts": 1795107435
+    },
+    "katilo natural ghee, 450g": {
+      "p": 349.95,
+      "ts": 1795107435
+    },
+    "al asdekaa natural buffalo ghee, 425g": {
+      "p": 328.09,
+      "ts": 1795107435
+    },
+    "fern pure butter ghee 400g": {
+      "p": 255.95,
+      "ts": 1795107435
+    },
+    "al asdekaa buffalo ghee, 900g": {
+      "p": 658.71,
+      "ts": 1795107435
+    },
+    "al asdekaa natural cow ghee, 850g": {
+      "p": 585.39,
+      "ts": 1795107435
+    },
+    "isis extra virgin olive oil, 500ml": {
+      "p": 593.75,
+      "ts": 1795107435
+    },
+    "dobella virgin olive oil, 150ml": {
+      "p": 100.0,
+      "ts": 1795107435
+    },
+    "nile garden extra virgin olive oil, 250m": {
+      "p": 239.0,
+      "ts": 1795107435
+    },
+    "talabat extra virgin olive oil, 250ml": {
+      "p": 240.0,
+      "ts": 1795107435
+    },
+    "dina farms virgin olive oil, 250ml": {
+      "p": 235.0,
+      "ts": 1795107435
+    },
+    "nile garden virgin olive oil, 250ml": {
+      "p": 203.0,
+      "ts": 1795107435
+    },
+    "talabat extra virgin olive oil, 500ml": {
+      "p": 450.0,
+      "ts": 1795107435
+    },
+    "dobella olive oil 250 ml": {
+      "p": 164.0,
+      "ts": 1795107435
+    },
+    "dina farms virgin olive oil, 500ml": {
+      "p": 418.0,
+      "ts": 1795107435
+    },
+    "wadi food virgin olive oil, 1l + virgin ": {
+      "p": 900.0,
+      "ts": 1795107435
+    },
+    "daria first cold pressed virgin olive oi": {
+      "p": 394.0,
+      "ts": 1795107435
+    },
+    "wadi food extra virgin olive oil pet, 50": {
+      "p": 499.0,
+      "ts": 1795107435
+    },
+    "wadi food virgin olive oil, 500ml": {
+      "p": 479.0,
+      "ts": 1795107435
+    },
+    "dobella olive oil 500 ml": {
+      "p": 316.0,
+      "ts": 1795107435
+    },
+    "wadi food extra virgin olive oil, 500ml": {
+      "p": 583.0,
+      "ts": 1795107435
+    },
+    "dina farms virgin olive oil, 1000ml": {
+      "p": 798.0,
+      "ts": 1795107435
+    },
+    "nile garden extra virgin olive oil, 500m": {
+      "p": 495.95,
+      "ts": 1795107435
+    },
+    "mafaza early harvest fruity extra virgin": {
+      "p": 856.0,
+      "ts": 1795107435
+    },
+    "dobella olive oil 1 liter": {
+      "p": 578.0,
+      "ts": 1795107435
+    },
+    "mafaza extra virgin olive oil with roast": {
+      "p": 240.0,
+      "ts": 1795107435
+    },
+    "khodar.com cucumber 1kg": {
+      "p": 39.95,
+      "ts": 1795107435
+    },
+    "khodar.com cuban green pepper, 250g": {
+      "p": 13.95,
+      "ts": 1795107435
+    },
+    "khodar.com tomato 1kg": {
+      "p": 39.95,
+      "ts": 1795107435
+    },
+    "khodar.com capsicum mix 500 gm": {
+      "p": 43.95,
+      "ts": 1795107435
+    },
+    "khodar.com pepper hot green 250gm": {
+      "p": 14.95,
+      "ts": 1795107435
+    },
+    "khodar.com zucchini 500gm": {
+      "p": 26.95,
+      "ts": 1795107435
+    },
+    "khodar.com grilled veggie saute, 350g": {
+      "p": 49.95,
+      "ts": 1795107435
+    },
+    "khodar.com ready pumpkin 350 gm": {
+      "p": 34.95,
+      "ts": 1795107435
+    },
+    "khodar.com iceberg lettuce shredded, 350": {
+      "p": 36.95,
+      "ts": 1795107435
+    },
+    "khodar.com peeled garlic balady 125g": {
+      "p": 19.95,
+      "ts": 1795107435
+    },
+    "khodar.com ginger 100gm": {
+      "p": 27.45,
+      "ts": 1795107435
+    },
+    "khodar.com ready soutee vegetables 350 g": {
+      "p": 49.95,
+      "ts": 1795107435
+    },
+    "khodar.com eggplant romi 1 kg": {
+      "p": 22.95,
+      "ts": 1795107435
+    },
+    "khodar.com zucchini slices, 350g": {
+      "p": 34.95,
+      "ts": 1795107435
+    },
+    "khodar.com ready squash for stuffing 350": {
+      "p": 34.95,
+      "ts": 1795107435
+    },
+    "khodar.com red bell pepper, 500g": {
+      "p": 43.95,
+      "ts": 1795107435
+    },
+    "khodar.com yellow bell pepper, 500g": {
+      "p": 42.95,
+      "ts": 1795107435
+    },
+    "khodar.com black eggplant long, 1kg": {
+      "p": 26.95,
+      "ts": 1795107435
+    },
+    "khodar.com cherry tomato 250gm": {
+      "p": 84.95,
+      "ts": 1795107435
+    },
+    "molto mini croissants with chocolate, 50": {
+      "p": 10.0,
+      "ts": 1795107440
+    },
+    "molto mini magnum chocolate & hazelnut c": {
+      "p": 15.0,
+      "ts": 1795107440
+    },
+    "domty plain fino bread, 4 pieces": {
+      "p": 29.95,
+      "ts": 1795107440
+    },
+    "tseppas plain petit pain, 5 pieces": {
+      "p": 32.95,
+      "ts": 1795107440
+    },
+    "tseppas sesame petit pain, 5 pieces": {
+      "p": 34.95,
+      "ts": 1795107440
+    },
+    "rich bake fino bread whole wheat sugar f": {
+      "p": 31.75,
+      "ts": 1795107440
+    },
+    "domty brioche bread, 4 pieces": {
+      "p": 39.95,
+      "ts": 1795107440
+    },
+    "rich bake fino bread, 4 pieces": {
+      "p": 31.95,
+      "ts": 1795107440
+    },
+    "molto mini magnum strawberry cheesecake,": {
+      "p": 15.0,
+      "ts": 1795107440
+    },
+    "rich bake sesame vienna bread, 2 pieces": {
+      "p": 27.45,
+      "ts": 1795107440
+    },
+    "molto mix croissant strawberry & cream c": {
+      "p": 10.0,
+      "ts": 1795107440
+    },
+    "rich bake fino w/sesame": {
+      "p": 31.95,
+      "ts": 1795107440
+    },
+    "rich bake plain vienna bread, 2 pieces": {
+      "p": 27.45,
+      "ts": 1795107440
+    },
+    "molto mini magnum mix croissant filled w": {
+      "p": 15.0,
+      "ts": 1795107440
+    },
+    "tseppas brown petit pain oats, 5 pieces": {
+      "p": 44.95,
+      "ts": 1795107440
+    },
+    "tseppas petit pain sesame 5 pcs": {
+      "p": 44.95,
+      "ts": 1795107440
+    },
+    "molto cake with chocolate & cream, 40g": {
+      "p": 10.0,
+      "ts": 1795107440
+    },
+    "tseppas plain vienna petit pain, 5 piece": {
+      "p": 44.95,
+      "ts": 1795107440
+    },
+    "domty multigrain bread, 4 pieces": {
+      "p": 39.95,
+      "ts": 1795107440
+    },
+    "domty fino bread with thyme, 4 pieces": {
+      "p": 39.95,
+      "ts": 1795107440
+    },
+    "scrunch sugar free peanut, almond & monk": {
+      "p": 45.0,
+      "ts": 1795107440
+    },
+    "scrunch sugar free hazelnut, almond & mo": {
+      "p": 65.0,
+      "ts": 1795107440
+    },
+    "rich bake whole wheat bread 20cm": {
+      "p": 21.95,
+      "ts": 1795107441
+    },
+    "rich bake lebanese bread, 20cm": {
+      "p": 17.95,
+      "ts": 1795107441
+    },
+    "tseppas balady bread, 16cm, 5 pieces": {
+      "p": 27.95,
+      "ts": 1795107441
+    },
+    "rich bake bran tortilla bread, 5 pieces": {
+      "p": 64.95,
+      "ts": 1795107441
+    },
+    "breadway large wheat bran tortilla bread": {
+      "p": 54.95,
+      "ts": 1795107441
+    },
+    "rich bake wheat flour tortilla bread, 5 ": {
+      "p": 64.95,
+      "ts": 1795107441
+    },
+    "breadway large tortilla, 450g": {
+      "p": 54.95,
+      "ts": 1795107441
+    },
+    "rich bake whole wheat bread without suga": {
+      "p": 29.95,
+      "ts": 1795107441
+    },
+    "rich bake balady bread, 4 pieces": {
+      "p": 32.95,
+      "ts": 1795107441
+    },
+    "breadway brown tortilla, 240g": {
+      "p": 44.95,
+      "ts": 1795107441
+    },
+    "reef diet high protein bread, 250g": {
+      "p": 72.0,
+      "ts": 1795107441
+    },
+    "domty high protein tanour bread, 5 piece": {
+      "p": 74.95,
+      "ts": 1795107441
+    },
+    "rich bake balady bready bran sourdough, ": {
+      "p": 44.95,
+      "ts": 1795107441
+    },
+    "domty fresh tanour bread with bran, 5 pi": {
+      "p": 49.95,
+      "ts": 1795107441
+    },
+    "rich bake whole wheat & barley bread, 5 ": {
+      "p": 29.95,
+      "ts": 1795107441
+    },
+    "rich bake barley tannour bread, 5 pieces": {
+      "p": 54.95,
+      "ts": 1795107441
+    },
+    "rich bake chia tannour bread, 5 pieces": {
+      "p": 54.95,
+      "ts": 1795107441
+    },
+    "rich bake whole wheat oats bread, 5 piec": {
+      "p": 29.95,
+      "ts": 1795107441
+    },
+    "domty fresh tanour bread with barley, 5 ": {
+      "p": 54.95,
+      "ts": 1795107441
+    },
+    "domty fresh tanour bread with chia seeds": {
+      "p": 54.95,
+      "ts": 1795107441
+    },
+    "bennu grab n go medjool dates, 50g": {
+      "p": 35.45,
+      "ts": 1795107441
+    },
+    "bennu mini medjool dates, 500g": {
+      "p": 290.45,
+      "ts": 1795107441
+    },
+    "bennu saudi sukkari mefatel dates, 400g": {
+      "p": 195.45,
+      "ts": 1795107441
+    },
+    "bennu sagai dates, 400g": {
+      "p": 200.45,
+      "ts": 1795107441
+    },
+    "bennu golden crown medjool dates, 1kg": {
+      "p": 330.45,
+      "ts": 1795107441
+    },
+    "abu auf dark sahra chocolate dates with ": {
+      "p": 268.45,
+      "ts": 1795107441
+    },
+    "bennu super juicy medjool dates, 400g": {
+      "p": 280.45,
+      "ts": 1795107441
+    },
+    "abu auf dark chocolate medjool dates stu": {
+      "p": 357.95,
+      "ts": 1795107441
+    },
+    "bennu bites medjool dates filled cashew ": {
+      "p": 94.95,
+      "ts": 1795107441
+    },
+    "bennu bites medjool dates filled peanut ": {
+      "p": 89.95,
+      "ts": 1795107441
+    },
+    "bennu large medjool dates, 500g": {
+      "p": 380.45,
+      "ts": 1795107441
+    },
+    "bennu bites medjool dates filled tahini,": {
+      "p": 79.95,
+      "ts": 1795107441
+    },
+    "bennu mini medjool dates, 1kg": {
+      "p": 560.45,
+      "ts": 1795107441
+    },
+    "bennu jumbo medjool dates, 500g": {
+      "p": 425.45,
+      "ts": 1795107441
+    },
+    "bennu agwa al madinah dates, 400g": {
+      "p": 395.45,
+      "ts": 1795107441
+    },
+    "bennu large medjool dates, 1kg": {
+      "p": 730.45,
+      "ts": 1795107441
+    },
+    "abu auf dark chocolate medjool dates, 23": {
+      "p": 321.45,
+      "ts": 1795107441
+    },
+    "abu auf dark chocolate coated medjool da": {
+      "p": 110.5,
+      "ts": 1795107441
+    },
+    "haj arafa coconut, 150g": {
+      "p": 49.95,
+      "ts": 1795107441
+    },
+    "molto gold butter croissant, 71g": {
+      "p": 19.95,
+      "ts": 1795107442
+    },
+    "molto gold butter croissant with seeds, ": {
+      "p": 19.95,
+      "ts": 1795107442
+    },
+    "tseppas 1/2 and 1/2 cake": {
+      "p": 159.95,
+      "ts": 1795107442
+    },
+    "domty croissant filled with hazelnut cre": {
+      "p": 14.95,
+      "ts": 1795107442
+    },
+    "tseppas plain cake, 1 piece": {
+      "p": 129.95,
+      "ts": 1795107442
+    },
+    "abu auf plain maamoul dates, 300g": {
+      "p": 94.95,
+      "ts": 1795107442
+    },
+    "tseppas small feteer meshaltet 1 pcs": {
+      "p": 104.95,
+      "ts": 1795107442
+    },
+    "tseppas nashader biscuits, 20 pieces": {
+      "p": 94.95,
+      "ts": 1795107442
+    },
+    "tseppas chocolate chip cookies, 250g": {
+      "p": 119.95,
+      "ts": 1795107442
+    },
+    "tseppas double chocolate cookies, 250g": {
+      "p": 144.95,
+      "ts": 1795107442
+    },
+    "tseppas vanilla petit four, 16 pieces": {
+      "p": 104.95,
+      "ts": 1795107442
+    },
+    "tseppas strawberry danish, 1 piece": {
+      "p": 59.95,
+      "ts": 1795107442
+    },
+    "tseppas red velvet cookies, 250g": {
+      "p": 109.95,
+      "ts": 1795107442
+    },
+    "tseppas roumi pate 1pc": {
+      "p": 54.95,
+      "ts": 1795107442
+    },
+    "tseppas pistachio danish, 1 piece": {
+      "p": 59.95,
+      "ts": 1795107442
+    },
+    "tseppas orange biscuits, 20 pieces": {
+      "p": 99.95,
+      "ts": 1795107442
+    },
+    "abu auf maamoul dates with chocolate, 30": {
+      "p": 110.95,
+      "ts": 1795107442
+    },
+    "abu auf maamoul dates with cinnamon, 300": {
+      "p": 94.95,
+      "ts": 1795107442
+    },
+    "tseppas plain menain, 500g": {
+      "p": 144.95,
+      "ts": 1795107442
+    },
+    "abu auf maamoul stuffed with strawberry ": {
+      "p": 110.5,
+      "ts": 1795107442
+    },
+    "molto twist chocolate hazelnut croissant": {
+      "p": 25.0,
+      "ts": 1795107447
+    },
+    "molto magnum chocolate & hazelnut croiss": {
+      "p": 15.0,
+      "ts": 1795107447
+    },
+    "molto bigger size xxl chocolate & hazeln": {
+      "p": 10.0,
+      "ts": 1795107447
+    },
+    "molto mini king chocolate & hazelnut cro": {
+      "p": 20.0,
+      "ts": 1795107447
+    },
+    "domty croissant white cheese with spicy ": {
+      "p": 14.95,
+      "ts": 1795107447
+    },
+    "domty croissant with istanbouly cheese": {
+      "p": 14.95,
+      "ts": 1795107447
+    },
+    "domty croissant feta cheese with edam fl": {
+      "p": 14.95,
+      "ts": 1795107447
+    },
+    "domty croissant feta cheese with pastram": {
+      "p": 14.95,
+      "ts": 1795107447
+    },
+    "domty creamy roumy cheese sandwich": {
+      "p": 14.95,
+      "ts": 1795107447
+    },
+    "domty croissant feta cheese with smoked ": {
+      "p": 14.95,
+      "ts": 1795107447
+    },
+    "domty creamy burger sandwich": {
+      "p": 14.95,
+      "ts": 1795107447
+    },
+    "domty istanboly cheese sandwich": {
+      "p": 14.95,
+      "ts": 1795107447
+    },
+    "domty feta plus white cheese sandwich": {
+      "p": 14.95,
+      "ts": 1795107447
+    },
+    "domty chocolate croissant, 90g": {
+      "p": 14.95,
+      "ts": 1795107447
+    },
+    "molto king chocolate & hazelnut croissan": {
+      "p": 20.0,
+      "ts": 1795107447
+    },
+    "domty white cheese & olives sandwich": {
+      "p": 14.95,
+      "ts": 1795107447
+    },
+    "domty chocolate sandwich": {
+      "p": 14.95,
+      "ts": 1795107447
+    },
+    "rich bake milk pound cake, 1 piece": {
+      "p": 99.95,
+      "ts": 1795107447
+    },
+    "talabat chicken caesar salad, 360g": {
+      "p": 250.0,
+      "ts": 1795107447
+    },
+    "talabat tuna pasta salad, 447g": {
+      "p": 225.0,
+      "ts": 1795107447
+    },
+    "green house pesto salad 440gm": {
+      "p": 182.0,
+      "ts": 1795107447
+    },
+    "green house pink salad 520gm": {
+      "p": 110.5,
+      "ts": 1795107447
+    },
+    "talabat chicken quinoa salad, 400g": {
+      "p": 240.0,
+      "ts": 1795107447
+    },
+    "talabat quattro frommagi salad, 270g": {
+      "p": 225.0,
+      "ts": 1795107447
+    },
+    "green house beet root salad 360gm": {
+      "p": 166.45,
+      "ts": 1795107447
+    },
+    "green house chickpea salad 410gm": {
+      "p": 166.45,
+      "ts": 1795107447
+    },
+    "green house bunny bites 250gm": {
+      "p": 65.0,
+      "ts": 1795107447
+    },
+    "green house cucumber & cheese snack pack": {
+      "p": 62.45,
+      "ts": 1795107447
+    },
+    "green house green apple salad 410gm": {
+      "p": 182.0,
+      "ts": 1795107447
+    },
+    "green house veggies & dip snack pack, 20": {
+      "p": 49.45,
+      "ts": 1795107447
+    },
+    "green house purple fusion 350gm": {
+      "p": 110.5,
+      "ts": 1795107447
+    },
+    "green house italian mix 300gm": {
+      "p": 130.0,
+      "ts": 1795107447
+    },
+    "green house carrot & cheese snack pack, ": {
+      "p": 62.45,
+      "ts": 1795107447
+    },
+    "green house carrot & dip snack pack, 200": {
+      "p": 52.0,
+      "ts": 1795107447
+    },
+    "green house cherry mary mix 300gm": {
+      "p": 143.0,
+      "ts": 1795107447
+    },
+    "green house spring mix 200gm": {
+      "p": 130.0,
+      "ts": 1795107447
+    },
+    "green house caesar dressing 300m": {
+      "p": 255.25,
+      "ts": 1795107447
+    },
+    "rich bake rusk, 400g": {
+      "p": 30.95,
+      "ts": 1795107447
+    },
+    "rich bake extra bread crumbs, 120g": {
+      "p": 17.95,
+      "ts": 1795107447
+    },
+    "rich bake crispy bread crumbs, 150g": {
+      "p": 17.95,
+      "ts": 1795107447
+    },
+    "tseppas diet crackers, 230g": {
+      "p": 59.95,
+      "ts": 1795107447
+    },
+    "tseppas anus biscuit, 300g": {
+      "p": 79.95,
+      "ts": 1795107447
+    },
+    "tseppas kahk with malban, 14 pieces": {
+      "p": 139.95,
+      "ts": 1795107447
+    },
+    "tseppas salted baton, 250g": {
+      "p": 129.95,
+      "ts": 1795107447
+    },
+    "tseppas kahk with ajwa, 14 pieces": {
+      "p": 124.95,
+      "ts": 1795107447
+    },
+    "tseppas kahk with pressed dates, 14 piec": {
+      "p": 139.95,
+      "ts": 1795107447
+    },
+    "katchino crissini sesame, 290g": {
+      "p": 85.75,
+      "ts": 1795107447
+    },
+    "katchino baton sale with salt and cumin,": {
+      "p": 95.95,
+      "ts": 1795107447
+    },
+    "rich bake crispy premium pane mix, 170g": {
+      "p": 99.95,
+      "ts": 1795107447
+    },
+    "tseppas crackers ketchup, 230g": {
+      "p": 84.95,
+      "ts": 1795107447
+    },
+    "katchino bread crumbs, 500g": {
+      "p": 32.25,
+      "ts": 1795107447
+    },
+    "rich bake premium spicy pane mix, 170g": {
+      "p": 99.95,
+      "ts": 1795107447
+    },
+    "pearla kursina brown, 500g": {
+      "p": 108.75,
+      "ts": 1795107447
+    },
+    "katchino puff sticks with cheese & olive": {
+      "p": 157.95,
+      "ts": 1795107447
+    },
+    "pearla kursina plain, 450g": {
+      "p": 121.45,
+      "ts": 1795107447
+    },
+    "pearla plain baton sale, 500g": {
+      "p": 125.95,
+      "ts": 1795107447
+    },
+    "pearla sesame baton sale, 500g": {
+      "p": 138.95,
+      "ts": 1795107447
+    },
+    "taghamees ful olive oil, 500g": {
+      "p": 88.45,
+      "ts": 1795107447
+    },
+    "taghamees ful olive oil, 300g": {
+      "p": 63.95,
+      "ts": 1795107447
+    },
+    "taghamees frozen small taameya plain, 15": {
+      "p": 78.45,
+      "ts": 1795107447
+    },
+    "felfela alexandrian taamia, 8 pieces": {
+      "p": 81.95,
+      "ts": 1795107447
+    },
+    "felfela foul olive oil, 500g": {
+      "p": 91.45,
+      "ts": 1795107447
+    },
+    "felfela foul olive oil, 300g": {
+      "p": 65.25,
+      "ts": 1795107447
+    },
+    "felfela foul oil, 300g": {
+      "p": 57.95,
+      "ts": 1795107447
+    },
+    "felfela cheddar cheese frozen taamia (8 ": {
+      "p": 95.0,
+      "ts": 1795107447
+    },
+    "taghamees frozen small taameya saffron l": {
+      "p": 94.95,
+      "ts": 1795107447
+    },
+    "taghamees frozen small taameya harissa, ": {
+      "p": 91.25,
+      "ts": 1795107447
+    },
+    "taghamees ful saffron lemon, 500g": {
+      "p": 88.45,
+      "ts": 1795107447
+    },
+    "tagamees frozen taameya kiri basterma sm": {
+      "p": 114.25,
+      "ts": 1795107447
+    },
+    "taghamees ful oil, 300g": {
+      "p": 56.25,
+      "ts": 1795107447
+    },
+    "felfela lemon saffron taamia, 8 pieces": {
+      "p": 81.95,
+      "ts": 1795107447
+    },
+    "felfela foul lemon saffron, 300g": {
+      "p": 60.95,
+      "ts": 1795107447
+    },
+    "felfela taamia creamy cheese, 8 pieces": {
+      "p": 99.95,
+      "ts": 1795107447
+    },
+    "felfela foul with butter, 500g": {
+      "p": 85.0,
+      "ts": 1795107447
+    },
+    "taghamees ful saffron lemon, 300g": {
+      "p": 63.95,
+      "ts": 1795107447
+    },
+    "taghamees ful oil, 500g": {
+      "p": 79.45,
+      "ts": 1795107447
+    },
+    "felfela frozen fried roumy cheese, 8 pie": {
+      "p": 242.45,
+      "ts": 1795107447
+    },
+    "talabat tuna sandwich": {
+      "p": 145.0,
+      "ts": 1795107452
+    },
+    "talabat roast beef sandwich": {
+      "p": 125.0,
+      "ts": 1795107452
+    },
+    "talabat chicken honey mustard sandwich": {
+      "p": 100.0,
+      "ts": 1795107452
+    },
+    "talabat haloumi sandwich": {
+      "p": 95.0,
+      "ts": 1795107452
+    },
+    "talabat chicken bbq sandwich": {
+      "p": 120.0,
+      "ts": 1795107452
+    },
+    "talabat beef bacon lettuce & tomato sand": {
+      "p": 133.95,
+      "ts": 1795107452
+    },
+    "temry tikka spicy marinated whole chicke": {
+      "p": 302.95,
+      "ts": 1795107452
+    },
+    "temry bbq marinated chicken fillet, 1kg": {
+      "p": 446.95,
+      "ts": 1795107452
+    },
+    "temry spicy tandoori marinated fillet, 1": {
+      "p": 446.95,
+      "ts": 1795107452
+    },
+    "olio mozzarella fingers 295 gm": {
+      "p": 125.0,
+      "ts": 1795107452
+    },
+    "olio cheese sambousek 350 gm": {
+      "p": 115.0,
+      "ts": 1795107452
+    },
+    "olio sambousek with meat, 240g": {
+      "p": 103.0,
+      "ts": 1795107452
+    },
+    "olio egyptian vine leaves, 500g": {
+      "p": 122.0,
+      "ts": 1795107452
+    },
+    "olio shami kebbeh 360 gm": {
+      "p": 135.0,
+      "ts": 1795107452
+    },
+    "olio potato croquette 300 gm": {
+      "p": 89.0,
+      "ts": 1795107452
+    },
+    "olio veggie spring rolls 320 gm": {
+      "p": 104.0,
+      "ts": 1795107452
+    },
+    "olio cheese hotdog rolls, 300g": {
+      "p": 128.0,
+      "ts": 1795107452
+    },
+    "olio onion rings 300 gm": {
+      "p": 92.0,
+      "ts": 1795107452
+    },
+    "olio jalapeno bites, 250g": {
+      "p": 122.0,
+      "ts": 1795107452
+    },
+    "olio cheddar melt, 350g": {
+      "p": 115.0,
+      "ts": 1795107452
+    },
+    "olio cheese sambousek 350 gm + olio pota": {
+      "p": 204.0,
+      "ts": 1795107452
+    },
+    "olio cheese sambousek 350 gm + olio chic": {
+      "p": 274.0,
+      "ts": 1795107452
+    },
+    "olio shami kebbeh 360 gm x2": {
+      "p": 270.0,
+      "ts": 1795107452
+    },
+    "olio mozzarella fingers 295 gm x2": {
+      "p": 250.0,
+      "ts": 1795107452
+    },
+    "olio egyptian vine leaves, 500g x2": {
+      "p": 244.0,
+      "ts": 1795107452
+    },
+    "olio cheese sambousek 350 gm x2": {
+      "p": 230.0,
+      "ts": 1795107452
+    },
+    "olio veggie spring rolls 320 gm x2": {
+      "p": 208.0,
+      "ts": 1795107452
+    },
+    "olio mozzarella fingers 295 gm + olio ja": {
+      "p": 247.0,
+      "ts": 1795107452
+    },
+    "olio onion rings 300 gm x2": {
+      "p": 184.0,
+      "ts": 1795107452
+    },
+    "atyab crispy chicken pane spicy 400 gm*2": {
+      "p": 282.0,
+      "ts": 1795107452
+    },
+    "koki nuggets crunchy 60 pcs + fries*2": {
+      "p": 726.0,
+      "ts": 1795107452
+    },
+    "koki heroz chicken cheese nuggets 400 gm": {
+      "p": 344.54,
+      "ts": 1795107452
+    },
+    "atyab grilled chicken shish 400 gm": {
+      "p": 218.0,
+      "ts": 1795107452
+    },
+    "olio cheddar bites, 250g": {
+      "p": 120.0,
+      "ts": 1795107452
+    },
+    "koki gold sweet & sour grilled chicken, ": {
+      "p": 288.75,
+      "ts": 1795107452
+    },
+    "olio cheddar bites, 250g x2": {
+      "p": 240.0,
+      "ts": 1795107452
+    },
+    "not fried hummus falafel, 350g": {
+      "p": 89.0,
+      "ts": 1795107452
+    },
+    "not fried spicy egyptian falafel, 400g": {
+      "p": 89.0,
+      "ts": 1795107452
+    },
+    "wonderfit chocolate without sugar ice cr": {
+      "p": 60.0,
+      "ts": 1795107458
+    },
+    "wonderfit vanilla without sugar ice crea": {
+      "p": 60.0,
+      "ts": 1795107458
+    },
+    "wonderfit yogurt & blueberry sauce witho": {
+      "p": 60.0,
+      "ts": 1795107458
+    },
+    "wonderfit pistachio cup ice cream withou": {
+      "p": 75.0,
+      "ts": 1795107458
+    },
+    "wonderville louts & vanilla sandwich ice": {
+      "p": 25.0,
+      "ts": 1795107458
+    },
+    "smoochy red watermelon mochi ice cream, ": {
+      "p": 60.0,
+      "ts": 1795107458
+    },
+    "smoochy salted caramel mochi ice cream, ": {
+      "p": 60.0,
+      "ts": 1795107458
+    },
+    "smoochy vanilla mochi ice cream, 64g": {
+      "p": 60.0,
+      "ts": 1795107458
+    },
+    "smoochy chocolate mochi ice cream, 64g": {
+      "p": 60.0,
+      "ts": 1795107458
+    },
+    "gelato factory chocolate gelato - 250 ml": {
+      "p": 105.0,
+      "ts": 1795107458
+    },
+    "gelato factory salted caramel - 250 ml": {
+      "p": 105.0,
+      "ts": 1795107458
+    },
+    "gelato factory mastic with pistachio - 2": {
+      "p": 105.0,
+      "ts": 1795107458
+    },
+    "farm frites crinkle fries, 11x11mm, 1kg": {
+      "p": 80.0,
+      "ts": 1795107458
+    },
+    "farm frites steak house fries, 10x20mm, ": {
+      "p": 82.0,
+      "ts": 1795107458
+    },
+    "farm frites spoonful fries 500 gm": {
+      "p": 56.75,
+      "ts": 1795107458
+    },
+    "farm frites potato cubes, 500g": {
+      "p": 43.0,
+      "ts": 1795107458
+    },
+    "olio hash browns, 570g (10 pieces)": {
+      "p": 111.0,
+      "ts": 1795107458
+    },
+    "digs cookie lava cake, 170g": {
+      "p": 105.0,
+      "ts": 1795107458
+    },
+    "olio caramel rolls, 200g": {
+      "p": 101.0,
+      "ts": 1795107458
+    },
+    "wunder strawberry panna cotta, 175g": {
+      "p": 145.0,
+      "ts": 1795107458
+    },
+    "forni mini sweet pie chocolate 8 pcs": {
+      "p": 90.0,
+      "ts": 1795107458
+    },
+    "forni mini sweet pie custard 8 pcs": {
+      "p": 65.0,
+      "ts": 1795107458
+    },
+    "al naeem frozen strawberry, 400g": {
+      "p": 44.5,
+      "ts": 1795107458
+    },
+    "al naeem frozen minced molokhia, 400g": {
+      "p": 19.5,
+      "ts": 1795107458
+    },
+    "montana molokhia, 400g": {
+      "p": 20.75,
+      "ts": 1795107458
+    },
+    "montana strawberry 400gm": {
+      "p": 29.0,
+      "ts": 1795107458
+    },
+    "al naeem frozen peas & carrots, 400g": {
+      "p": 31.5,
+      "ts": 1795107458
+    },
+    "montana peas & carrot, 400g": {
+      "p": 31.45,
+      "ts": 1795107458
+    },
+    "al naeem frozen green beans, 400g": {
+      "p": 20.5,
+      "ts": 1795107458
+    },
+    "al naeem frozen mixed vegetables, 400g": {
+      "p": 22.0,
+      "ts": 1795107458
+    },
+    "al naeem frozen green peas, 400g": {
+      "p": 49.0,
+      "ts": 1795107458
+    },
+    "montana mixed vegetables, 400g": {
+      "p": 24.0,
+      "ts": 1795107458
+    },
+    "montana zero okra, 400g": {
+      "p": 52.0,
+      "ts": 1795107458
+    },
+    "montana peas, 400g": {
+      "p": 54.0,
+      "ts": 1795107458
+    },
+    "al naeem frozen green okra excellent, 40": {
+      "p": 29.75,
+      "ts": 1795107458
+    },
+    "al naeem frozen pomegranate, 400g": {
+      "p": 52.5,
+      "ts": 1795107458
+    },
+    "montana okra excellent 400 gm": {
+      "p": 32.0,
+      "ts": 1795107458
+    },
+    "froot frozen blueberry bites, 100g": {
+      "p": 80.0,
+      "ts": 1795107458
+    },
+    "al naeem frozen green okra extra, 400g": {
+      "p": 64.0,
+      "ts": 1795107458
+    },
+    "al naeem frozen green okra zero, 400g": {
+      "p": 52.25,
+      "ts": 1795107458
+    },
+    "froot frozen strawberry bites, 100g": {
+      "p": 55.0,
+      "ts": 1795107458
+    },
+    "froot frozen mango bites, 100g": {
+      "p": 55.0,
+      "ts": 1795107458
+    },
+    "kimo cono vanilla & chocholate ice cream": {
+      "p": 10.0,
+      "ts": 1795107458
+    },
+    "nestle mega chocolate ice cream stick, 9": {
+      "p": 25.0,
+      "ts": 1795107458
+    },
+    "nestle mega blackberry yoghurt ice cream": {
+      "p": 25.0,
+      "ts": 1795107458
+    },
+    "nestle mega vanilla ice cream stick, 95m": {
+      "p": 25.0,
+      "ts": 1795107458
+    },
+    "squizz mango ice cream stick, 60ml": {
+      "p": 10.0,
+      "ts": 1795107458
+    },
+    "nestle mega white chocolate ice cream st": {
+      "p": 25.0,
+      "ts": 1795107458
+    },
+    "cadbury dairy milk caramel ice cream con": {
+      "p": 35.0,
+      "ts": 1795107458
+    },
+    "dolce wich cream ice cream sandwich 80ml": {
+      "p": 12.0,
+      "ts": 1795107458
+    },
+    "oreo ice cream cone, 110ml": {
+      "p": 25.0,
+      "ts": 1795107458
+    },
+    "dolce wich cream & choco ice cream sandw": {
+      "p": 12.0,
+      "ts": 1795107458
+    },
+    "squizz lemon mint ice cream stick, 60ml": {
+      "p": 10.0,
+      "ts": 1795107458
+    },
+    "dolce wich choco cookies ice cream sandw": {
+      "p": 15.0,
+      "ts": 1795107458
+    },
+    "dolce wich cookies ice cream sandwich 12": {
+      "p": 15.0,
+      "ts": 1795107458
+    },
+    "wonderfit belgian chocolate ice cream st": {
+      "p": 50.0,
+      "ts": 1795107458
+    },
+    "squizz up mango sorbet, 120ml": {
+      "p": 25.0,
+      "ts": 1795107458
+    },
+    "nestle squizz up mixed berries ice cream": {
+      "p": 25.0,
+      "ts": 1795107458
+    },
+    "wonderfit french vanilla flavor ice crea": {
+      "p": 50.0,
+      "ts": 1795107458
+    },
+    "wonderville yougurt rasberry stick ice c": {
+      "p": 25.0,
+      "ts": 1795107458
+    },
+    "mega mango vanilla crunch ice cream stic": {
+      "p": 25.0,
+      "ts": 1795107458
+    },
+    "nestle mega strawberry vanilla crunch, 8": {
+      "p": 25.0,
+      "ts": 1795107458
+    },
+    "dreem pancake mix, 440g": {
+      "p": 77.95,
+      "ts": 1795107463
+    },
+    "five stars pancake 1 kg": {
+      "p": 84.95,
+      "ts": 1795107463
+    },
+    "bakeland waffle 400 gm": {
+      "p": 64.95,
+      "ts": 1795107463
+    },
+    "el bawadi halawa jumbo bar, 18g x6": {
+      "p": 21.0,
+      "ts": 1795107463
+    },
+    "temmy's choco pillow, 32g x 3": {
+      "p": 37.35,
+      "ts": 1795107463
+    },
+    "temmy's choco scoops, 30g x 3": {
+      "p": 37.35,
+      "ts": 1795107463
+    },
+    "el bawadi molasses 350 gm x 2": {
+      "p": 61.9,
+      "ts": 1795107463
+    },
+    "temmy's choco pops, 30g x 3": {
+      "p": 37.35,
+      "ts": 1795107463
+    },
+    "temmy's honey pops, 30g x 3": {
+      "p": 37.35,
+      "ts": 1795107463
+    },
+    "el bawadi molasses - 200 g x 2": {
+      "p": 39.9,
+      "ts": 1795107463
+    },
+    "el mizan halawa spread 150 gm x 2": {
+      "p": 76.0,
+      "ts": 1795107463
+    },
+    "moltobella hazelnut spread chocolate wit": {
+      "p": 416.75,
+      "ts": 1795107463
+    },
+    "moltobella ivory hazelnut cream, 315g x ": {
+      "p": 422.75,
+      "ts": 1795107463
+    },
+    "smoochy popcorn mochi ice cream, 6x32g": {
+      "p": 150.0,
+      "ts": 1795107463
+    },
+    "smoochy mochi ice cream mango passion fr": {
+      "p": 187.0,
+      "ts": 1795107463
+    },
+    "smoochy strawberry ice cream, 6 pieces, ": {
+      "p": 150.0,
+      "ts": 1795107463
+    },
+    "smoochy spanish latte mochi ice cream, 1": {
+      "p": 187.0,
+      "ts": 1795107463
+    },
+    "gelato factory scoop & smile kite - plai": {
+      "p": 135.0,
+      "ts": 1795107463
+    },
+    "smoochy chocolate ice cream, 6 pieces, 1": {
+      "p": 150.0,
+      "ts": 1795107463
+    },
+    "smoochy caramel ice cream, 6 pieces, 192": {
+      "p": 150.0,
+      "ts": 1795107463
+    },
+    "smoochy vanilla ice cream, 6 pieces, 192": {
+      "p": 150.0,
+      "ts": 1795107463
+    },
+    "gelato factory french vanilla ice cream,": {
+      "p": 200.0,
+      "ts": 1795107463
+    },
+    "gelato factory yogurt blueberry ice crea": {
+      "p": 200.0,
+      "ts": 1795107463
+    },
+    "gelato factory salted caramel ice cream,": {
+      "p": 200.0,
+      "ts": 1795107463
+    },
+    "gelato factory mango ice cream, 500ml": {
+      "p": 200.0,
+      "ts": 1795107463
+    },
+    "gelato factory cheesecake strawberry ice": {
+      "p": 200.0,
+      "ts": 1795107463
+    },
+    "gelato factory dolce de leche gelato ice": {
+      "p": 200.0,
+      "ts": 1795107463
+    },
+    "gelato factory mastic with pistachio ice": {
+      "p": 200.0,
+      "ts": 1795107463
+    },
+    "gelato factory chocolate ice cream, 500m": {
+      "p": 200.0,
+      "ts": 1795107463
+    },
+    "nutella ferrero hazelnut spread with coc": {
+      "p": 19.75,
+      "ts": 1795107464
+    },
+    "nutella chocolate hazelnut spread, 350g": {
+      "p": 280.0,
+      "ts": 1795107464
+    },
+    "abu auf peanut butter, 330g": {
+      "p": 215.95,
+      "ts": 1795107464
+    },
+    "talabat creamy peanut butter, 300g": {
+      "p": 100.0,
+      "ts": 1795107464
+    },
+    "chocolate dreem spread hazelnut 250 gm": {
+      "p": 121.95,
+      "ts": 1795107464
+    },
+    "el bawadi chocolate spread, 160g": {
+      "p": 38.95,
+      "ts": 1795107464
+    },
+    "lychee original creamy peanut butter, 30": {
+      "p": 115.0,
+      "ts": 1795107464
+    },
+    "talabat crunchy peanut butter, 300g": {
+      "p": 100.0,
+      "ts": 1795107464
+    },
+    "lychee original crunchy peanut butter, 3": {
+      "p": 115.0,
+      "ts": 1795107464
+    },
+    "lychee honey creamy peanut butter, 300g": {
+      "p": 115.0,
+      "ts": 1795107464
+    },
+    "dreem chocolate spread 900 gm": {
+      "p": 356.95,
+      "ts": 1795107464
+    },
+    "abu auf plain date spread, 230g": {
+      "p": 105.45,
+      "ts": 1795107464
+    },
+    "abu auf cinnamon date spread, 230g": {
+      "p": 105.45,
+      "ts": 1795107464
+    },
+    "abu auf coconut date spread, 230g": {
+      "p": 105.45,
+      "ts": 1795107464
+    },
+    "dobella peanut butter creamy 340gm": {
+      "p": 133.0,
+      "ts": 1795107464
+    },
+    "dobella peanut butter crunchy 340gm": {
+      "p": 133.0,
+      "ts": 1795107464
+    },
+    "el bawadi yummies caramel with coffee ha": {
+      "p": 73.95,
+      "ts": 1795107464
+    },
+    "el bawadi yummies plain cherry halawa sp": {
+      "p": 73.95,
+      "ts": 1795107464
+    },
+    "el bawadi yummies hazelnut spread, 300g": {
+      "p": 199.95,
+      "ts": 1795107464
+    },
+    "el bawadi yummies plain ginger & lemon h": {
+      "p": 73.95,
+      "ts": 1795107464
+    },
+    "temmy's choco pillow cereals, 25g": {
+      "p": 12.45,
+      "ts": 1795107464
+    },
+    "temmy's choco pillow, 110g": {
+      "p": 45.0,
+      "ts": 1795107464
+    },
+    "kellogg's corn flakes plain, 250g": {
+      "p": 170.0,
+      "ts": 1795107464
+    },
+    "temmy's choco pillow, 250g": {
+      "p": 105.0,
+      "ts": 1795107464
+    },
+    "kellogg's frosties breakfast cereal, 330": {
+      "p": 200.0,
+      "ts": 1795107464
+    },
+    "kellogg's original corn flakes, 500g": {
+      "p": 263.0,
+      "ts": 1795107464
+    },
+    "kellogg's chocolate fills coco pops, 350": {
+      "p": 149.95,
+      "ts": 1795107464
+    },
+    "real nutrition chocolate buddies cereal ": {
+      "p": 21.0,
+      "ts": 1795107464
+    },
+    "kellogg's coco pops chocos, 330g": {
+      "p": 150.0,
+      "ts": 1795107464
+    },
+    "kellogg's frosties breakfast cereal, 470": {
+      "p": 300.0,
+      "ts": 1795107464
+    },
+    "dobella oats flakes, 600g": {
+      "p": 100.0,
+      "ts": 1795107464
+    },
+    "kellogg's coco pops chocolate cereal, 48": {
+      "p": 200.0,
+      "ts": 1795107464
+    },
+    "kellogg's froot loops, 375g": {
+      "p": 149.95,
+      "ts": 1795107464
+    },
+    "kellogg's coco pops jumbos breakfast cer": {
+      "p": 150.0,
+      "ts": 1795107464
+    },
+    "kellogg's coco pops chocos cereal, 480g": {
+      "p": 200.0,
+      "ts": 1795107464
+    },
+    "kellogg's coco pops original, 330g": {
+      "p": 150.95,
+      "ts": 1795107464
+    },
+    "mega food oats bags 500g": {
+      "p": 81.0,
+      "ts": 1795107464
+    },
+    "kellogg's coco pops jumbo chocolate cere": {
+      "p": 200.0,
+      "ts": 1795107464
+    },
+    "dobella oats flakes, 500g": {
+      "p": 81.0,
+      "ts": 1795107464
+    },
+    "real nutrition peanut butter buddies cer": {
+      "p": 21.0,
+      "ts": 1795107464
+    },
+    "wadi food natural vinegar, 1l": {
+      "p": 19.0,
+      "ts": 1795107469
+    },
+    "heinz natural vinegar plastic bottle, 1l": {
+      "p": 25.45,
+      "ts": 1795107469
+    },
+    "harvest foods natural white vinegar, 1l": {
+      "p": 19.95,
+      "ts": 1795107469
+    },
+    "lavida ranch sauce, 175ml": {
+      "p": 37.95,
+      "ts": 1795107469
+    },
+    "rehana natural vinger 1l": {
+      "p": 19.0,
+      "ts": 1795107469
+    },
+    "daria pomegranate molasses 350 gm": {
+      "p": 94.35,
+      "ts": 1795107469
+    },
+    "dobella grenadine molasses, 350ml": {
+      "p": 64.0,
+      "ts": 1795107469
+    },
+    "add me natural vinegar 1 liter": {
+      "p": 19.5,
+      "ts": 1795107469
+    },
+    "dobella apple vinegar 250 ml": {
+      "p": 32.0,
+      "ts": 1795107469
+    },
+    "bab elsham sweet & sour dressing, 15g": {
+      "p": 14.95,
+      "ts": 1795107469
+    },
+    "bab elsham italian dressing, 15g": {
+      "p": 14.95,
+      "ts": 1795107469
+    },
+    "wadi food apple pet vinegar, 500ml": {
+      "p": 94.95,
+      "ts": 1795107469
+    },
+    "bab elsham thousand islands dressing, 15": {
+      "p": 16.95,
+      "ts": 1795107469
+    },
+    "bab elsham oriental salad dressing, 15g": {
+      "p": 14.95,
+      "ts": 1795107469
+    },
+    "dobella grape leaves 950 g": {
+      "p": 78.0,
+      "ts": 1795107469
+    },
+    "bab elsham dressing mediterranean , 15g": {
+      "p": 16.95,
+      "ts": 1795107469
+    },
+    "dobella apple vinegar 500 ml": {
+      "p": 57.0,
+      "ts": 1795107469
+    },
+    "limes gard rose water, 300ml": {
+      "p": 53.63,
+      "ts": 1795107469
+    },
+    "boulos pomegranate molasses squeez, 350m": {
+      "p": 151.5,
+      "ts": 1795107469
+    },
+    "el bawadi halawa jumbo bar, 18g": {
+      "p": 3.5,
+      "ts": 1795107469
+    },
+    "el bawadi plain halawa, 255g": {
+      "p": 60.95,
+      "ts": 1795107469
+    },
+    "el bawadi chocolate spread halawa, 300g": {
+      "p": 74.0,
+      "ts": 1795107469
+    },
+    "el bawadi plain halawa, 575g": {
+      "p": 115.0,
+      "ts": 1795107469
+    },
+    "el bawadi plain halawa, 120g": {
+      "p": 31.95,
+      "ts": 1795107469
+    },
+    "el rashidi el mizan plain halawa, 230g": {
+      "p": 66.0,
+      "ts": 1795107469
+    },
+    "el rashidi el mizan plain halava, 120g": {
+      "p": 33.0,
+      "ts": 1795107469
+    },
+    "el bawadi plain sweet spread, 300g": {
+      "p": 69.95,
+      "ts": 1795107469
+    },
+    "halwani plain halawa, 275g": {
+      "p": 57.95,
+      "ts": 1795107469
+    },
+    "el bawadi plain halawa spread, 160g": {
+      "p": 35.95,
+      "ts": 1795107469
+    },
+    "el mizan halawa choco halawa spread 300 ": {
+      "p": 75.0,
+      "ts": 1795107469
+    },
+    "don lopez plain halawa, 535g": {
+      "p": 104.95,
+      "ts": 1795107469
+    },
+    "halwani plain light halawa, 275g": {
+      "p": 103.45,
+      "ts": 1795107469
+    },
+    "el mizan halawa spread 300 gm": {
+      "p": 72.0,
+      "ts": 1795107469
+    },
+    "el rashidi el mizan halawa spread, 150g": {
+      "p": 38.0,
+      "ts": 1795107469
+    },
+    "halwani chocolate halawa, 275g": {
+      "p": 71.95,
+      "ts": 1795107469
+    },
+    "halwani hazelnut halawa, 275g": {
+      "p": 87.95,
+      "ts": 1795107469
+    },
+    "el bawadi halawa spread with caramel, 30": {
+      "p": 71.95,
+      "ts": 1795107469
+    },
+    "halwani almond halawa, 275g": {
+      "p": 87.95,
+      "ts": 1795107469
+    },
+    "el bawadi almond halawa, 275g": {
+      "p": 80.95,
+      "ts": 1795107469
+    },
+    "heinz premium hot sauce, 165g + heinz ma": {
+      "p": 125.4,
+      "ts": 1795107469
+    },
+    "isis pure ginseng honey, 250g": {
+      "p": 265.0,
+      "ts": 1795107469
+    },
+    "el bawadi molasses 350 gm": {
+      "p": 30.95,
+      "ts": 1795107469
+    },
+    "imtenan clover honey 250 gm": {
+      "p": 93.95,
+      "ts": 1795107469
+    },
+    "el bawadi molasses - 200 g": {
+      "p": 19.95,
+      "ts": 1795107469
+    },
+    "talabat clover honey squeeze bottle, 500": {
+      "p": 119.95,
+      "ts": 1795107469
+    },
+    "el bawadi molasses 700 g": {
+      "p": 56.45,
+      "ts": 1795107469
+    },
+    "imtenan spring blossom honey 250 gm": {
+      "p": 88.0,
+      "ts": 1795107469
+    },
+    "imtenan honey 450 gm": {
+      "p": 161.95,
+      "ts": 1795107469
+    },
+    "talabat spring honey squeeze bottle, 500": {
+      "p": 119.95,
+      "ts": 1795107469
+    },
+    "talabat citrus honey squeeze bottle, 500": {
+      "p": 124.95,
+      "ts": 1795107469
+    },
+    "talabat spring honey glass jar, 450g": {
+      "p": 104.95,
+      "ts": 1795107469
+    },
+    "imtenan spring blossom honey, 450g": {
+      "p": 161.95,
+      "ts": 1795107469
+    },
+    "talabat clover honey glass jar, 450g": {
+      "p": 105.0,
+      "ts": 1795107469
+    },
+    "imtenan medicine flowers honey 250 gm": {
+      "p": 96.95,
+      "ts": 1795107469
+    },
+    "talabat citrus honey glass jar, 450g": {
+      "p": 124.95,
+      "ts": 1795107469
+    },
+    "imtenan black seed honey 250 gm": {
+      "p": 114.95,
+      "ts": 1795107469
+    },
+    "royal clover blossom honey, 450g": {
+      "p": 100.0,
+      "ts": 1795107469
+    },
+    "imtenan citrus honey 450 gm": {
+      "p": 190.95,
+      "ts": 1795107469
+    },
+    "royal citrus blossom honey, 450g": {
+      "p": 110.0,
+      "ts": 1795107469
+    },
+    "vitrac strawberry light jam, 220g": {
+      "p": 38.5,
+      "ts": 1795107469
+    },
+    "vitrac strawberry jam, 230g": {
+      "p": 38.5,
+      "ts": 1795107469
+    },
+    "vitrac blueberry jam, 430g": {
+      "p": 81.0,
+      "ts": 1795107469
+    },
+    "vitrac creamy strawberry jam, 430g": {
+      "p": 60.75,
+      "ts": 1795107469
+    },
+    "vitrac fig light jam 220 gm": {
+      "p": 38.5,
+      "ts": 1795107469
+    },
+    "vitrac strawberry jam, 430g": {
+      "p": 60.75,
+      "ts": 1795107469
+    },
+    "vitrac forest berries light jam, 220g": {
+      "p": 60.75,
+      "ts": 1795107469
+    },
+    "vitrac strawberry & raspberry jam, 430g": {
+      "p": 60.75,
+      "ts": 1795107469
+    },
+    "vitrac apricot light jam, 220g": {
+      "p": 42.25,
+      "ts": 1795107469
+    },
+    "vitrac strawberry jam, 850g": {
+      "p": 104.25,
+      "ts": 1795107469
+    },
+    "elbawadi strawberry creamy jam, 365g": {
+      "p": 35.95,
+      "ts": 1795107469
+    },
+    "vitrac fig jam, 430g": {
+      "p": 60.75,
+      "ts": 1795107469
+    },
+    "halwani strawberry jam 380 gm": {
+      "p": 57.5,
+      "ts": 1795107469
+    },
+    "halwani strawberry jam 750 gm": {
+      "p": 110.95,
+      "ts": 1795107469
+    },
+    "vitrac raspberry jam, 430g": {
+      "p": 81.0,
+      "ts": 1795107469
+    },
+    "vitrac creamy apricot jam, 430g": {
+      "p": 67.0,
+      "ts": 1795107469
+    },
+    "elbawadi fig creamy jam, 365g": {
+      "p": 35.95,
+      "ts": 1795107469
+    },
+    "halwani light apricot jam 380 gm": {
+      "p": 61.0,
+      "ts": 1795107469
+    },
+    "elbawadi apricot creamy jam, 365g": {
+      "p": 39.95,
+      "ts": 1795107469
+    },
+    "halwani fig jam 380 gm": {
+      "p": 61.45,
+      "ts": 1795107469
+    },
+    "al khair fine food salt, 500g": {
+      "p": 5.0,
+      "ts": 1795107473
+    },
+    "cook's table salt 700 gm": {
+      "p": 18.95,
+      "ts": 1795107473
+    },
+    "talabat table salt, 700g": {
+      "p": 16.95,
+      "ts": 1795107473
+    },
+    "cook's vacuum iodized table salt, 200g": {
+      "p": 7.95,
+      "ts": 1795107473
+    },
+    "el kheir salt 200 gm": {
+      "p": 3.0,
+      "ts": 1795107473
+    },
+    "magic moments sodium bicarbonate raw pow": {
+      "p": 28.0,
+      "ts": 1795107473
+    },
+    "cook`s pink himalyan salt 200 gm": {
+      "p": 15.95,
+      "ts": 1795107473
+    },
+    "al khair iodized table salt, 2kg": {
+      "p": 11.25,
+      "ts": 1795107473
+    },
+    "nour salt 700 gm": {
+      "p": 19.95,
+      "ts": 1795107473
+    },
+    "talabat table salt, 3x700g": {
+      "p": 49.0,
+      "ts": 1795107473
+    },
+    "magic moments lemon salt raw powder 150 ": {
+      "p": 34.0,
+      "ts": 1795107473
+    },
+    "oujaj natural sea salt 500 gm": {
+      "p": 20.0,
+      "ts": 1795107473
+    },
+    "talabat fine himalayan pink salt, 400g": {
+      "p": 50.0,
+      "ts": 1795107473
+    },
+    "abu auf fine himalayan powder pink salt,": {
+      "p": 54.95,
+      "ts": 1795107473
+    },
+    "talabat sea salt coarse with crusher, 20": {
+      "p": 52.0,
+      "ts": 1795107473
+    },
+    "talabat himalayan pink salt coarse with ": {
+      "p": 54.0,
+      "ts": 1795107473
+    },
+    "oujaj himalayan coarse salt 500 gm": {
+      "p": 40.0,
+      "ts": 1795107473
+    },
+    "dobella himalayan natural salt crude 600": {
+      "p": 65.95,
+      "ts": 1795107473
+    },
+    "dobella himalayan natural salt crude 650": {
+      "p": 62.25,
+      "ts": 1795107473
+    },
+    "ta7bisha truffle salt, 60g": {
+      "p": 194.95,
+      "ts": 1795107473
+    },
+    "maggi chicken stock, 12 cubes, 108g": {
+      "p": 21.0,
+      "ts": 1795107473
+    },
+    "knorr potato seasoning, 6g": {
+      "p": 3.75,
+      "ts": 1795107473
+    },
+    "aldoha black pepper powder 20 gm": {
+      "p": 26.5,
+      "ts": 1795107473
+    },
+    "aldoha bread crumbs, 300g": {
+      "p": 28.95,
+      "ts": 1795107473
+    },
+    "aldoha cumin powder 20 gm": {
+      "p": 26.0,
+      "ts": 1795107473
+    },
+    "aldoha ground black pepper, 70g": {
+      "p": 105.0,
+      "ts": 1795107473
+    },
+    "talabat black pepper powder, 90g": {
+      "p": 97.95,
+      "ts": 1795107473
+    },
+    "talabat 7 spices, 70g": {
+      "p": 40.0,
+      "ts": 1795107473
+    },
+    "talabat paprika powder, 70g": {
+      "p": 42.0,
+      "ts": 1795107473
+    },
+    "talabat smoked paprika, 70g": {
+      "p": 65.0,
+      "ts": 1795107473
+    },
+    "talabat dried garlic powder, 90g": {
+      "p": 40.0,
+      "ts": 1795107473
+    },
+    "talabat turmeric powder, 80g": {
+      "p": 49.95,
+      "ts": 1795107473
+    },
+    "talabat ginger powder, 70g": {
+      "p": 50.0,
+      "ts": 1795107473
+    },
+    "talabat curry powder, 75g": {
+      "p": 45.0,
+      "ts": 1795107473
+    },
+    "talabat cumin powder, 70g": {
+      "p": 75.0,
+      "ts": 1795107473
+    },
+    "talabat ground coriander, 55g": {
+      "p": 31.95,
+      "ts": 1795107473
+    },
+    "talabat red chilli powder, 70g": {
+      "p": 50.0,
+      "ts": 1795107473
+    },
+    "talabat sumac, 75g": {
+      "p": 65.0,
+      "ts": 1795107473
+    },
+    "talabat ground nutmeg, 75g": {
+      "p": 119.0,
+      "ts": 1795107473
+    },
+    "talabat black seeds, 85g": {
+      "p": 69.0,
+      "ts": 1795107473
+    }
+  },
+  "18582e23-bba9-4cc0-9a3a-7870ad42fb3d": {
+    "price": 46.0,
+    "ts": 1795107384
+  },
+  "TITLE_juhayna plain yoghurt 105g (5+1 ": {
+    "price": 46.0,
+    "ts": 1795107384
+  },
+  "4fe6eb09-5996-4b8f-b0f7-f3a79c233cbd": {
+    "price": 42.0,
+    "ts": 1795107397
+  },
+  "TITLE_waterkind electrolytes sparkling": {
+    "price": 42.0,
+    "ts": 1795107397
+  },
+  "12be21cc-f154-4739-80ac-e6777358e34e": {
+    "price": 206.5,
+    "ts": 1795107416
+  },
+  "TITLE_talabat raw hazelnuts, 175g": {
+    "price": 206.5,
+    "ts": 1795107416
+  },
+  "d1888e27-187f-406e-a630-9dd4419c5dd1": {
+    "price": 180.0,
+    "ts": 1795107429
+  },
+  "TITLE_talabat sunflower oil, 2.1l": {
+    "price": 180.0,
+    "ts": 1795107429
   }
 }
