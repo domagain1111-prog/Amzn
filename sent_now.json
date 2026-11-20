@@ -364,12 +364,12 @@
     "ts": 1794968618
   },
   "B07LBSH6B2": {
-    "price": 33.6,
-    "ts": 1794968618
+    "price": 30.45,
+    "ts": 1795175430
   },
   "TITLE_Bobana Berry Spa Salt Scrub Ja": {
-    "price": 33.6,
-    "ts": 1794968618
+    "price": 30.45,
+    "ts": 1795175430
   },
   "B07Y8JTWT3": {
     "price": 30.45,
@@ -946,5 +946,13 @@
   "TITLE_AXIS-Y Vegan Collagen Eye Seru": {
     "price": 681.7,
     "ts": 1795170925
+  },
+  "B0G64H131Y": {
+    "price": 27.25,
+    "ts": 1795175399
+  },
+  "TITLE_Fresh Source Cucumber": {
+    "price": 27.25,
+    "ts": 1795175399
   }
 }
