@@ -979,7 +979,7 @@
     "price": 25.2,
     "ts": 1795266514
   },
-  "__NEXT_IDX__": 15,
+  "__NEXT_IDX__": 1,
   "B00BDC9V90": {
     "price": 27.55,
     "ts": 1795267087
@@ -1131,5 +1131,13 @@
   "TITLE_Abu Auf Turkish Coffee": {
     "price": 241.01,
     "ts": 1795273348
+  },
+  "B0DJ7C1GSW": {
+    "price": 24.93,
+    "ts": 1795275414
+  },
+  "TITLE_VETELLY -Root Comb Applicator ": {
+    "price": 24.93,
+    "ts": 1795275414
   }
 }
