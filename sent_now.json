@@ -356,12 +356,12 @@
     "ts": 1794968618
   },
   "B0DLBFLZH7": {
-    "price": 61.95,
-    "ts": 1794968618
+    "price": 60.9,
+    "ts": 1795271750
   },
   "TITLE_Care & More Foot cream 100 ML": {
-    "price": 61.95,
-    "ts": 1794968618
+    "price": 60.9,
+    "ts": 1795271750
   },
   "B07LBSH6B2": {
     "price": 30.45,
@@ -979,7 +979,7 @@
     "price": 25.2,
     "ts": 1795266514
   },
-  "__NEXT_IDX__": 17,
+  "__NEXT_IDX__": 3,
   "B00BDC9V90": {
     "price": 27.55,
     "ts": 1795267087
@@ -1011,5 +1011,117 @@
   "TITLE_ZOZY Plastic Headband Durable ": {
     "price": 10,
     "ts": 1795267465
+  },
+  "B0BYZZSCFS": {
+    "price": 260.44,
+    "ts": 1795271417
+  },
+  "TITLE_LUTFI Body Fat Scale Smart Wei": {
+    "price": 260.44,
+    "ts": 1795271417
+  },
+  "B08WJMSZVV": {
+    "price": 131.25,
+    "ts": 1795271502
+  },
+  "TITLE_Abu Auf Peanut Butter, 330 gm": {
+    "price": 131.25,
+    "ts": 1795271502
+  },
+  "B0G42J56TP": {
+    "price": 142.5,
+    "ts": 1795271503
+  },
+  "TITLE_Pico Spring Blossom Honey": {
+    "price": 142.5,
+    "ts": 1795271503
+  },
+  "B08WJNP73F": {
+    "price": 77.7,
+    "ts": 1795271530
+  },
+  "TITLE_Healthy Mill Crunchy Waffle": {
+    "price": 77.7,
+    "ts": 1795271530
+  },
+  "B0BT822SWP": {
+    "price": 26.25,
+    "ts": 1795271555
+  },
+  "TITLE_Dabur Red Ayurvedic Toothpaste": {
+    "price": 26.25,
+    "ts": 1795271555
+  },
+  "B0BHZPTPY2": {
+    "price": 18.71,
+    "ts": 1795271607
+  },
+  "TITLE_Corona Dark Chocolate Bar": {
+    "price": 18.71,
+    "ts": 1795271607
+  },
+  "B0G1ZGGVNW": {
+    "price": 82.5,
+    "ts": 1795271724
+  },
+  "TITLE_Pico Black Seed Honey": {
+    "price": 82.5,
+    "ts": 1795271724
+  },
+  "B09KQQCRBV": {
+    "price": 131.29,
+    "ts": 1795271774
+  },
+  "TITLE_Axe Body Spray for Men Ice Chi": {
+    "price": 131.29,
+    "ts": 1795271774
+  },
+  "B09KQP311K": {
+    "price": 131.29,
+    "ts": 1795271775
+  },
+  "TITLE_Axe Body Spray for Men Dark Te": {
+    "price": 131.29,
+    "ts": 1795271775
+  },
+  "B07SJ6NYBT": {
+    "price": 131.29,
+    "ts": 1795271776
+  },
+  "TITLE_Axe Body Spray for Men Leather": {
+    "price": 131.29,
+    "ts": 1795271776
+  },
+  "B0BBDF2GCH": {
+    "price": 71.4,
+    "ts": 1795271778
+  },
+  "TITLE_Luna Eau De Cologne Twist Berr": {
+    "price": 71.4,
+    "ts": 1795271778
+  },
+  "B0DG2MB7DR": {
+    "price": 33.6,
+    "ts": 1795271779
+  },
+  "TITLE_Luna Lip Moist (Men Care) With": {
+    "price": 33.6,
+    "ts": 1795271779
+  },
+  "B07NDN8TWW": {
+    "price": 329.97,
+    "ts": 1795271781
+  },
+  "TITLE_Fogg Scent Intense Many Flower": {
+    "price": 329.97,
+    "ts": 1795271781
+  },
+  "B0B5VBGCBL": {
+    "price": 312.9,
+    "ts": 1795271782
+  },
+  "TITLE_Fogg Scent Dazzle 100 Ml Scent": {
+    "price": 312.9,
+    "ts": 1795271782
   }
 }
