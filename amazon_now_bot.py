@@ -15,14 +15,10 @@ CACHE_TTL_DAYS = 7
 COOKIE_ALERT_COOLDOWN = 12 * 3600
 MAX_RUN_SECONDS = 540
 AUTO_DISCOVER_EXTRA_LINKS = True
+MAX_SCROLL_STEPS = 10
 
 STATE_FILE = "sent_now.json"
 QC_BRAND = "sAuWWBROaG"
-
-NOW_ENTRY_PAGES = [
-    "https://www.amazon.eg/tez",
-    f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=220630950031&title=Top+Deals&ref=EG_Tez_SF_Top_deals",
-]
 
 NOW_TARGETS = [
     ("أقوى العروض (Top Deals)", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=220630950031&title=Top+Deals&ref=EG_Tez_SF_Top_deals"),
@@ -200,18 +196,34 @@ def parse_playwright_cookies(raw_json):
 def warmup_session(page):
     try:
         page.goto("https://www.amazon.eg/?language=ar_AE", wait_until="domcontentloaded", timeout=30000)
-        time.sleep(2.5)
+        time.sleep(2.0)
     except Exception as e:
         print(f"   ℹ️ تمهيد الصفحة الرئيسية: {e}")
 
-def collect_links_from_current_page(page, known_nodes, known_urls):
-    found = []
+def discover_from_tez_hub(page, existing_targets):
+    """اكتشاف سريع لأقسام Amazon Now الإضافية من صفحة tez الرئيسية مرة واحدة في بداية الجلسة"""
+    discovered = []
+    known_nodes = set()
+    known_urls = set()
+
+    for _, u in existing_targets:
+        known_urls.add(u)
+        m = re.search(r"nodeId=(\d+)", u)
+        if m:
+            known_nodes.add(m.group(1))
+
     try:
+        page.goto("https://www.amazon.eg/tez", wait_until="domcontentloaded", timeout=25000)
+        time.sleep(2.0)
+        for _ in range(3):
+            page.evaluate("window.scrollBy(0, 900)")
+            time.sleep(0.4)
+
         raw_links = page.evaluate("""() => {
             const out = [];
             for (const a of document.querySelectorAll("a[href]")) {
                 const href = a.href || a.getAttribute("href") || "";
-                if (href.includes("/tez/")) {
+                if (href.includes("/tez/browse/explore/category")) {
                     out.push({
                         href,
                         txt: (a.innerText || a.getAttribute("aria-label") || a.getAttribute("title") || "").trim()
@@ -232,9 +244,6 @@ def collect_links_from_current_page(page, known_nodes, known_urls):
             if not href:
                 continue
             full_url = urllib.parse.urljoin("https://www.amazon.eg", href)
-            if "/tez/browse/explore/category" not in full_url:
-                continue
-
             parsed = urllib.parse.urlparse(full_url)
             qs = urllib.parse.parse_qs(parsed.query)
             node_id = (qs.get("nodeId") or [""])[0]
@@ -255,36 +264,9 @@ def collect_links_from_current_page(page, known_nodes, known_urls):
             if not txt and title_q:
                 txt = urllib.parse.unquote_plus(title_q)
             label = txt[:35] if len(txt) >= 2 else f"قسم ناو ({node_id})"
-            found.append((label, clean_url))
+            discovered.append((label, clean_url))
     except Exception:
         pass
-    return found
-
-def deep_discover_now_sections(page, existing_targets):
-    discovered = []
-    known_nodes = set()
-    known_urls = set()
-
-    for _, u in existing_targets:
-        known_urls.add(u)
-        m = re.search(r"nodeId=(\d+)", u)
-        if m:
-            known_nodes.add(m.group(1))
-
-    discovered.extend(collect_links_from_current_page(page, known_nodes, known_urls))
-
-    for entry_url in NOW_ENTRY_PAGES:
-        if entry_url in known_urls:
-            continue
-        try:
-            page.goto(entry_url, wait_until="domcontentloaded", timeout=25000)
-            time.sleep(2.5)
-            for _ in range(5):
-                page.evaluate("window.scrollBy(0, 900)")
-                time.sleep(0.5)
-            discovered.extend(collect_links_from_current_page(page, known_nodes, known_urls))
-        except Exception:
-            pass
 
     return discovered
 
@@ -647,6 +629,12 @@ def main():
 
         warmup_session(page)
 
+        if AUTO_DISCOVER_EXTRA_LINKS:
+            extra_links = discover_from_tez_hub(page, ordered_targets)
+            if extra_links:
+                ordered_targets.extend(extra_links)
+                print(f"🔎 تم اكتشاف {len(extra_links)} قسم إضافي من صفحة tez تلقائياً.")
+
         img_to_asin = {}
         title_to_asin = {}
 
@@ -660,7 +648,6 @@ def main():
 
         page.on("response", on_response)
         lost_conn_streak = 0
-        discovered_added = False
         idx = 0
 
         while idx < len(ordered_targets):
@@ -672,7 +659,7 @@ def main():
             print(f"\n[{idx + 1}/{len(ordered_targets)}] فحص قسم: {cat_name}...")
             try:
                 page.goto(url, wait_until="domcontentloaded", timeout=35000)
-                time.sleep(3.5)
+                time.sleep(3.0)
 
                 page_title = page.title()
                 body_txt = page.inner_text("body")
@@ -688,7 +675,7 @@ def main():
 
                 if "لقد فقدت الاتصال" in body_txt:
                     page.reload(wait_until="domcontentloaded", timeout=25000)
-                    time.sleep(3)
+                    time.sleep(2.5)
                     body_txt = page.inner_text("body")
                     if "لقد فقدت الاتصال" in body_txt:
                         lost_conn_streak += 1
@@ -701,15 +688,6 @@ def main():
                         continue
 
                 lost_conn_streak = 0
-
-                if AUTO_DISCOVER_EXTRA_LINKS and not discovered_added:
-                    extra_links = deep_discover_now_sections(page, ordered_targets)
-                    discovered_added = True
-                    if extra_links:
-                        ordered_targets.extend(extra_links)
-                        print(f"   🔎 تم اكتشاف {len(extra_links)} قسم إضافي تلقائياً وإضافته للقائمة.")
-                    page.goto(url, wait_until="domcontentloaded", timeout=35000)
-                    time.sleep(2.5)
 
                 try:
                     next_json_list = page.evaluate(
@@ -728,7 +706,7 @@ def main():
                 stagnant = 0
                 all_items = {}
 
-                for _ in range(16):
+                for _ in range(MAX_SCROLL_STEPS):
                     items = page.evaluate(EXTRACT_JS)
                     for it in items:
                         all_items[it["prodId"]] = it
@@ -739,11 +717,11 @@ def main():
                         stagnant = 0
                     last_count = len(all_items)
 
-                    if stagnant >= 4 and len(all_items) > 0:
+                    if stagnant >= 3 and len(all_items) > 0:
                         break
 
                     page.evaluate(SCROLL_JS)
-                    time.sleep(1.2)
+                    time.sleep(1.0)
 
                 if len(all_items) > 0:
                     sent_deals.pop("__COOKIE_ALERT_TS__", None)
