@@ -28,6 +28,11 @@ NOW_TARGETS = [
     ("أقوى العروض (Top Deals)", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=220630950031&title=Top+Deals&ref=EG_Tez_SF_Top_deals"),
     ("عروض إضافية 1", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=223577117031"),
     ("عروض إضافية 2", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=223985148031"),
+    ("عروض إضافية 3", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=224491782031"),
+    ("الشيبسي والفشار (Chips & Pop-Corn)", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=214837371031&title=Chips+%26+Pop-Corn"),
+    ("المربى والعسل والسبريد (Jams, Honey & Spreads)", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215093297031&title=Jams%2C+Honey+%26+Spreads"),
+    ("الكوكيز والبسكويت (Cookies & Biscuits)", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215093318031&title=Cookies+and+Biscuits"),
+    ("الصحة (Health)", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215032325031&ref=EG_Tez_SF_SBC_Health"),
     ("الإلكترونيات والموبايلات", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=212925567031&title=Electronics"),
     ("الشوكولاتة والحلويات", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215093316031&title=Chocolate+and+Candies"),
     ("السناكس والحلويات", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215093298031&title=Snack+%26+Sweets"),
@@ -35,7 +40,7 @@ NOW_TARGETS = [
     ("خزين المطبخ والبقالة", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=212925568031&title=Food+Cupboard"),
     ("الألبان والبيض", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215052334031&title=Bakery"),
     ("الخضروات والفاكهة", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=214841697031&title=Fruits+and+Vegetables"),
-    ("الجمال والعناية الشخصية", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215021840031&ref=EG_Tez_SF_Herotator_Beauty"),
+    ("الجمال والعناية الشخصية", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215021840031&ref=SA_Tez_SF_SBC_Beauty"),
     ("الصحة والعافية", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215021841031&title=Health"),
     ("مستلزمات المنزل", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215103357031&ref=SA_Tez_SF_SBC_Home"),
     ("المنظفات والغسيل", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215103358031&title=Household+Cleaning"),
@@ -43,7 +48,6 @@ NOW_TARGETS = [
     ("المخبوزات الطازجة", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215052333031&ref=EG_Tez_SF_SBC_Bakery"),
     ("الدواجن واللحوم والأسماك", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=214841696031&ref=EG_Tez_SF_SBC_CMF"),
     ("الأطفال والرضع", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215093317031&title=Baby"),
-    ("الألعاب والترفيه", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215093318031&title=Toys"),
 ]
 
 def load_and_clean_sent():
@@ -258,7 +262,6 @@ def collect_links_from_current_page(page, known_nodes, known_urls):
     return found
 
 def deep_discover_now_sections(page, existing_targets):
-    """اكتشاف شامل لكافة أقسام Amazon Now من الصفحات المرجعية والصفحة الحالية"""
     discovered = []
     known_nodes = set()
     known_urls = set()
@@ -706,7 +709,6 @@ def main():
                     if extra_links:
                         ordered_targets.extend(extra_links)
                         print(f"   🔎 تم اكتشاف {len(extra_links)} قسم إضافي تلقائياً وإضافته للقائمة.")
-                    # العودة لرابط القسم الحالي بعد الاستكشاف لضمان فحصه
                     page.goto(url, wait_until="domcontentloaded", timeout=35000)
                     time.sleep(2.5)
 
