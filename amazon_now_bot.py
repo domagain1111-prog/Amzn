@@ -15,7 +15,7 @@ CACHE_TTL_DAYS = 7
 COOKIE_ALERT_COOLDOWN = 12 * 3600
 MAX_RUN_SECONDS = 540
 AUTO_DISCOVER_EXTRA_LINKS = True
-MAX_SCROLL_STEPS = 10
+MAX_SCROLL_STEPS = 15
 
 STATE_FILE = "sent_now.json"
 QC_BRAND = "sAuWWBROaG"
@@ -201,7 +201,6 @@ def warmup_session(page):
         print(f"   ℹ️ تمهيد الصفحة الرئيسية: {e}")
 
 def discover_from_tez_hub(page, existing_targets):
-    """اكتشاف سريع لأقسام Amazon Now الإضافية من صفحة tez الرئيسية مرة واحدة في بداية الجلسة"""
     discovered = []
     known_nodes = set()
     known_urls = set()
@@ -717,7 +716,7 @@ def main():
                         stagnant = 0
                     last_count = len(all_items)
 
-                    if stagnant >= 3 and len(all_items) > 0:
+                    if stagnant >= 2 and len(all_items) > 0:
                         break
 
                     page.evaluate(SCROLL_JS)
