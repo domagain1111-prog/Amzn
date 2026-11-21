@@ -13,13 +13,22 @@ AMAZON_COOKIES = os.environ.get("AMAZON_COOKIES", "").strip()
 MIN_DISCOUNT_PERCENT = 40
 CACHE_TTL_DAYS = 7
 COOKIE_ALERT_COOLDOWN = 12 * 3600
+MAX_RUN_SECONDS = 540
+AUTO_DISCOVER_EXTRA_LINKS = True
+
 STATE_FILE = "sent_now.json"
 QC_BRAND = "sAuWWBROaG"
+
+NOW_ENTRY_PAGES = [
+    f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=220630950031&title=Top+Deals&ref=EG_Tez_SF_Top_deals",
+    "https://www.amazon.eg/tez",
+]
 
 NOW_TARGETS = [
     ("أقوى العروض (Top Deals)", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=220630950031&title=Top+Deals&ref=EG_Tez_SF_Top_deals"),
     ("عروض إضافية 1", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=223577117031"),
     ("عروض إضافية 2", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=223985148031"),
+    ("الإلكترونيات والموبايلات", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=212925567031&title=Electronics"),
     ("الشوكولاتة والحلويات", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215093316031&title=Chocolate+and+Candies"),
     ("السناكس والحلويات", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215093298031&title=Snack+%26+Sweets"),
     ("القهوة والشاي", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=212925569031&title=Coffee+and+Tea"),
@@ -27,10 +36,14 @@ NOW_TARGETS = [
     ("الألبان والبيض", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215052334031&title=Bakery"),
     ("الخضروات والفاكهة", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=214841697031&title=Fruits+and+Vegetables"),
     ("الجمال والعناية الشخصية", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215021840031&ref=EG_Tez_SF_Herotator_Beauty"),
+    ("الصحة والعافية", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215021841031&title=Health"),
     ("مستلزمات المنزل", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215103357031&ref=SA_Tez_SF_SBC_Home"),
+    ("المنظفات والغسيل", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215103358031&title=Household+Cleaning"),
     ("المشروبات والعصائر", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=212925566031&ref=EG_Tez_SF_SBC_Beverages"),
     ("المخبوزات الطازجة", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215052333031&ref=EG_Tez_SF_SBC_Bakery"),
     ("الدواجن واللحوم والأسماك", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=214841696031&ref=EG_Tez_SF_SBC_CMF"),
+    ("الأطفال والرضع", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215093317031&title=Baby"),
+    ("الألعاب والترفيه", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215093318031&title=Toys"),
 ]
 
 def load_and_clean_sent():
@@ -50,6 +63,10 @@ def load_and_clean_sent():
     for k, v in data.items():
         if k == "__COOKIE_ALERT_TS__":
             if isinstance(v, (int, float)) and (now - v) < 86400:
+                cleaned[k] = v
+            continue
+        if k == "__NEXT_IDX__":
+            if isinstance(v, int) and v >= 0:
                 cleaned[k] = v
             continue
         if isinstance(v, dict):
@@ -183,6 +200,91 @@ def warmup_session(page):
         time.sleep(2.5)
     except Exception as e:
         print(f"   ℹ️ تمهيد الصفحة الرئيسية: {e}")
+
+def collect_links_from_current_page(page, known_nodes, known_urls):
+    found = []
+    try:
+        raw_links = page.evaluate("""() => {
+            const out = [];
+            for (const a of document.querySelectorAll("a[href]")) {
+                const href = a.href || a.getAttribute("href") || "";
+                if (href.includes("/tez/")) {
+                    out.push({
+                        href,
+                        txt: (a.innerText || a.getAttribute("aria-label") || a.getAttribute("title") || "").trim()
+                    });
+                }
+            }
+            const html = document.documentElement.innerHTML || "";
+            const re = /\/tez\/browse\/explore\/category[^"'\\s<>)]*/g;
+            let m;
+            while ((m = re.exec(html)) !== null) {
+                out.push({ href: m[0], txt: "" });
+            }
+            return out;
+        }""")
+
+        for item in raw_links:
+            href = (item.get("href") or "").replace("&amp;", "&").strip()
+            if not href:
+                continue
+            full_url = urllib.parse.urljoin("https://www.amazon.eg", href)
+            if "/tez/browse/explore/category" not in full_url:
+                continue
+
+            parsed = urllib.parse.urlparse(full_url)
+            qs = urllib.parse.parse_qs(parsed.query)
+            node_id = (qs.get("nodeId") or [""])[0]
+            qc = (qs.get("qcbrand") or [QC_BRAND])[0]
+            title_q = (qs.get("title") or [""])[0]
+
+            if not node_id or node_id in known_nodes:
+                continue
+
+            clean_url = f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={qc}&nodeId={node_id}"
+            if clean_url in known_urls:
+                continue
+
+            known_nodes.add(node_id)
+            known_urls.add(clean_url)
+
+            txt = re.sub(r"\s+", " ", item.get("txt") or "").strip()
+            if not txt and title_q:
+                txt = urllib.parse.unquote_plus(title_q)
+            label = txt[:35] if len(txt) >= 2 else f"قسم ناو ({node_id})"
+            found.append((label, clean_url))
+    except Exception:
+        pass
+    return found
+
+def deep_discover_now_sections(page, existing_targets):
+    """اكتشاف شامل لكافة أقسام Amazon Now من الصفحات المرجعية والصفحة الحالية"""
+    discovered = []
+    known_nodes = set()
+    known_urls = set()
+
+    for _, u in existing_targets:
+        known_urls.add(u)
+        m = re.search(r"nodeId=(\d+)", u)
+        if m:
+            known_nodes.add(m.group(1))
+
+    discovered.extend(collect_links_from_current_page(page, known_nodes, known_urls))
+
+    for entry_url in NOW_ENTRY_PAGES:
+        if entry_url in known_urls:
+            continue
+        try:
+            page.goto(entry_url, wait_until="domcontentloaded", timeout=25000)
+            time.sleep(2.5)
+            for _ in range(4):
+                page.evaluate("window.scrollBy(0, 900)")
+                time.sleep(0.6)
+            discovered.extend(collect_links_from_current_page(page, known_nodes, known_urls))
+        except Exception:
+            pass
+
+    return discovered
 
 EXTRACT_JS = r"""
 () => {
@@ -511,8 +613,20 @@ def main():
         print("⚠️ لم يتم العثور على AMAZON_COOKIES في Secrets، تخطي فحص Amazon Now.")
         return
 
+    start_ts = time.time()
     sent_deals = load_and_clean_sent()
-    print(f"⚡ بدء فحص Amazon Now السحابي ({len(NOW_TARGETS)} أقسام | خصم فعلي {MIN_DISCOUNT_PERCENT}%+ | بالذاكرة: {len(sent_deals)})...")
+    targets = list(NOW_TARGETS)
+    saved_next_idx = sent_deals.get("__NEXT_IDX__", 0) % len(targets)
+
+    priority_head = targets[:3]
+    rotating_tail = targets[3:]
+    if rotating_tail:
+        rot_offset = saved_next_idx % len(rotating_tail)
+        ordered_targets = priority_head + rotating_tail[rot_offset:] + rotating_tail[:rot_offset]
+    else:
+        ordered_targets = priority_head
+
+    print(f"⚡ بدء فحص Amazon Now الشامل (أساسي: {len(targets)} قسم | خصم فعلي {MIN_DISCOUNT_PERCENT}%+)...")
 
     with sync_playwright() as p:
         browser = p.chromium.launch(
@@ -544,12 +658,19 @@ def main():
 
         page.on("response", on_response)
         lost_conn_streak = 0
+        discovered_added = False
+        idx = 0
 
-        for idx, (cat_name, url) in enumerate(NOW_TARGETS, 1):
-            print(f"\n[{idx}/{len(NOW_TARGETS)}] فحص قسم: {cat_name}...")
+        while idx < len(ordered_targets):
+            if time.time() - start_ts > MAX_RUN_SECONDS:
+                print("\n⏱️ تم الوصول لحد وقت الجولة الآمن لحفظ الذاكرة واستكمال الباقي في الجولة التالية.")
+                break
+
+            cat_name, url = ordered_targets[idx]
+            print(f"\n[{idx + 1}/{len(ordered_targets)}] فحص قسم: {cat_name}...")
             try:
                 page.goto(url, wait_until="domcontentloaded", timeout=35000)
-                time.sleep(4)
+                time.sleep(3.5)
 
                 page_title = page.title()
                 body_txt = page.inner_text("body")
@@ -565,7 +686,7 @@ def main():
 
                 if "لقد فقدت الاتصال" in body_txt:
                     page.reload(wait_until="domcontentloaded", timeout=25000)
-                    time.sleep(3.5)
+                    time.sleep(3)
                     body_txt = page.inner_text("body")
                     if "لقد فقدت الاتصال" in body_txt:
                         lost_conn_streak += 1
@@ -574,9 +695,20 @@ def main():
                             print("   🛑 تكررت في 3 أقسام (إما الكوكيز فصلت أو فرع ناو مغلق مؤقتاً في منطقتك).")
                             maybe_send_cookie_alert(sent_deals, "استمرار ظهور 'لقد فقدت الاتصال' في أقسام ناو")
                             break
+                        idx += 1
                         continue
 
                 lost_conn_streak = 0
+
+                if AUTO_DISCOVER_EXTRA_LINKS and not discovered_added:
+                    extra_links = deep_discover_now_sections(page, ordered_targets)
+                    discovered_added = True
+                    if extra_links:
+                        ordered_targets.extend(extra_links)
+                        print(f"   🔎 تم اكتشاف {len(extra_links)} قسم إضافي تلقائياً وإضافته للقائمة.")
+                    # العودة لرابط القسم الحالي بعد الاستكشاف لضمان فحصه
+                    page.goto(url, wait_until="domcontentloaded", timeout=35000)
+                    time.sleep(2.5)
 
                 try:
                     next_json_list = page.evaluate(
@@ -595,7 +727,7 @@ def main():
                 stagnant = 0
                 all_items = {}
 
-                for _ in range(18):
+                for _ in range(16):
                     items = page.evaluate(EXTRACT_JS)
                     for it in items:
                         all_items[it["prodId"]] = it
@@ -610,7 +742,7 @@ def main():
                         break
 
                     page.evaluate(SCROLL_JS)
-                    time.sleep(1.3)
+                    time.sleep(1.2)
 
                 if len(all_items) > 0:
                     sent_deals.pop("__COOKIE_ALERT_TS__", None)
@@ -700,8 +832,12 @@ def main():
             except Exception as e:
                 print(f"   ❌ خطأ أثناء فحص {cat_name}: {e}")
 
+            idx += 1
+
         browser.close()
 
+    if rotating_tail:
+        sent_deals["__NEXT_IDX__"] = (saved_next_idx + max(1, idx)) % len(rotating_tail)
     save_sent(sent_deals)
 
 if __name__ == "__main__":
