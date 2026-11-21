@@ -716,11 +716,11 @@ def main():
                         stagnant = 0
                     last_count = len(all_items)
 
-                    if stagnant >= 2 and len(all_items) > 0:
+                    if stagnant >= 3 and len(all_items) > 0:
                         break
 
                     page.evaluate(SCROLL_JS)
-                    time.sleep(1.0)
+                    time.sleep(1.3)
 
                 if len(all_items) > 0:
                     sent_deals.pop("__COOKIE_ALERT_TS__", None)
