@@ -10,7 +10,7 @@ TELEGRAM_TOKEN = (os.environ.get("NOW_TELEGRAM_TOKEN") or os.environ.get("TELEGR
 CHAT_ID = (os.environ.get("NOW_CHAT_ID") or os.environ.get("CHAT_ID") or "").strip()
 AMAZON_COOKIES = os.environ.get("AMAZON_COOKIES", "").strip()
 
-MIN_DISCOUNT_PERCENT = 40
+MIN_DISCOUNT_PERCENT = 35
 CACHE_TTL_DAYS = 7
 COOKIE_ALERT_COOLDOWN = 12 * 3600
 MAX_RUN_SECONDS = 540
@@ -20,8 +20,8 @@ STATE_FILE = "sent_now.json"
 QC_BRAND = "sAuWWBROaG"
 
 NOW_ENTRY_PAGES = [
-    f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=220630950031&title=Top+Deals&ref=EG_Tez_SF_Top_deals",
     "https://www.amazon.eg/tez",
+    f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=220630950031&title=Top+Deals&ref=EG_Tez_SF_Top_deals",
 ]
 
 NOW_TARGETS = [
@@ -43,7 +43,6 @@ NOW_TARGETS = [
     ("الجمال والعناية الشخصية", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215021840031&ref=SA_Tez_SF_SBC_Beauty"),
     ("الصحة والعافية", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215021841031&title=Health"),
     ("مستلزمات المنزل", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215103357031&ref=SA_Tez_SF_SBC_Home"),
-    ("المنظفات والغسيل", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215103358031&title=Household+Cleaning"),
     ("المشروبات والعصائر", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=212925566031&ref=EG_Tez_SF_SBC_Beverages"),
     ("المخبوزات الطازجة", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=215052333031&ref=EG_Tez_SF_SBC_Bakery"),
     ("الدواجن واللحوم والأسماك", f"https://www.amazon.eg/tez/browse/explore/category?qcbrand={QC_BRAND}&nodeId=214841696031&ref=EG_Tez_SF_SBC_CMF"),
@@ -280,9 +279,9 @@ def deep_discover_now_sections(page, existing_targets):
         try:
             page.goto(entry_url, wait_until="domcontentloaded", timeout=25000)
             time.sleep(2.5)
-            for _ in range(4):
+            for _ in range(5):
                 page.evaluate("window.scrollBy(0, 900)")
-                time.sleep(0.6)
+                time.sleep(0.5)
             discovered.extend(collect_links_from_current_page(page, known_nodes, known_urls))
         except Exception:
             pass
@@ -621,8 +620,8 @@ def main():
     targets = list(NOW_TARGETS)
     saved_next_idx = sent_deals.get("__NEXT_IDX__", 0) % len(targets)
 
-    priority_head = targets[:3]
-    rotating_tail = targets[3:]
+    priority_head = targets[:4]
+    rotating_tail = targets[4:]
     if rotating_tail:
         rot_offset = saved_next_idx % len(rotating_tail)
         ordered_targets = priority_head + rotating_tail[rot_offset:] + rotating_tail[:rot_offset]
